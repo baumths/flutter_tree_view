@@ -1,7 +1,7 @@
 library flutter_tree_view;
 
-/// A Calculator.
-class Calculator {
-  /// Returns [value] plus 1.
-  int addOne(int value) => value + 1;
-}
+export 'src/node_widget.dart' show ToggleNodeIconButton;
+export 'src/tree_node.dart' show TreeNode;
+export 'src/tree_view.dart' show TreeView;
+export 'src/tree_view_controller.dart' show TreeViewController;
+export 'src/tree_view_theme.dart';

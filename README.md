@@ -1,14 +1,13 @@
-# flutter_tree_view
+## 👷️ Documentation under construction.
 
-A new Flutter package project.
+## 🌐️ Take a look at the [example](https://mbaumgartenbr.github.io/flutter_tree_view/).
 
-## Getting Started
+## 📸️ Screenshots:
 
-This project is a starting point for a Dart
-[package](https://flutter.dev/developing-packages/),
-a library module containing code that can be shared easily across
-multiple Flutter or Dart projects.
+| Connected Lines | Scoped Lines | Disabled Lines |
+| :-: | :-: | :-: |
+| ![Screenshot][connected] | ![Screenshot][scoped] | ![Screenshot][disabled] |
 
-For help getting started with Flutter, view our 
-[online documentation](https://flutter.dev/docs), which offers tutorials, 
-samples, guidance on mobile development, and a full API reference.
+[connected]: https://github.com/mbaumgartenbr/flutter_tree_view/blob/main/.github/assets/example_lines_connecting.png?raw=true
+[scoped]: https://raw.githubusercontent.com/mbaumgartenbr/flutter_tree_view/main/.github/assets/example_lines_scoped.png
+[disabled]: https://raw.githubusercontent.com/mbaumgartenbr/flutter_tree_view/main/.github/assets/example_lines_disabled.png
