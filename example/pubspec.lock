@@ -70,9 +70,11 @@ packages:
   flutter_tree_view:
     dependency: "direct main"
     description:
-      path: ".."
-      relative: true
-    source: path
+      path: "."
+      ref: HEAD
+      resolved-ref: f33b2ed45a05a5075b21c481f0dc16562384855d
+      url: "https://github.com/mbaumgartenbr/flutter_tree_view.git"
+    source: git
     version: "0.0.1"
   matcher:
     dependency: transitive
@@ -165,4 +167,3 @@ packages:
     version: "2.1.0-nullsafety.5"
 sdks:
   dart: ">=2.12.0-0.0 <3.0.0"
-  flutter: ">=1.17.0"
