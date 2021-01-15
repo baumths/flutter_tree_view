@@ -8,6 +8,6 @@
 | :-: | :-: | :-: |
 | ![Screenshot][connected] | ![Screenshot][scoped] | ![Screenshot][disabled] |
 
-[connected]: https://github.com/mbaumgartenbr/flutter_tree_view/blob/main/.github/assets/example_lines_connecting.png?raw=true
+[connected]: https://raw.githubusercontent.com/mbaumgartenbr/flutter_tree_view/main/.github/assets/example_lines_connecting.png
 [scoped]: https://raw.githubusercontent.com/mbaumgartenbr/flutter_tree_view/main/.github/assets/example_lines_scoped.png
 [disabled]: https://raw.githubusercontent.com/mbaumgartenbr/flutter_tree_view/main/.github/assets/example_lines_disabled.png
