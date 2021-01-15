@@ -1,6 +1,7 @@
 ## 👷️ Documentation under construction.
 
-## 🌐️ Take a look at the [example](https://mbaumgartenbr.github.io/flutter_tree_view/).
+## 🌐️ Take a look at the [example](https://mbaumgartenbr.github.io/flutter_tree_view/). *(Github pages is not working currently)* 🤷‍♂️️
+
 
 ## 📸️ Screenshots:
 
