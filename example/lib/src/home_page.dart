@@ -40,12 +40,17 @@ class _HomePageState extends State<HomePage> {
           child: TreeView(
             controller: treeController,
             theme: treeTheme,
-            onTap: (n) => showSnackBar(context, 'Node Tapped: ${n.data}'),
-            onLongPress: (n) {
-              showSnackBar(context, 'Node Pressed: ${n.data}');
-            },
-            nodeBuilder: (_, TreeNode node) {
-              return NodeWidget(node: node, treeController: treeController);
+            nodeBuilder: (_, node) {
+              return NodeWidget(
+                node: node,
+                theme: treeTheme,
+                controller: treeController,
+                title: Text(node.data as String),
+                onTap: (n) => showSnackBar(context, 'Node Tapped: ${n.data}'),
+                onLongPress: (n) {
+                  showSnackBar(context, 'Node Pressed: ${n.data}');
+                },
+              );
             },
           ),
         ),
@@ -97,39 +102,5 @@ class _HomePageState extends State<HomePage> {
           break;
       }
     });
-  }
-}
-
-class NodeWidget extends StatelessWidget {
-  const NodeWidget({
-    Key? key,
-    required this.node,
-    required this.treeController,
-  }) : super(key: key);
-
-  final TreeNode node;
-  final TreeViewController treeController;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(
-          node.hasChildren ? Icons.folder : Icons.article,
-          color: Theme.of(context).accentColor,
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
-          child: Text(node.data as String),
-        ),
-        const Spacer(),
-        if (node.hasChildren)
-          ToggleNodeIconButton(
-            node: node,
-            controller: treeController,
-            onToggle: (n) => showSnackBar(context, 'Node Toggled: ${n.data}'),
-          ),
-      ],
-    );
   }
 }
