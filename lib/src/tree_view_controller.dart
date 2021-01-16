@@ -11,10 +11,18 @@ import 'internal.dart';
 /// once the controller is not needed anymore.
 class TreeViewController {
   /// Constructor for [TreeViewController].
-  TreeViewController({required this.rootNode});
+  TreeViewController({
+    required this.rootNode,
+    this.disposeNodesAutomatically = true,
+  });
 
   /// The [TreeNode] that will store all top level nodes.
   final TreeNode rootNode;
+
+  /// If `false`, you will have to dispose each node individually.
+  /// If `true`, calling [TreeViewController.dispose]
+  /// will dispose all [TreeNode] instances descendants of [rootNode].
+  final bool disposeNodesAutomatically;
 
   final eventDispatcher = TreeViewEventDispatcher();
 
@@ -53,5 +61,16 @@ class TreeViewController {
   void collapseAll() => collapseNode(rootNode);
 
   /// Release resources.
-  void dispose() => eventDispatcher.dispose();
+  void dispose() {
+    eventDispatcher.dispose();
+    if (disposeNodesAutomatically) {
+      subtreeGenerator(rootNode).forEach((node) => node.dispose());
+      rootNode.dispose();
+    } else {
+      print(
+        'TREE VIEW WARNING: NODE DISPOSAL WAS DISABLED!'
+        'This could lead to memory leaks.',
+      );
+    }
+  }
 }
