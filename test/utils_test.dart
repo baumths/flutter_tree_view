@@ -13,19 +13,20 @@ void main() {
   late TreeNode node2;
 
   late List<TreeNode> rootSubtree;
+  late List<TreeNode> reversedRootSubtree;
   late List<TreeNode> node1Subtree;
   late List<TreeNode> node11Subtree;
   late List<TreeNode> node12Subtree;
 
   setUp(() {
-    rootNode = TreeNode();
-    node1 = TreeNode();
-    node11 = TreeNode();
-    node111 = TreeNode();
-    node12 = TreeNode();
-    node121 = TreeNode();
-    node122 = TreeNode();
-    node2 = TreeNode();
+    rootNode = TreeNode(data: 'Root');
+    node1 = TreeNode(data: '1');
+    node11 = TreeNode(data: '11');
+    node111 = TreeNode(data: '111');
+    node12 = TreeNode(data: '12');
+    node121 = TreeNode(data: '121');
+    node122 = TreeNode(data: '122');
+    node2 = TreeNode(data: '2');
 
     node11.addChild(node111);
     node12.addChildren([node121, node122]);
@@ -85,6 +86,19 @@ void main() {
         expect(subtreeGenerator(node122), isEmpty);
 
         expect(subtreeGenerator(node2), isEmpty);
+      },
+    );
+  });
+
+  group('Tests for reversedSubtreeGenerator -', () {
+    setUp(() {
+      reversedRootSubtree = rootSubtree.reversed.toList();
+    });
+
+    test(
+      'Should return reversedRootSubtree when called with rootNode',
+      () {
+        expect(reversedSubtreeGenerator(rootNode), equals(reversedRootSubtree));
       },
     );
   });

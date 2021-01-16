@@ -10,7 +10,7 @@ typedef RemoveNodeBuilder = Widget Function(
 );
 
 /// Callback to build a widget for [TreeNode].
-typedef NodeBuilder = Widget Function(BuildContext context, TreeNode node);
+typedef NodeBuilder = NodeWidget Function(BuildContext context, TreeNode node);
 
 /// Yields every descendant in the subtree of [node]. In Breadth first traversal.
 Iterable<TreeNode> subtreeGenerator(TreeNode node) sync* {
@@ -25,6 +25,14 @@ Iterable<TreeNode> subtreeGenerator(TreeNode node) sync* {
 Iterable<TreeNode?> nullableSubtreeGenerator(TreeNode node) sync* {
   for (final child in node.children) {
     yield child;
-    if (child.hasChildren) yield* subtreeGenerator(child);
+    if (child.hasChildren) yield* nullableSubtreeGenerator(child);
+  }
+}
+
+/// Yields every descendant in the subtree of [node]. In post-order traversal.
+Iterable<TreeNode> reversedSubtreeGenerator(TreeNode node) sync* {
+  for (final child in node.children.reversed) {
+    if (child.hasChildren) yield* reversedSubtreeGenerator(child);
+    yield child;
   }
 }
