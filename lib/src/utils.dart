@@ -13,19 +13,18 @@ typedef RemoveNodeBuilder = Widget Function(
 typedef NodeBuilder = Widget Function(BuildContext context, TreeNode node);
 
 /// Yields every descendant in the subtree of [node]. In Breadth first traversal.
-///
-/// If [filter] is not null, yields only the descendants that match filter.
-Iterable<TreeNode> subtreeGenerator(
-  TreeNode node, [
-  bool Function(TreeNode)? filter,
-]) sync* {
+Iterable<TreeNode> subtreeGenerator(TreeNode node) sync* {
   for (final child in node.children) {
-    if (filter?.call(child) ?? true) {
-      yield child;
-    }
+    yield child;
+    if (child.hasChildren) yield* subtreeGenerator(child);
+  }
+}
 
-    if (child.hasChildren) {
-      yield* subtreeGenerator(child, filter);
-    }
+/// Same as [subtreeGenerator] but with nullable return, useful when
+/// filtering nodes to use `orElse: () => null` when no node was found.
+Iterable<TreeNode?> nullableSubtreeGenerator(TreeNode node) sync* {
+  for (final child in node.children) {
+    yield child;
+    if (child.hasChildren) yield* subtreeGenerator(child);
   }
 }

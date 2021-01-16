@@ -42,10 +42,9 @@ class TreeViewController {
     if (node.isLeaf || !node.isExpanded) return;
     node.collapse();
 
-    final subtree = subtreeGenerator(
-      node,
-      (n) => n.isRemovable && (n.isLeaf || !n.isExpanded),
-    ).toList(growable: false);
+    final subtree = subtreeGenerator(node)
+        .where((n) => n.isRemovable && (n.isLeaf || !n.isExpanded))
+        .toList(growable: false);
     eventDispatcher.emit(NodeCollapsedEvent(nodes: subtree));
   }
 

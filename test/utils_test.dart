@@ -87,39 +87,5 @@ void main() {
         expect(subtreeGenerator(node2), isEmpty);
       },
     );
-
-    group('@param filter -', () {
-      late List<TreeNode> expandedNodes;
-      late List<TreeNode> collapsedNodes;
-      setUp(() {
-        node1.expand();
-        node11.expand();
-        node121.expand();
-        expandedNodes = [node1, node11, node121];
-        collapsedNodes = [node111, node12, node122, node2];
-      });
-
-      test(
-        'Should return only expanded nodes when filter is testing for expanded nodes.',
-        () {
-          expect(subtreeGenerator(rootNode), equals(rootSubtree));
-
-          final result = subtreeGenerator(rootNode, (n) => n.isExpanded);
-          expect(result, isNotEmpty);
-          expect(result, equals(expandedNodes));
-        },
-      );
-
-      test(
-        'Should return only collapsed nodes when filter is testing for collapsed nodes.',
-        () {
-          expect(subtreeGenerator(rootNode), equals(rootSubtree));
-
-          final result = subtreeGenerator(rootNode, (n) => !n.isExpanded);
-          expect(result, isNotEmpty);
-          expect(result, equals(collapsedNodes));
-        },
-      );
-    });
   });
 }

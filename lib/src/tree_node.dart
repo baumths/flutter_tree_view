@@ -3,7 +3,7 @@ import 'dart:collection';
 import 'internal.dart';
 
 // TODO: Missing Documentation
-class TreeNode with LineMixin {
+class TreeNode with LineMixin, ChangeNotifier {
   /// Constructor for [TreeNode].
   TreeNode({Key? key, this.data}) : key = key ?? UniqueKey();
 
@@ -56,17 +56,33 @@ class TreeNode with LineMixin {
   /// Whether or not this node is expanded.
   bool get isExpanded => isRoot ? true : _isExpanded;
   var _isExpanded = false;
+  set isExpanded(bool value) {
+    if (value == _isExpanded) return;
+    _isExpanded = value;
+    notifyListeners();
+  }
 
   /* ~~~~~~~~~~ SELECTION RELATED ~~~~~~~~~~ */
 
   /// Whether or not this node is expanded.
   bool get isSelected => _isSelected;
   var _isSelected = false;
+  set isSelected(bool value) {
+    if (value == _isSelected) return;
+    _isSelected = value;
+    notifyListeners();
+  }
 
   /* ~~~~~~~~~~ ENABLE/DISABLE RELATED ~~~~~~~~~~ */
 
+  /// Whether or not this node can be interacted with.
   bool get isEnabled => _isEnabled;
   var _isEnabled = false;
+  set isEnabled(bool value) {
+    if (value == _isEnabled) return;
+    _isEnabled = value;
+    notifyListeners();
+  }
 
   /* ~~~~~~~~~~ NODE RELATED ~~~~~~~~~~ */
 
@@ -76,12 +92,13 @@ class TreeNode with LineMixin {
   /// Whether or not this node is the root.
   bool get isRoot => parent == null;
 
-  /// Starting from this node, looks for a node key that match [key],
-  /// returns null if no node was found with the given [key].
-  TreeNode? find(Key key) {
-    final nodes = subtreeGenerator(this, (n) => n.key == key);
-    return nodes.isEmpty ? null : nodes.first;
-  }
+  /// Starting from this node, searches the subtree
+  /// looking for a node key that match [key],
+  /// returns `null` if no node was found with the given [key].
+  TreeNode? find(Key key) => nullableSubtreeGenerator(this).firstWhere(
+        (descendant) => descendant == null ? false : descendant.key == key,
+        orElse: () => null,
+      );
 
   /* ~~~~~~~~~~ OTHER ~~~~~~~~~~ */
 
@@ -122,22 +139,22 @@ extension TreeNodeX on TreeNode {
   bool get shouldBuildLines => _linesCache == null;
 
   /// Set this node as expanded.
-  void expand() => _isExpanded = true;
+  void expand() => isExpanded = true;
 
   /// Collapses the subtree starting at this node.
-  void collapse() => visitSubtree((node) => node._isExpanded = false);
+  void collapse() => visitSubtree((node) => node.isExpanded = false);
 
   /// Set this node as selected.
-  void select() => _isSelected = true;
+  void select() => isSelected = true;
 
   /// Unselects this node.
-  void deselect() => _isSelected = false;
+  void deselect() => isSelected = false;
 
   /// Set this node as enabled.
-  void enable() => _isEnabled = true;
+  void enable() => isEnabled = true;
 
   /// Disables this node.
-  void disable() => _isEnabled = false;
+  void disable() => isEnabled = false;
 
   /// Applies the function [fn] to every node in the subtree
   /// starting from this node in breadth first, pre-order traversal.
