@@ -1,5 +1,97 @@
 import 'internal.dart';
 
+class NodeWidget extends StatefulWidget {
+  const NodeWidget({
+    Key? key,
+    required this.node,
+    required this.title,
+    required this.theme,
+    required this.controller,
+    this.subtitle,
+    this.leading,
+    this.trailing,
+    this.onTap,
+    this.onToggle,
+    this.onLongPress,
+  }) : super(key: key);
+
+  final TreeNode node;
+  final TreeViewTheme theme;
+  final TreeViewController controller;
+
+  final Widget title;
+  final Widget? subtitle;
+  final Widget? leading;
+  final List<Widget>? trailing;
+
+  /// Callback for when user taps on a node.
+  final TreeViewCallback? onTap;
+
+  /// Callback for when a node is expanded/collapsed.
+  final TreeViewCallback? onToggle;
+
+  /// Callback for when user long presses a node.
+  final TreeViewCallback? onLongPress;
+
+  @override
+  _NodeWidgetState createState() => _NodeWidgetState();
+}
+
+class _NodeWidgetState extends State<NodeWidget> {
+  late final TreeNode node;
+
+  void update() => setState(() {});
+
+  @override
+  void initState() {
+    super.initState();
+    node = widget.node;
+    node.addListener(update);
+  }
+
+  @override
+  void dispose() {
+    node.removeListener(update);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      selected: node.isSelected,
+      enabled: node.isEnabled,
+      onTap: () => widget.onTap?.call(node),
+      onLongPress: () => widget.onLongPress?.call(node),
+      title: widget.title,
+      trailing: node.hasChildren
+          ? ToggleNodeIconButton(
+              node: node,
+              onToggle: widget.onToggle,
+              controller: widget.controller,
+            )
+          : null,
+      leading: Padding(
+        padding: EdgeInsets.only(left: indentation),
+        child: SizedBox(
+          height: double.infinity,
+          child: widget.leading ??
+              Icon(
+                node.hasChildren ? Icons.folder : Icons.article,
+                color: Theme.of(context).accentColor,
+              ),
+        ),
+      ).lines(node, widget.theme),
+    );
+  }
+
+  double get indentation {
+    return widget.theme.lineStyle == LineStyle.connected
+        ? node.depth * widget.theme.singleLineWidth
+        : (node.depth - 1) * widget.theme.singleLineWidth;
+  }
+}
+
 class ToggleNodeIconButton extends StatelessWidget {
   const ToggleNodeIconButton({
     Key? key,
@@ -27,73 +119,8 @@ class ToggleNodeIconButton extends StatelessWidget {
   }
 }
 
-class NodeWidget extends StatelessWidget {
-  const NodeWidget({
-    Key? key,
-    required this.animation,
-    required this.node,
-    required this.nodeBuilder,
-    required this.controller,
-    required this.theme,
-    this.onTap,
-    this.onLongPress,
-  }) : super(key: key);
-
-  final Animation<double> animation;
-
-  final TreeNode node;
-  final TreeViewTheme theme;
-  final TreeViewController controller;
-
-  final NodeBuilder nodeBuilder;
-  final TreeViewCallback? onTap;
-  final TreeViewCallback? onLongPress;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap == null ? null : () => onTap!(node),
-      onLongPress: onTap == null ? null : () => onLongPress!(node),
-      child: AnimatedNode(
-        animation: animation,
-        child: Padding(
-          padding: EdgeInsets.only(left: indentation),
-          child: nodeBuilder(context, node),
-        ).lines(node, theme),
-      ),
-    );
-  }
-
-  double get indentation {
-    return theme.lineStyle == LineStyle.connected
-        ? node.depth * theme.singleLineWidth
-        : (node.depth - 1) * theme.singleLineWidth;
-  }
-}
-
-class AnimatedNode extends StatelessWidget {
-  const AnimatedNode({
-    Key? key,
-    required this.animation,
-    required this.child,
-  }) : super(key: key);
-
-  final Animation<double> animation;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizeTransition(
-      sizeFactor: animation,
-      child: FadeTransition(
-        opacity: animation,
-        child: child,
-      ),
-    );
-  }
-}
-
-extension LineX on Padding {
+extension LineX on Widget {
+  /// Extension that decides how to draw lines based on [TreeViewTheme.lineStyle].
   Widget lines(TreeNode node, TreeViewTheme theme) {
     switch (theme.lineStyle) {
       case LineStyle.scoped:

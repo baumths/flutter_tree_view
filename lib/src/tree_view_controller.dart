@@ -49,11 +49,10 @@ class TreeViewController {
   void collapseNode(TreeNode node) {
     if (node.isLeaf || !node.isExpanded) return;
     node.collapse();
-
-    final subtree = subtreeGenerator(node)
-        .where((n) => n.isRemovable && (n.isLeaf || !n.isExpanded))
+    final descendants = reversedSubtreeGenerator(node)
+        .where((node) => node.isRemovable)
         .toList(growable: false);
-    eventDispatcher.emit(NodeCollapsedEvent(nodes: subtree));
+    eventDispatcher.emit(NodeCollapsedEvent(nodes: descendants));
   }
 
   /// Collapses all nodes.

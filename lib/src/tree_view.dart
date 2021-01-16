@@ -7,8 +7,6 @@ class TreeView extends StatefulWidget {
     required this.nodeBuilder,
     required this.controller,
     this.shrinkWrap = false,
-    this.onTap,
-    this.onLongPress,
     this.theme = const TreeViewTheme(),
   }) : super(key: key);
 
@@ -26,16 +24,7 @@ class TreeView extends StatefulWidget {
 
   /// Called, as needed, to build node widgets.
   /// Nodes are only built when they're scrolled into view.
-  ///
-  /// The Widget returned by this function will get wrapped in an [InkWell] and
-  /// left padded with lines (if lines are enabled).
   final NodeBuilder nodeBuilder;
-
-  /// Callback for when user taps on a node.
-  final TreeViewCallback? onTap;
-
-  /// Callback for when user long presses a node.
-  final TreeViewCallback? onLongPress;
 
   @override
   _TreeViewState createState() => _TreeViewState();
@@ -76,15 +65,10 @@ class _TreeViewState extends State<TreeView> {
   /// The callback to build the widget that will get animated
   /// when a node is inserted/removed from de tree.
   Widget _buildNode(TreeNode node, Animation<double> animation) {
-    return NodeWidget(
+    return AnimatedNode(
       key: node.key,
       animation: animation,
-      node: node,
-      theme: widget.theme,
-      controller: controller,
-      nodeBuilder: widget.nodeBuilder,
-      onTap: widget.onTap,
-      onLongPress: widget.onLongPress,
+      child: widget.nodeBuilder(context, node),
     );
   }
 
@@ -93,10 +77,7 @@ class _TreeViewState extends State<TreeView> {
     final event = controller.eventDispatcher.event;
 
     if (event is NodeExpandedEvent) {
-      _insertAll(
-        _indexOf(event.node) + 1,
-        event.node.children,
-      );
+      _insertAll(_indexOf(event.node) + 1, event.node.children);
     } else if (event is NodeCollapsedEvent) {
       _removeAll(event.nodes);
     }
@@ -119,24 +100,42 @@ class _TreeViewState extends State<TreeView> {
   }
 
   void _removeAt(int index) {
-    final removedItem = _visibleNodes.removeAt(index);
+    final removedNode = _visibleNodes.removeAt(index);
     _animatedList.removeItem(
       index,
-      (_, animation) => _buildNode(removedItem, animation),
+      (_, animation) => _buildNode(removedNode, animation),
     );
   }
 
   void _removeAll(List<TreeNode> nodes) {
-    nodes.forEach((node) {
-      if (_visibleNodes.contains(node)) {
-        _removeAt(_indexOf(node));
-      }
-    });
+    nodes.forEach((node) => _removeAt(_indexOf(node)));
   }
 
   @override
   void dispose() {
     controller.eventDispatcher.removeListener(treeViewEventHandler);
     super.dispose();
+  }
+}
+
+class AnimatedNode extends StatelessWidget {
+  const AnimatedNode({
+    Key? key,
+    required this.animation,
+    required this.child,
+  }) : super(key: key);
+
+  final Animation<double> animation;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizeTransition(
+      sizeFactor: animation,
+      child: FadeTransition(
+        opacity: animation,
+        child: child,
+      ),
+    );
   }
 }

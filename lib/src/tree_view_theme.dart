@@ -66,7 +66,7 @@ class TreeViewTheme {
   /// Defaults to `24.0`
   final double singleLineWidth;
 
-  /// The mode to style the lines of the [TreeView].
+  /// The style used to draw the lines of [TreeView].
   ///
   /// Defaults to `LineStyle.connected`
   final LineStyle lineStyle;
