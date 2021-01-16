@@ -57,14 +57,13 @@ class TreeNode with LineMixin, ChangeNotifier {
   bool get isExpanded => isRoot ? true : _isExpanded;
   var _isExpanded = false;
   set isExpanded(bool value) {
-    if (value == _isExpanded) return;
+    if (_isExpanded == value) return;
     _isExpanded = value;
-    notifyListeners();
   }
 
   /* ~~~~~~~~~~ SELECTION RELATED ~~~~~~~~~~ */
 
-  /// Whether or not this node is expanded.
+  /// Whether or not this node is selected.
   bool get isSelected => _isSelected;
   var _isSelected = false;
   set isSelected(bool value) {
@@ -77,7 +76,7 @@ class TreeNode with LineMixin, ChangeNotifier {
 
   /// Whether or not this node can be interacted with.
   bool get isEnabled => _isEnabled;
-  var _isEnabled = false;
+  var _isEnabled = true;
   set isEnabled(bool value) {
     if (value == _isEnabled) return;
     _isEnabled = value;
@@ -135,14 +134,14 @@ extension TreeNodeX on TreeNode {
   /// Whether or not this node is the last child of its parent.
   bool get hasNextSibling => isRoot ? false : this != parent!.children.last;
 
-  /// Returns `false` if the lines of this node were already generated.
-  bool get shouldBuildLines => _linesCache == null;
-
   /// Set this node as expanded.
   void expand() => isExpanded = true;
 
   /// Collapses the subtree starting at this node.
   void collapse() => visitSubtree((node) => node.isExpanded = false);
+
+  /// Toggles the expansion to the opposite state.
+  void toggleExpanded() => isExpanded ? collapse() : expand();
 
   /// Set this node as selected.
   void select() => isSelected = true;
@@ -150,14 +149,20 @@ extension TreeNodeX on TreeNode {
   /// Unselects this node.
   void deselect() => isSelected = false;
 
+  /// Toggles selection to the opposite state.
+  void toggleSelected() => _isSelected ? deselect() : select();
+
   /// Set this node as enabled.
   void enable() => isEnabled = true;
 
   /// Disables this node.
   void disable() => isEnabled = false;
 
+  /// Toggles enabled to opposite state.
+  void toggleEnabled() => _isEnabled ? disable() : enable();
+
   /// Applies the function [fn] to every node in the subtree
-  /// starting from this node in breadth first, pre-order traversal.
+  /// starting from this node in breadth first traversal.
   void visitSubtree(void Function(TreeNode node) fn) {
     final queue = Queue<TreeNode>()..add(this);
 
