@@ -7,9 +7,11 @@ class NodeWidget extends StatefulWidget {
     required this.title,
     required this.theme,
     required this.controller,
-    this.subtitle,
+    this.trailing = const [],
     this.leading,
-    this.trailing,
+    this.contentPadding,
+    this.horizontalTitleGap,
+    this.dense,
     this.onTap,
     this.onToggle,
     this.onLongPress,
@@ -19,10 +21,46 @@ class NodeWidget extends StatefulWidget {
   final TreeViewTheme theme;
   final TreeViewController controller;
 
+  /// The Widget to be used as `title` of [ListTile].
+  ///
+  /// Usually a [Text] widget.
   final Widget title;
-  final Widget? subtitle;
+
+  /// Widget to use as leading of [ListTile].
+  ///
+  /// If null, defaults to an [Icon] customized by [TreeViewTheme].
   final Widget? leading;
-  final List<Widget>? trailing;
+
+  /// List of items to display in a [Row]
+  /// before [ToggleNodeIconButton] inside [ListTile.trailing]
+  final List<Widget> trailing;
+
+  /// The tile's internal padding. (Doesn't affect lines space)
+  ///
+  /// Insets a [ListTile]'s contents: its [leading], [title],
+  /// [subtitle], and [trailing] widgets.
+  ///
+  /// `Copied from [ListTile.contentPadding].`
+  ///
+  /// If null, `EdgeInsets.zero` is used.
+  final EdgeInsetsGeometry? contentPadding;
+
+  /// The horizontal gap between the titles and the leading/trailing widgets.
+  ///
+  /// If null, then the value of [ListTileTheme.horizontalTitleGap] is used.
+  /// If that is also null, then a default value of 16 is used.
+  ///
+  /// `Copied from [ListTile.horizontalTitleGap].`
+  final double? horizontalTitleGap;
+
+  /// Whether this list tile is part of a vertically dense list.
+  ///
+  /// If this property is null then its value is based on [ListTileTheme.dense].
+  ///
+  /// Dense list tiles default to a smaller height.
+  ///
+  /// `Copied from [ListTile.dense].`
+  final bool? dense;
 
   /// Callback for when user taps on a node.
   final TreeViewCallback? onTap;
@@ -38,57 +76,71 @@ class NodeWidget extends StatefulWidget {
 }
 
 class _NodeWidgetState extends State<NodeWidget> {
-  late final TreeNode node;
-
   void update() => setState(() {});
 
   @override
   void initState() {
     super.initState();
-    node = widget.node;
-    node.addListener(update);
+    widget.node.addListener(update);
   }
 
   @override
   void dispose() {
-    node.removeListener(update);
+    widget.node.removeListener(update);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      contentPadding: EdgeInsets.zero,
-      selected: node.isSelected,
-      enabled: node.isEnabled,
-      onTap: () => widget.onTap?.call(node),
-      onLongPress: () => widget.onLongPress?.call(node),
+      horizontalTitleGap: widget.horizontalTitleGap,
+      contentPadding: widget.contentPadding ?? EdgeInsets.zero,
+      selected: widget.node.isSelected,
+      enabled: widget.node.isEnabled,
+      dense: widget.dense,
       title: widget.title,
-      trailing: node.hasChildren
-          ? ToggleNodeIconButton(
-              node: node,
-              onToggle: widget.onToggle,
+      tileColor: widget.theme.nodeTileColor,
+      selectedTileColor: widget.theme.nodeSelectedTileColor,
+      hoverColor: widget.theme.nodeHoverColor,
+      focusColor: widget.theme.nodeFocusColor,
+      shape: widget.theme.nodeShape,
+      onTap: widget.onTap == null ? null : () => widget.onTap!(widget.node),
+      onLongPress: widget.onLongPress == null
+          ? null
+          : () => widget.onLongPress!(widget.node),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ...widget.trailing,
+          if (widget.node.hasChildren)
+            ToggleNodeIconButton(
+              node: widget.node,
+              onToggle: widget.node.isEnabled ? widget.onToggle : null,
               controller: widget.controller,
-            )
-          : null,
-      leading: Padding(
-        padding: EdgeInsets.only(left: indentation),
-        child: SizedBox(
-          height: double.infinity,
-          child: widget.leading ??
-              Icon(
-                node.hasChildren ? Icons.folder : Icons.article,
-                color: Theme.of(context).accentColor,
-              ),
-        ),
-      ).lines(node, widget.theme),
+            ),
+        ],
+      ),
+      leading: LinesWidget(
+        indentation: indentation,
+        child: widget.leading ?? _buildLeading(),
+      ).chooseLines(widget.node, widget.theme),
     );
+  }
+
+  Icon? _buildLeading() {
+    final color = widget.theme.nodeIconColor ?? Theme.of(context).accentColor;
+    if (widget.node.hasChildren) {
+      if (widget.theme.parentNodeIcon == null) return null;
+      return Icon(widget.theme.parentNodeIcon, color: color);
+    }
+    if (widget.theme.leafNodeIcon == null) return null;
+    return Icon(widget.theme.leafNodeIcon, color: color);
   }
 
   double get indentation {
     return widget.theme.lineStyle == LineStyle.connected
-        ? node.depth * widget.theme.singleLineWidth
-        : (node.depth - 1) * widget.theme.singleLineWidth;
+        ? widget.node.depth * widget.theme.singleLineWidth
+        : (widget.node.depth - 1) * widget.theme.singleLineWidth;
   }
 }
 
@@ -109,19 +161,40 @@ class ToggleNodeIconButton extends StatelessWidget {
     return ExpandIcon(
       padding: EdgeInsets.zero,
       isExpanded: node.isExpanded,
-      onPressed: (_) {
-        node.isExpanded
-            ? controller.collapseNode(node)
-            : controller.expandNode(node);
-        onToggle?.call(node);
-      },
+      onPressed: node.isEnabled
+          ? (_) {
+              node.isExpanded
+                  ? controller.collapseNode(node)
+                  : controller.expandNode(node);
+              onToggle?.call(node);
+            }
+          : null,
     );
   }
 }
 
-extension LineX on Widget {
+class LinesWidget extends StatelessWidget {
+  const LinesWidget({
+    Key? key,
+    required this.indentation,
+    this.child,
+  }) : super(key: key);
+
+  final Widget? child;
+  final double indentation;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(left: indentation),
+      child: SizedBox(height: double.infinity, child: child),
+    );
+  }
+}
+
+extension LineX on LinesWidget {
   /// Extension that decides how to draw lines based on [TreeViewTheme.lineStyle].
-  Widget lines(TreeNode node, TreeViewTheme theme) {
+  Widget chooseLines(TreeNode node, TreeViewTheme theme) {
     switch (theme.lineStyle) {
       case LineStyle.scoped:
         return CustomPaint(
