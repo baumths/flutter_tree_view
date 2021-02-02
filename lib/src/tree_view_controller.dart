@@ -59,6 +59,38 @@ class TreeViewController {
   /// Only the children of [TreeView.rootNode] will be visible.
   void collapseAll() => collapseNode(rootNode);
 
+  /* HELPER METHODS */
+
+  /// Changes the `isSelected` property of [node] and its subtree
+  /// to [state] (defaults to `true`).
+  void selectSubtree(TreeNode node, [bool state = true]) {
+    subtreeGenerator(node).forEach((n) => n.toggleSelected(state));
+  }
+
+  /// Changes the `isEnabled` property of [node] and its subtree
+  /// to [state] (defaults to `true`).
+  void enableSubtree(TreeNode node, [bool state = true]) {
+    subtreeGenerator(node).forEach((n) => n.toggleEnabled(state));
+  }
+
+  /// Returns a list of every selected node in the subtree of [startingNode].
+  ///
+  /// If [startingNode] is null, starts from [rootNode].
+  List<TreeNode> selectedNodes(TreeNode? startingNode) {
+    return subtreeGenerator(startingNode ?? rootNode)
+        .where((n) => n.isSelected)
+        .toList(growable: false);
+  }
+
+  /// Returns a list of every enabled node in the subtree of [startingNode].
+  ///
+  /// If [startingNode] is null, starts from [rootNode].
+  List<TreeNode> enabledNodes(TreeNode? startingNode) {
+    return subtreeGenerator(startingNode ?? rootNode)
+        .where((n) => n.isEnabled)
+        .toList(growable: false);
+  }
+
   /// Release resources.
   void dispose() {
     eventDispatcher.dispose();
