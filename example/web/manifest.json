@@ -1,11 +1,11 @@
 {
     "name": "flutter_tree_view example",
-    "short_name": "TreeView Example",
+    "short_name": "example",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A Flutter widget to display nested data.",
+    "description": "A Flutter widget to display Hierarchical data.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
