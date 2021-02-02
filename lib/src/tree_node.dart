@@ -91,6 +91,57 @@ class TreeNode with LineMixin, ChangeNotifier {
   /// Whether or not this node is the root.
   bool get isRoot => parent == null;
 
+  /// Whether or not this node can be removed from the view.
+  bool get isRemovable => depth > 1;
+
+  /// The distance between this node and the root node.
+  int get depth => parent == null ? 0 : parent!.depth + 1;
+
+  /// As root doesn't get displayed, the most top level node is 1 instead of 0.
+  bool get isMostTopLevel => depth == 1;
+
+  /// Whether or not this node is the last child of its parent.
+  bool get hasNextSibling => isRoot ? false : this != parent!.children.last;
+
+  /// Set this node as expanded.
+  void expand() => toggleExpanded(true);
+
+  /// Collapses the subtree starting at this node.
+  void collapse() => visitSubtree((node) => node.toggleExpanded(false));
+
+  /// Toggles the expansion to the opposite state.
+  void toggleExpanded([bool? value]) => isExpanded = value ?? !_isExpanded;
+
+  /// Set this node as selected.
+  void select() => toggleSelected(true);
+
+  /// Unselects this node.
+  void deselect() => toggleSelected(false);
+
+  /// Toggles selection to the opposite state.
+  void toggleSelected([bool? value]) => isSelected = value ?? !_isSelected;
+
+  /// Set this node as enabled.
+  void enable() => toggleEnabled(true);
+
+  /// Disables this node.
+  void disable() => toggleEnabled(false);
+
+  /// Toggles enabled to opposite state.
+  void toggleEnabled([bool? value]) => isEnabled = value ?? !_isEnabled;
+
+  /// Applies the function [fn] to every node in the subtree
+  /// starting from this node in breadth first traversal.
+  void visitSubtree(void Function(TreeNode node) fn) {
+    final queue = Queue<TreeNode>()..add(this);
+
+    while (queue.isNotEmpty) {
+      final node = queue.removeFirst();
+      fn(node);
+      queue.addAll(node.children);
+    }
+  }
+
   /// Starting from this node, searches the subtree
   /// looking for a node key that match [key],
   /// returns `null` if no node was found with the given [key].
@@ -118,58 +169,4 @@ mixin LineMixin {
   List<TreeLine> get lines => _linesCache ?? [];
 
   set lines(List<TreeLine> lines) => _linesCache = lines;
-}
-
-/// Adds internal methods to [TreeNode].
-extension TreeNodeX on TreeNode {
-  /// Whether or not this node can be removed from the view.
-  bool get isRemovable => depth > 1;
-
-  /// The distance between this node and the root node.
-  int get depth => parent == null ? 0 : parent!.depth + 1;
-
-  /// As root doesn't get displayed, the most top level node is 1 instead of 0.
-  bool get isMostTopLevel => depth == 1;
-
-  /// Whether or not this node is the last child of its parent.
-  bool get hasNextSibling => isRoot ? false : this != parent!.children.last;
-
-  /// Set this node as expanded.
-  void expand() => isExpanded = true;
-
-  /// Collapses the subtree starting at this node.
-  void collapse() => visitSubtree((node) => node.isExpanded = false);
-
-  /// Toggles the expansion to the opposite state.
-  void toggleExpanded() => isExpanded ? collapse() : expand();
-
-  /// Set this node as selected.
-  void select() => isSelected = true;
-
-  /// Unselects this node.
-  void deselect() => isSelected = false;
-
-  /// Toggles selection to the opposite state.
-  void toggleSelected() => _isSelected ? deselect() : select();
-
-  /// Set this node as enabled.
-  void enable() => isEnabled = true;
-
-  /// Disables this node.
-  void disable() => isEnabled = false;
-
-  /// Toggles enabled to opposite state.
-  void toggleEnabled() => _isEnabled ? disable() : enable();
-
-  /// Applies the function [fn] to every node in the subtree
-  /// starting from this node in breadth first traversal.
-  void visitSubtree(void Function(TreeNode node) fn) {
-    final queue = Queue<TreeNode>()..add(this);
-
-    while (queue.isNotEmpty) {
-      final node = queue.removeFirst();
-      fn(node);
-      queue.addAll(node.children);
-    }
-  }
 }
