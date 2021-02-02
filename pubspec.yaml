@@ -1,5 +1,5 @@
 name: flutter_tree_view
-description: A fancy looking TreeView widget made of Slivers
+description: A fancy looking and highly customizable TreeView Widget.
 version: 0.0.1
 
 environment:
