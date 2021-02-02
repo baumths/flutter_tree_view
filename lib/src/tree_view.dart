@@ -108,7 +108,9 @@ class _TreeViewState extends State<TreeView> {
   }
 
   void _removeAll(List<TreeNode> nodes) {
-    nodes.forEach((node) => _removeAt(_indexOf(node)));
+    nodes
+        .where(_visibleNodes.contains)
+        .forEach((node) => _removeAt(_indexOf(node)));
   }
 
   @override
