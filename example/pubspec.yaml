@@ -10,11 +10,9 @@ dependencies:
   cupertino_icons: ^1.0.2
   flutter:
     sdk: flutter
-  flutter_tree_view: any
-
-dependency_overrides:
   flutter_tree_view:
-    git: https://github.com/mbaumgartenbr/flutter_tree_view.git
+    path: ../
+
 
 dev_dependencies:
   flutter_test:

@@ -47,9 +47,16 @@ class _HomePageState extends State<HomePage> {
                 controller: treeController,
                 title: Text(node.data as String),
                 onTap: (n) => showSnackBar(context, 'Node Tapped: ${n.data}'),
-                onLongPress: (n) {
-                  showSnackBar(context, 'Node Pressed: ${n.data}');
-                },
+                onLongPress: (n) => n.toggleEnabled(),
+                trailing: [
+                  IconButton(
+                    icon: const Icon(Icons.star),
+                    tooltip: 'Select',
+                    color:
+                        node.isSelected ? Theme.of(context).accentColor : null,
+                    onPressed: node.toggleSelected,
+                  ),
+                ],
               );
             },
           ),
