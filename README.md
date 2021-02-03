@@ -1,12 +1,12 @@
 ## 👷️ Documentation under construction.
 
-## 🌐️ Take a look at the [example](https://mbaumgartenbr.github.io/flutter_tree_view/). *(Github pages is not working currently)* 🤷‍♂️️
+## 🌐️ Take a look at the demo [here](https://mbaumgartenbr.github.io/flutter_tree_view/).
 
 
 ## 📸️ Screenshots:
 
-| Connected Lines | Scoped Lines | Disabled Lines |
-| :-: | :-: | :-: |
+|     Connected Lines      |     Scoped Lines      |     Disabled Lines      |
+| :----------------------: | :-------------------: | :---------------------: |
 | ![Screenshot][connected] | ![Screenshot][scoped] | ![Screenshot][disabled] |
 
 [connected]: https://raw.githubusercontent.com/mbaumgartenbr/flutter_tree_view/main/.github/assets/example_lines_connecting.png
