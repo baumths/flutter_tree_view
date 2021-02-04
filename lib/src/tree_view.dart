@@ -57,7 +57,8 @@ class _TreeViewState extends State<TreeView> {
       key: _animatedListKey,
       initialItemCount: visibleNodes.length,
       itemBuilder: (_, int index, Animation<double> animation) {
-        return _buildNode(_nodeAt(index), animation);
+        final node = _nodeAt(index)..addCallback(_toggleNode);
+        return _buildNode(node, animation);
       },
     );
   }
@@ -65,7 +66,7 @@ class _TreeViewState extends State<TreeView> {
   /// The callback to build the widget that will get animated
   /// when a node is inserted/removed from de tree.
   Widget _buildNode(TreeNode node, Animation<double> animation) {
-    return AnimatedNode(
+    return SizeAndFadeAnimatedWidget(
       key: node.key,
       animation: animation,
       child: widget.nodeBuilder(context, node),
@@ -83,11 +84,20 @@ class _TreeViewState extends State<TreeView> {
     }
   }
 
-  // PRIVATE METHODS
+  /* ~~~~~~~~~~ PRIVATE METHODS ~~~~~~~~~~ */
 
   TreeNode _nodeAt(int index) => _visibleNodes[index];
 
   int _indexOf(TreeNode node) => _visibleNodes.indexOf(node);
+
+  /// Callback for expanding/collapsing nodes from its methods.
+  void _toggleNode(TreeNode node) {
+    if (node.isExpanded) {
+      _insertAll(_indexOf(node) + 1, node.children);
+    } else {
+      _removeAll(controller.removableDescendantsOf(node));
+    }
+  }
 
   void _insert(int index, TreeNode node) {
     _visibleNodes.insert(index, node);
@@ -96,11 +106,13 @@ class _TreeViewState extends State<TreeView> {
 
   void _insertAll(int index, List<TreeNode> nodes) {
     // The list must be reversed for the order to not get messed up
-    nodes.reversed.forEach((node) => _insert(index, node));
+    nodes.reversed
+        .where((n) => !_visibleNodes.contains(n))
+        .forEach((node) => _insert(index, node));
   }
 
   void _removeAt(int index) {
-    final removedNode = _visibleNodes.removeAt(index);
+    final removedNode = _visibleNodes.removeAt(index)..removeCallback();
     _animatedList.removeItem(
       index,
       (_, animation) => _buildNode(removedNode, animation),
@@ -117,27 +129,5 @@ class _TreeViewState extends State<TreeView> {
   void dispose() {
     controller.eventDispatcher.removeListener(treeViewEventHandler);
     super.dispose();
-  }
-}
-
-class AnimatedNode extends StatelessWidget {
-  const AnimatedNode({
-    Key? key,
-    required this.animation,
-    required this.child,
-  }) : super(key: key);
-
-  final Animation<double> animation;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizeTransition(
-      sizeFactor: animation,
-      child: FadeTransition(
-        opacity: animation,
-        child: child,
-      ),
-    );
   }
 }

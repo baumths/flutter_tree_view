@@ -49,9 +49,7 @@ class TreeViewController {
   void collapseNode(TreeNode node) {
     if (node.isLeaf || !node.isExpanded) return;
     node.collapse();
-    final descendants = reversedSubtreeGenerator(node)
-        .where((node) => node.isRemovable)
-        .toList(growable: false);
+    final descendants = removableDescendantsOf(node);
     eventDispatcher.emit(NodeCollapsedEvent(nodes: descendants));
   }
 
@@ -103,5 +101,13 @@ class TreeViewController {
         'This could lead to memory leaks.',
       );
     }
+  }
+
+  /// Returns a list with every node in the subtree of [node]
+  /// that is removable (`depth > 1`), in post order. *(e.g. 3, 2, 1)*
+  List<TreeNode> removableDescendantsOf(TreeNode node) {
+    return reversedSubtreeGenerator(node)
+        .where((node) => node.isRemovable)
+        .toList(growable: false);
   }
 }

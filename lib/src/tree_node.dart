@@ -59,7 +59,19 @@ class TreeNode with LineMixin, ChangeNotifier {
   set isExpanded(bool value) {
     if (_isExpanded == value) return;
     _isExpanded = value;
+
+    // Notify the [TreeView] Widget if visible. (_expansionCallback != null)
+    _expansionCallback?.call(this);
   }
+
+  /// Sets `isExpanded` to `true`.
+  void expand() => isExpanded = true;
+
+  /// Sets `isExpanded` of this node and every node under it to `false`.
+  void collapse() => visitSubtree((node) => node.isExpanded = false);
+
+  /// Toggles `isExpanded` to the opposite state.
+  void toggleExpanded() => isExpanded ? collapse() : expand();
 
   /* ~~~~~~~~~~ SELECTION RELATED ~~~~~~~~~~ */
 
@@ -72,6 +84,15 @@ class TreeNode with LineMixin, ChangeNotifier {
     notifyListeners();
   }
 
+  /// Sets `isSelected` to `true`.
+  void select() => toggleSelected(true);
+
+  /// Sets `isSelected` to `false`.
+  void deselect() => toggleSelected(false);
+
+  /// Toggles `isSelected` to the opposite state.
+  void toggleSelected([bool? value]) => isSelected = value ?? !_isSelected;
+
   /* ~~~~~~~~~~ ENABLE/DISABLE RELATED ~~~~~~~~~~ */
 
   /// Whether or not this node can be interacted with.
@@ -83,7 +104,19 @@ class TreeNode with LineMixin, ChangeNotifier {
     notifyListeners();
   }
 
+  /// Sets `isEnabled` to `true`.
+  void enable() => toggleEnabled(true);
+
+  /// Sets `isEnabled` to `false`.
+  void disable() => toggleEnabled(false);
+
+  /// Toggles `isEnabled` to opposite state.
+  void toggleEnabled([bool? value]) => isEnabled = value ?? !_isEnabled;
+
   /* ~~~~~~~~~~ NODE RELATED ~~~~~~~~~~ */
+
+  /// The distance between this node and the root node.
+  int get depth => parent == null ? 0 : parent!.depth + 1;
 
   /// Whether this node is the last one in the subtree (empty children).
   bool get isLeaf => _children.isEmpty;
@@ -92,10 +125,9 @@ class TreeNode with LineMixin, ChangeNotifier {
   bool get isRoot => parent == null;
 
   /// Whether or not this node can be removed from the view.
+  ///
+  /// For the view to not be empty, nodes with depth of 1 must not be removed.
   bool get isRemovable => depth > 1;
-
-  /// The distance between this node and the root node.
-  int get depth => parent == null ? 0 : parent!.depth + 1;
 
   /// As root doesn't get displayed, the most top level node is 1 instead of 0.
   bool get isMostTopLevel => depth == 1;
@@ -103,36 +135,9 @@ class TreeNode with LineMixin, ChangeNotifier {
   /// Whether or not this node is the last child of its parent.
   bool get hasNextSibling => isRoot ? false : this != parent!.children.last;
 
-  /// Set this node as expanded.
-  void expand() => toggleExpanded(true);
-
-  /// Collapses the subtree starting at this node.
-  void collapse() => visitSubtree((node) => node.toggleExpanded(false));
-
-  /// Toggles the expansion to the opposite state.
-  void toggleExpanded([bool? value]) => isExpanded = value ?? !_isExpanded;
-
-  /// Set this node as selected.
-  void select() => toggleSelected(true);
-
-  /// Unselects this node.
-  void deselect() => toggleSelected(false);
-
-  /// Toggles selection to the opposite state.
-  void toggleSelected([bool? value]) => isSelected = value ?? !_isSelected;
-
-  /// Set this node as enabled.
-  void enable() => toggleEnabled(true);
-
-  /// Disables this node.
-  void disable() => toggleEnabled(false);
-
-  /// Toggles enabled to opposite state.
-  void toggleEnabled([bool? value]) => isEnabled = value ?? !_isEnabled;
-
   /// Applies the function [fn] to every node in the subtree
   /// starting from this node in breadth first traversal.
-  void visitSubtree(void Function(TreeNode node) fn) {
+  void visitSubtree(TreeViewCallback fn) {
     final queue = Queue<TreeNode>()..add(this);
 
     while (queue.isNotEmpty) {
@@ -149,6 +154,13 @@ class TreeNode with LineMixin, ChangeNotifier {
         (descendant) => descendant == null ? false : descendant.key == key,
         orElse: () => null,
       );
+
+  /* ~~~~~~~~~~ PRIVATE ~~~~~~~~~~ */
+
+  /// Callback used to notify [TreeView] when the expansion of this node changes.
+  ///
+  /// This property is null when the [Widget] it belongs to is not rendered.
+  TreeViewCallback? _expansionCallback;
 
   /* ~~~~~~~~~~ OTHER ~~~~~~~~~~ */
 
@@ -169,4 +181,15 @@ mixin LineMixin {
   List<TreeLine> get lines => _linesCache ?? [];
 
   set lines(List<TreeLine> lines) => _linesCache = lines;
+}
+
+/// Extension to make `_expansionCallback` only settable from within the package.
+extension TreeNodeX on TreeNode {
+  /// Sets the callback [cb] to notify [TreeView]
+  /// when the expansion of this node changes.
+  void addCallback(TreeViewCallback cb) => _expansionCallback = cb;
+
+  /// Sets `_expansionCallback` to null meaning that
+  /// this node is no longer in the view.
+  void removeCallback() => _expansionCallback = null;
 }

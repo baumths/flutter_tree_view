@@ -163,9 +163,7 @@ class ToggleNodeIconButton extends StatelessWidget {
       isExpanded: node.isExpanded,
       onPressed: node.isEnabled
           ? (_) {
-              node.isExpanded
-                  ? controller.collapseNode(node)
-                  : controller.expandNode(node);
+              node.toggleExpanded();
               onToggle?.call(node);
             }
           : null,
@@ -173,6 +171,42 @@ class ToggleNodeIconButton extends StatelessWidget {
   }
 }
 
+/// Uses [animation] to animate [child] with [SizeTransition] & [FadeTransition].
+class SizeAndFadeAnimatedWidget extends StatelessWidget {
+  const SizeAndFadeAnimatedWidget({
+    Key? key,
+    required this.animation,
+    required this.child,
+  }) : super(key: key);
+
+  final Animation<double> animation;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizeTransition(
+      sizeFactor: animation,
+      child: FadeTransition(
+        opacity: animation,
+        child: child,
+      ),
+    );
+  }
+}
+
+/// Wraps [child] in a [SizedBox] with height of `double.infinity`
+/// and adds left padding of [indentation].
+///
+/// Used to draw lines for [NodeWidget].
+///
+/// Usage:
+/// ```dart
+/// LinesWidget(/* ... */).chooseLines(TreeNode, TreeViewTheme);
+/// ```
+///
+/// The `chooseLines` method wraps [LinesWidget] in a [CustomPaint] *if needed*.
+/// It was extracted as an extension to remove the many `if` checks from
+/// the `build` method.
 class LinesWidget extends StatelessWidget {
   const LinesWidget({
     Key? key,
@@ -187,7 +221,10 @@ class LinesWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(left: indentation),
-      child: SizedBox(height: double.infinity, child: child),
+      child: SizedBox(
+        height: double.infinity,
+        child: child,
+      ),
     );
   }
 }
