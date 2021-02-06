@@ -31,6 +31,8 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
+  // TODO: Make a better example UI.
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -46,15 +48,17 @@ class _HomePageState extends State<HomePage> {
                 theme: treeTheme,
                 controller: treeController,
                 title: Text(node.data as String),
-                onTap: (n) => showSnackBar(context, 'Node Tapped: ${n.data}'),
-                onLongPress: (n) => n.toggleEnabled(),
+                onTap: () => showSnackBar(context, 'Node Tapped: ${node.data}'),
+                onLongPress: () => setState(node.disable),
                 trailing: [
                   IconButton(
                     icon: const Icon(Icons.star),
-                    tooltip: 'Select',
+                    tooltip: node.isSelected ? 'Deselect' : 'Select',
                     color:
                         node.isSelected ? Theme.of(context).accentColor : null,
-                    onPressed: node.toggleSelected,
+                    onPressed: node.isEnabled
+                        ? () => setState(node.toggleSelected)
+                        : null,
                   ),
                 ],
               );
