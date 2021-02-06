@@ -116,7 +116,7 @@ class TreeNode with LineMixin, ChangeNotifier {
   /* ~~~~~~~~~~ NODE RELATED ~~~~~~~~~~ */
 
   /// The distance between this node and the root node.
-  int get depth => parent == null ? 0 : parent!.depth + 1;
+  int get depth => isRoot ? -1 : parent!.depth + 1;
 
   /// Whether this node is the last one in the subtree (empty children).
   bool get isLeaf => _children.isEmpty;
@@ -126,11 +126,11 @@ class TreeNode with LineMixin, ChangeNotifier {
 
   /// Whether or not this node can be removed from the view.
   ///
-  /// For the view to not be empty, nodes with depth of 1 must not be removed.
-  bool get isRemovable => depth > 1;
+  /// For the view to not be empty, nodes with depth of 0 must not be removed.
+  bool get isRemovable => depth > 0;
 
-  /// As root doesn't get displayed, the most top level node is 1 instead of 0.
-  bool get isMostTopLevel => depth == 1;
+  /// Whether this node is a direct child of the root node.
+  bool get isMostTopLevel => depth == 0;
 
   /// Whether or not this node is the last child of its parent.
   bool get hasNextSibling => isRoot ? false : this != parent!.children.last;

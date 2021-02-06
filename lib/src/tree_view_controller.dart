@@ -104,7 +104,7 @@ class TreeViewController {
   }
 
   /// Returns a list with every node in the subtree of [node]
-  /// that is removable (`depth > 1`), in post order. *(e.g. 3, 2, 1)*
+  /// that is removable (`depth > 0`), in post order. *(e.g. 3, 2, 1)*
   List<TreeNode> removableDescendantsOf(TreeNode node) {
     return reversedSubtreeGenerator(node)
         .where((node) => node.isRemovable)

@@ -63,13 +63,13 @@ class NodeWidget extends StatefulWidget {
   final bool? dense;
 
   /// Callback for when user taps on a node.
-  final TreeViewCallback? onTap;
+  final VoidCallback? onTap;
 
   /// Callback for when a node is expanded/collapsed.
-  final TreeViewCallback? onToggle;
+  final VoidCallback? onToggle;
 
   /// Callback for when user long presses a node.
-  final TreeViewCallback? onLongPress;
+  final VoidCallback? onLongPress;
 
   @override
   _NodeWidgetState createState() => _NodeWidgetState();
@@ -104,26 +104,14 @@ class _NodeWidgetState extends State<NodeWidget> {
       hoverColor: widget.theme.nodeHoverColor,
       focusColor: widget.theme.nodeFocusColor,
       shape: widget.theme.nodeShape,
-      onTap: widget.onTap == null ? null : () => widget.onTap!(widget.node),
-      onLongPress: widget.onLongPress == null
-          ? null
-          : () => widget.onLongPress!(widget.node),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ...widget.trailing,
-          if (widget.node.hasChildren)
-            ToggleNodeIconButton(
-              node: widget.node,
-              onToggle: widget.node.isEnabled ? widget.onToggle : null,
-              controller: widget.controller,
-            ),
-        ],
-      ),
+      onTap: widget.onTap,
+      onLongPress: widget.onLongPress,
+      trailing: _buildTrailing(),
       leading: LinesWidget(
-        indentation: indentation,
+        node: widget.node,
+        theme: widget.theme,
         child: widget.leading ?? _buildLeading(),
-      ).chooseLines(widget.node, widget.theme),
+      ),
     );
   }
 
@@ -137,13 +125,29 @@ class _NodeWidgetState extends State<NodeWidget> {
     return Icon(widget.theme.leafNodeIcon, color: color);
   }
 
-  double get indentation {
-    return widget.theme.lineStyle == LineStyle.connected
-        ? widget.node.depth * widget.theme.singleLineWidth
-        : (widget.node.depth - 1) * widget.theme.singleLineWidth;
+  Widget? _buildTrailing() {
+    if (widget.trailing.isEmpty) {
+      return widget.node.hasChildren ? _expandIcon : null;
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ...widget.trailing,
+        if (widget.node.hasChildren) _expandIcon,
+      ],
+    );
+  }
+
+  Widget get _expandIcon {
+    return ToggleNodeIconButton(
+      node: widget.node,
+      onToggle: widget.node.isEnabled ? widget.onToggle : null,
+      controller: widget.controller,
+    );
   }
 }
 
+/// Creates an [ExpandIcon] Widget with toggling node functionality.
 class ToggleNodeIconButton extends StatelessWidget {
   const ToggleNodeIconButton({
     Key? key,
@@ -154,7 +158,7 @@ class ToggleNodeIconButton extends StatelessWidget {
 
   final TreeNode node;
   final TreeViewController controller;
-  final TreeViewCallback? onToggle;
+  final VoidCallback? onToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -164,7 +168,7 @@ class ToggleNodeIconButton extends StatelessWidget {
       onPressed: node.isEnabled
           ? (_) {
               node.toggleExpanded();
-              onToggle?.call(node);
+              onToggle?.call();
             }
           : null,
     );
@@ -172,8 +176,8 @@ class ToggleNodeIconButton extends StatelessWidget {
 }
 
 /// Uses [animation] to animate [child] with [SizeTransition] & [FadeTransition].
-class SizeAndFadeAnimatedWidget extends StatelessWidget {
-  const SizeAndFadeAnimatedWidget({
+class SizeAndFadeTransition extends StatelessWidget {
+  const SizeAndFadeTransition({
     Key? key,
     required this.animation,
     required this.child,
@@ -194,31 +198,27 @@ class SizeAndFadeAnimatedWidget extends StatelessWidget {
   }
 }
 
-/// Wraps [child] in a [SizedBox] with height of `double.infinity`
-/// and adds left padding of [indentation].
-///
-/// Used to draw lines for [NodeWidget].
-///
-/// Usage:
-/// ```dart
-/// LinesWidget(/* ... */).chooseLines(TreeNode, TreeViewTheme);
-/// ```
-///
-/// The `chooseLines` method wraps [LinesWidget] in a [CustomPaint] *if needed*.
-/// It was extracted as an extension to remove the many `if` checks from
-/// the `build` method.
+/// Widget responsible for indenting nodes and drawing lines (if enabled).
 class LinesWidget extends StatelessWidget {
   const LinesWidget({
     Key? key,
-    required this.indentation,
+    required this.node,
+    required this.theme,
     this.child,
   }) : super(key: key);
 
-  final Widget? child;
-  final double indentation;
+  final TreeNode node;
+  final TreeViewTheme theme;
 
-  @override
-  Widget build(BuildContext context) {
+  final Widget? child;
+
+  double get indentation {
+    return theme.lineStyle == LineStyle.connected
+        ? (node.depth + 1) * theme.singleLineWidth
+        : node.depth * theme.singleLineWidth;
+  }
+
+  Padding _buildPadding() {
     return Padding(
       padding: EdgeInsets.only(left: indentation),
       child: SizedBox(
@@ -227,25 +227,23 @@ class LinesWidget extends StatelessWidget {
       ),
     );
   }
-}
 
-extension LineX on LinesWidget {
-  /// Extension that decides how to draw lines based on [TreeViewTheme.lineStyle].
-  Widget chooseLines(TreeNode node, TreeViewTheme theme) {
+  @override
+  Widget build(BuildContext context) {
     switch (theme.lineStyle) {
       case LineStyle.scoped:
         return CustomPaint(
           painter: LinesPainter.scoped(node: node, theme: theme),
-          child: this,
+          child: _buildPadding(),
         );
       case LineStyle.connected:
         return CustomPaint(
           painter: LinesPainter.connected(node: node, theme: theme),
-          child: this,
+          child: _buildPadding(),
         );
       case LineStyle.disabled:
       default:
-        return this;
+        return _buildPadding();
     }
   }
 }

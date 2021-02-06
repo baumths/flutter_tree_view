@@ -14,11 +14,9 @@ enum TreeLine {
   /// '|' from top to bottom (used to connect nodes)
   straight,
 
-  /// '|' from center to bottom (used to connect parent with children lines)
+  /// '|' from center to bottom (used to connect parent and children lines)
   link,
 }
-
-// TODO: implement custom constructor/class for different lineStyle.
 
 // TODO: Implement curved corners for [TreeLine].`connection`
 
@@ -26,7 +24,7 @@ enum TreeLine {
 /// draw the lines that compose a single node in the [TreeView] widget.
 class LinesPainter extends CustomPainter {
   LinesPainter.connected({required this.node, required this.theme}) {
-    node.lines = node.isRoot ? [] : buildConnectedLines(node.parent!.lines);
+    node.lines = buildConnectedLines(node.parent!.lines);
     linesToBeDrawn = <TreeLine>[
       ...node.lines,
       if (theme.shouldDrawLinkLine && node.hasChildren && node.isExpanded)
@@ -39,7 +37,7 @@ class LinesPainter extends CustomPainter {
     linesToBeDrawn = List<TreeLine>.from(node.lines);
   }
 
-  /// List of lines to be drawn for a single node. (Copy from [node.lines]).
+  /// List of lines to be drawn for a single node.
   late final List<TreeLine> linesToBeDrawn;
 
   final TreeNode node;
@@ -51,24 +49,25 @@ class LinesPainter extends CustomPainter {
       : linesToBeDrawn.length;
 
   List<TreeLine> buildConnectedLines(List<TreeLine> parentLines) {
-    final hasNextSibling = node.hasNextSibling;
-
+    if (node.isRoot) return const [];
     if (node.isMostTopLevel) {
-      return [hasNextSibling ? TreeLine.intersection : TreeLine.connection];
+      return [
+        node.hasNextSibling ? TreeLine.intersection : TreeLine.connection,
+      ];
     }
     return [
       ...parentLines.sublist(0, parentLines.length - 1),
       parentLines.last == TreeLine.intersection
           ? TreeLine.straight
           : TreeLine.blank,
-      hasNextSibling ? TreeLine.intersection : TreeLine.connection,
+      node.hasNextSibling ? TreeLine.intersection : TreeLine.connection,
     ];
   }
 
   List<TreeLine> buildScopedLines() {
     if (node.isMostTopLevel) return const [];
     return List<TreeLine>.generate(
-      node.depth - 1,
+      node.depth,
       (_) => TreeLine.straight,
       growable: false,
     );

@@ -66,7 +66,7 @@ class _TreeViewState extends State<TreeView> {
   /// The callback to build the widget that will get animated
   /// when a node is inserted/removed from de tree.
   Widget _buildNode(TreeNode node, Animation<double> animation) {
-    return SizeAndFadeAnimatedWidget(
+    return SizeAndFadeTransition(
       key: node.key,
       animation: animation,
       child: widget.nodeBuilder(context, node),
