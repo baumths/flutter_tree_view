@@ -57,7 +57,7 @@ class _TreeViewState extends State<TreeView> {
       key: _animatedListKey,
       initialItemCount: visibleNodes.length,
       itemBuilder: (_, int index, Animation<double> animation) {
-        final node = _nodeAt(index)..addCallback(_toggleNode);
+        final node = _nodeAt(index)..addExpansionCallback(_toggleNode);
         return _buildNode(node, animation);
       },
     );
@@ -112,7 +112,8 @@ class _TreeViewState extends State<TreeView> {
   }
 
   void _removeAt(int index) {
-    final removedNode = _visibleNodes.removeAt(index)..removeCallback();
+    final removedNode = _visibleNodes.removeAt(index)
+      ..removeExpansionCallback();
     _animatedList.removeItem(
       index,
       (_, animation) => _buildNode(removedNode, animation),

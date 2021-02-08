@@ -3,7 +3,7 @@ import 'dart:collection';
 import 'internal.dart';
 
 // TODO: Missing Documentation
-class TreeNode with LineMixin, ChangeNotifier {
+class TreeNode with LineMixin {
   /// Constructor for [TreeNode].
   TreeNode({Key? key, this.data}) : key = key ?? UniqueKey();
 
@@ -81,7 +81,9 @@ class TreeNode with LineMixin, ChangeNotifier {
   set isSelected(bool value) {
     if (value == _isSelected) return;
     _isSelected = value;
-    notifyListeners();
+
+    // Update the view if not null.
+    _updateCallback?.call();
   }
 
   /// Sets `isSelected` to `true`.
@@ -101,7 +103,9 @@ class TreeNode with LineMixin, ChangeNotifier {
   set isEnabled(bool value) {
     if (value == _isEnabled) return;
     _isEnabled = value;
-    notifyListeners();
+
+    // Update the view if not null.
+    _updateCallback?.call();
   }
 
   /// Sets `isEnabled` to `true`.
@@ -123,11 +127,6 @@ class TreeNode with LineMixin, ChangeNotifier {
 
   /// Whether or not this node is the root.
   bool get isRoot => parent == null;
-
-  /// Whether or not this node can be removed from the view.
-  ///
-  /// For the view to not be empty, nodes with depth of 0 must not be removed.
-  bool get isRemovable => depth > 0;
 
   /// Whether this node is a direct child of the root node.
   bool get isMostTopLevel => depth == 0;
@@ -155,20 +154,37 @@ class TreeNode with LineMixin, ChangeNotifier {
         orElse: () => null,
       );
 
-  /* ~~~~~~~~~~ PRIVATE ~~~~~~~~~~ */
-
-  /// Callback used to notify [TreeView] when the expansion of this node changes.
-  ///
-  /// This property is null when the [Widget] it belongs to is not rendered.
-  TreeViewCallback? _expansionCallback;
-
   /* ~~~~~~~~~~ OTHER ~~~~~~~~~~ */
+
+  /// Callback for when either `isEnabled` or `isSelected` state changes.
+  ///
+  /// Usually used with [StatefulWidget]'s `setState`.
+  ///
+  /// Make sure to call `removeUpdateCallback` when the widget holding this node
+  /// gets disposed, otherwise this node could be calling `setState` on other
+  /// widgets and break your [TreeView].
+  VoidCallback? get updateCallback => _updateCallback;
+  VoidCallback? _updateCallback;
+
+  /// Sets the callback [cb] that gets called when
+  /// `isEnabled` or `isSelected` state changes.
+  void addUpdateCallback(VoidCallback cb) => _updateCallback = cb;
+
+  /// Sets `updateCallback` to null.
+  void removeUpdateCallback() => _updateCallback = null;
 
   /// Casts [data] as [T].
   T dataAs<T>() => data as T;
 
   @override
   String toString() => 'TreeNode(data: $data)';
+
+  /* ~~~~~~~~~~ PRIVATE ~~~~~~~~~~ */
+
+  /// Callback used to notify [TreeView] when the expansion of this node changes.
+  ///
+  /// This property is null when the [Widget] it belongs to is not rendered.
+  TreeViewCallback? _expansionCallback;
 }
 
 /// Caches the lines for a [TreeNode].
@@ -183,13 +199,18 @@ mixin LineMixin {
   set lines(List<TreeLine> lines) => _linesCache = lines;
 }
 
-/// Extension to make `_expansionCallback` only settable from within the package.
+/// Extension to hide internal functionality.
 extension TreeNodeX on TreeNode {
+  /// Whether or not this node can be removed from the view.
+  ///
+  /// For the view to not be empty, nodes with depth of 0 must not be removed.
+  bool get isRemovable => depth > 0;
+
   /// Sets the callback [cb] to notify [TreeView]
   /// when the expansion of this node changes.
-  void addCallback(TreeViewCallback cb) => _expansionCallback = cb;
+  void addExpansionCallback(TreeViewCallback cb) => _expansionCallback = cb;
 
   /// Sets `_expansionCallback` to null meaning that
   /// this node is no longer in the view.
-  void removeCallback() => _expansionCallback = null;
+  void removeExpansionCallback() => _expansionCallback = null;
 }

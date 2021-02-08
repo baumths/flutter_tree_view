@@ -76,17 +76,18 @@ class NodeWidget extends StatefulWidget {
 }
 
 class _NodeWidgetState extends State<NodeWidget> {
+  /// Updates the view.
   void update() => setState(() {});
 
   @override
   void initState() {
     super.initState();
-    widget.node.addListener(update);
+    widget.node.addUpdateCallback(update);
   }
 
   @override
   void dispose() {
-    widget.node.removeListener(update);
+    widget.node.removeUpdateCallback();
     super.dispose();
   }
 

@@ -10,19 +10,13 @@ import 'internal.dart';
 /// Make sure you call [TreeViewController.dispose] to release resources
 /// once the controller is not needed anymore.
 class TreeViewController {
-  /// Constructor for [TreeViewController].
+  /// Creates a [TreeViewController].
   TreeViewController({
     required this.rootNode,
-    this.disposeNodesAutomatically = true,
-  });
+  }) : assert(rootNode.isRoot, "The rootNode's parent must be null.");
 
   /// The [TreeNode] that will store all top level nodes.
   final TreeNode rootNode;
-
-  /// If `false`, you will have to dispose each node individually.
-  /// If `true`, calling [TreeViewController.dispose]
-  /// will dispose all [TreeNode] instances descendants of [rootNode].
-  final bool disposeNodesAutomatically;
 
   final eventDispatcher = TreeViewEventDispatcher();
 
@@ -87,20 +81,6 @@ class TreeViewController {
     return subtreeGenerator(startingNode ?? rootNode)
         .where((n) => n.isEnabled)
         .toList(growable: false);
-  }
-
-  /// Release resources.
-  void dispose() {
-    eventDispatcher.dispose();
-    if (disposeNodesAutomatically) {
-      subtreeGenerator(rootNode).forEach((node) => node.dispose());
-      rootNode.dispose();
-    } else {
-      print(
-        'TREE VIEW WARNING: NODE DISPOSAL WAS DISABLED!'
-        'This could lead to memory leaks.',
-      );
-    }
   }
 
   /// Returns a list with every node in the subtree of [node]
