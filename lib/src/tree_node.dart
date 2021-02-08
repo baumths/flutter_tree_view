@@ -4,16 +4,16 @@ import 'internal.dart';
 
 // TODO: Missing Documentation
 class TreeNode with LineMixin {
-  /// Constructor for [TreeNode].
-  TreeNode({Key? key, this.data}) : key = key ?? UniqueKey();
+  /// Creates a [TreeNode].
+  TreeNode({this.id, this.data});
 
-  /// A key to find this node in the tree.
-  final Key key;
+  /// An id to find this node in the Tree.
+  final int? id;
 
   /// Any data you may want to store or pass around.
   final dynamic data;
 
-  /* ~~~~~~~~~~ CHILDREN RELATED ~~~~~~~~~~ */
+  // * ~~~~~~~~~~ CHILDREN RELATED ~~~~~~~~~~ *
 
   /// The list of child nodes.
   List<TreeNode> get children => _children;
@@ -43,48 +43,40 @@ class TreeNode with LineMixin {
     if (wasRemoved) child._parent = null;
   }
 
-  /* ~~~~~~~~~~ PARENT RELATED ~~~~~~~~~~ */
+  // * ~~~~~~~~~~ PARENT RELATED ~~~~~~~~~~ *
 
   /// If `null`, this node is the root of the tree.
   ///
-  /// This property should only be set by [TreeNode.addChild].
+  /// This property is set by [TreeNode.addChild].
   TreeNode? get parent => _parent;
   TreeNode? _parent;
 
-  /* ~~~~~~~~~~ EXPANSION RELATED ~~~~~~~~~~ */
+  // * ~~~~~~~~~~ EXPANSION RELATED ~~~~~~~~~~ *
 
   /// Whether or not this node is expanded.
   bool get isExpanded => isRoot ? true : _isExpanded;
-  var _isExpanded = false;
-  set isExpanded(bool value) {
-    if (_isExpanded == value) return;
-    _isExpanded = value;
+  bool _isExpanded = false;
 
-    // Notify the [TreeView] Widget if visible. (_expansionCallback != null)
+  /// Sets `isExpanded` to `true`.
+  void expand() {
+    pExpand();
     _expansionCallback?.call(this);
   }
 
-  /// Sets `isExpanded` to `true`.
-  void expand() => isExpanded = true;
-
   /// Sets `isExpanded` of this node and every node under it to `false`.
-  void collapse() => visitSubtree((node) => node.isExpanded = false);
+  void collapse() {
+    pCollapse();
+    _expansionCallback?.call(this);
+  }
 
   /// Toggles `isExpanded` to the opposite state.
   void toggleExpanded() => isExpanded ? collapse() : expand();
 
-  /* ~~~~~~~~~~ SELECTION RELATED ~~~~~~~~~~ */
+  // * ~~~~~~~~~~ SELECTION RELATED ~~~~~~~~~~ *
 
   /// Whether or not this node is selected.
   bool get isSelected => _isSelected;
-  var _isSelected = false;
-  set isSelected(bool value) {
-    if (value == _isSelected) return;
-    _isSelected = value;
-
-    // Update the view if not null.
-    _updateCallback?.call();
-  }
+  bool _isSelected = false;
 
   /// Sets `isSelected` to `true`.
   void select() => toggleSelected(true);
@@ -93,20 +85,16 @@ class TreeNode with LineMixin {
   void deselect() => toggleSelected(false);
 
   /// Toggles `isSelected` to the opposite state.
-  void toggleSelected([bool? value]) => isSelected = value ?? !_isSelected;
+  void toggleSelected([bool? value]) {
+    _isSelected = value ?? !_isSelected;
+    _updateCallback?.call(); // Update the view if not null.
+  }
 
-  /* ~~~~~~~~~~ ENABLE/DISABLE RELATED ~~~~~~~~~~ */
+  // * ~~~~~~~~~~ ENABLE/DISABLE RELATED ~~~~~~~~~~ *
 
   /// Whether or not this node can be interacted with.
   bool get isEnabled => _isEnabled;
-  var _isEnabled = true;
-  set isEnabled(bool value) {
-    if (value == _isEnabled) return;
-    _isEnabled = value;
-
-    // Update the view if not null.
-    _updateCallback?.call();
-  }
+  bool _isEnabled = true;
 
   /// Sets `isEnabled` to `true`.
   void enable() => toggleEnabled(true);
@@ -115,9 +103,12 @@ class TreeNode with LineMixin {
   void disable() => toggleEnabled(false);
 
   /// Toggles `isEnabled` to opposite state.
-  void toggleEnabled([bool? value]) => isEnabled = value ?? !_isEnabled;
+  void toggleEnabled([bool? value]) {
+    _isEnabled = value ?? !_isEnabled;
+    _updateCallback?.call(); // Update the view if not null.
+  }
 
-  /* ~~~~~~~~~~ NODE RELATED ~~~~~~~~~~ */
+  // * ~~~~~~~~~~ NODE RELATED ~~~~~~~~~~ *
 
   /// The distance between this node and the root node.
   int get depth => isRoot ? -1 : parent!.depth + 1;
@@ -147,14 +138,14 @@ class TreeNode with LineMixin {
   }
 
   /// Starting from this node, searches the subtree
-  /// looking for a node key that match [key],
-  /// returns `null` if no node was found with the given [key].
-  TreeNode? find(Key key) => nullableSubtreeGenerator(this).firstWhere(
-        (descendant) => descendant == null ? false : descendant.key == key,
+  /// looking for a node id that match [id],
+  /// returns `null` if no node was found with the given [id].
+  TreeNode? find(int id) => nullableSubtreeGenerator(this).firstWhere(
+        (descendant) => descendant == null ? false : descendant.id == id,
         orElse: () => null,
       );
 
-  /* ~~~~~~~~~~ OTHER ~~~~~~~~~~ */
+  // * ~~~~~~~~~~ OTHER ~~~~~~~~~~ *
 
   /// Callback for when either `isEnabled` or `isSelected` state changes.
   ///
@@ -173,13 +164,10 @@ class TreeNode with LineMixin {
   /// Sets `updateCallback` to null.
   void removeUpdateCallback() => _updateCallback = null;
 
-  /// Casts [data] as [T].
-  T dataAs<T>() => data as T;
-
   @override
-  String toString() => 'TreeNode(data: $data)';
+  String toString() => 'TreeNode(id: $id, data: $data)';
 
-  /* ~~~~~~~~~~ PRIVATE ~~~~~~~~~~ */
+  // * ~~~~~~~~~~ PRIVATE ~~~~~~~~~~ *
 
   /// Callback used to notify [TreeView] when the expansion of this node changes.
   ///
@@ -205,6 +193,18 @@ extension TreeNodeX on TreeNode {
   ///
   /// For the view to not be empty, nodes with depth of 0 must not be removed.
   bool get isRemovable => depth > 0;
+
+  /// Package private expand.
+  ///
+  /// Used to avoid repetitively changing `isExpanded`
+  /// when [TreeViewController.`expandNode`] is called.
+  void pExpand() => _isExpanded = true;
+
+  /// Package private collapse.
+  ///
+  /// Used to avoid repetitively changing `isExpanded`
+  /// when [TreeViewController.`collapseNode`] is called.
+  void pCollapse() => visitSubtree((node) => node._isExpanded = false);
 
   /// Sets the callback [cb] to notify [TreeView]
   /// when the expansion of this node changes.
