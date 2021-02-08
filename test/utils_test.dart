@@ -41,7 +41,8 @@ void main() {
 
   group('Tests for subtreeGenerator -', () {
     test(
-      'Should return a list of length 7 that match rootSubtree when called with rootNode.',
+      'Should return a list of length 7 that match rootSubtree '
+      'when called with rootNode.',
       () {
         final result = subtreeGenerator(rootNode);
         expect(result, hasLength(7));
@@ -50,7 +51,8 @@ void main() {
     );
 
     test(
-      'Should return a list of length 5 that match node1Subtree when called with node1.',
+      'Should return a list of length 5 that match node1Subtree '
+      'when called with node1.',
       () {
         final result = subtreeGenerator(node1);
         expect(result, hasLength(5));
@@ -59,7 +61,8 @@ void main() {
     );
 
     test(
-      'Should return a list of length 1 that match node11Subtree when called with node11.',
+      'Should return a list of length 1 that match node11Subtree '
+      'when called with node11.',
       () {
         final result = subtreeGenerator(node11);
         expect(result, hasLength(1));
@@ -68,7 +71,8 @@ void main() {
     );
 
     test(
-      'Should return a list of length 2 that match node12Subtree when called with node12.',
+      'Should return a list of length 2 that match node12Subtree '
+      'when called with node12.',
       () {
         final result = subtreeGenerator(node12);
         expect(result, hasLength(2));
@@ -77,7 +81,8 @@ void main() {
     );
 
     test(
-      'Should return an empty list each when called with: node111, node121, node122, node2.',
+      'Should return an empty list each '
+      'when called with: node111, node121, node122, node2.',
       () {
         expect(subtreeGenerator(node111), isEmpty);
 
@@ -96,7 +101,8 @@ void main() {
     });
 
     test(
-      'Should return reversedRootSubtree when called with rootNode',
+      'Should return reversedRootSubtree '
+      'when called with rootNode',
       () {
         expect(reversedSubtreeGenerator(rootNode), equals(reversedRootSubtree));
       },
