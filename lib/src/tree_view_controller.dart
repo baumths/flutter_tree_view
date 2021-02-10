@@ -3,7 +3,8 @@ import 'internal.dart';
 /// Controller for managing the nodes that compose [TreeView].
 ///
 /// This controller was extracted from [TreeView] for use cases where you
-/// need to toggle/find a node from outside the [TreeView] widget subtree.
+/// need to toggle/find a node from outside the [TreeView] Widget subtree.
+///
 /// Makes it easy to pass the controller down the widget tree
 /// through dependency injection (like the Provider package).
 class TreeViewController {
@@ -24,7 +25,6 @@ class TreeViewController {
   /// Returns the node at [index] of [visibleNodes].
   TreeNode nodeAt(int index) => _visibleNodes[index];
 
-  /// Returns the index of [node] in [visibleNodes].
   int _indexOf(TreeNode node) => _visibleNodes.indexOf(node);
 
   void _insert(int index, TreeNode node) {
@@ -64,10 +64,21 @@ class TreeViewController {
 
   /// Expands a single node.
   void expandNode(TreeNode node) {
-    if (node.isLeaf || node.isExpanded) return;
-    node.pExpand(); // Use private expand to avoid re-expanding.
-    _insertAll(_indexOf(node) + 1, node.children);
+    if (node.isRoot || node.isExpanded) return;
+
+    // Expand all ancestors of [node] if its parent is not expanded.
+    if (!node.parent!.isExpanded) expandUntil(node);
+
+    if (node.hasChildren) {
+      node.pExpand(); // Use private expand to avoid re-expanding.
+      _insertAll(_indexOf(node) + 1, node.children);
+    }
   }
+
+  /// Expands every node within the path from root to [node.parent].
+  ///
+  /// _Does not expand [node]._
+  void expandUntil(TreeNode node) => node.ancestors.forEach(expandNode);
 
   /// Expands [node] and every descendant node.
   void expandSubtree(TreeNode node) {
@@ -93,16 +104,25 @@ class TreeViewController {
 
   // * ~~~~~~~~~~ HELPER METHODS ~~~~~~~~~~ *
 
+  /// Starting from [rootNode], searches the subtree
+  /// looking for a node id that match [id],
+  /// returns `null` if no node was found with the given [id].
+  TreeNode? find(int id) => rootNode.find(id);
+
   /// Changes the `isSelected` property of [node] and its subtree
   /// to [state] (defaults to `true`).
-  void selectSubtree(TreeNode node, [bool state = true]) {
-    subtreeGenerator(node).forEach((n) => n.toggleSelected(state));
+  ///
+  /// If [node] is null, starts from [rootNode].
+  void selectSubtree(TreeNode? node, [bool state = true]) {
+    subtreeGenerator(node ?? rootNode).forEach((n) => n.toggleSelected(state));
   }
 
   /// Changes the `isEnabled` property of [node] and its subtree
   /// to [state] (defaults to `true`).
-  void enableSubtree(TreeNode node, [bool state = true]) {
-    subtreeGenerator(node).forEach((n) => n.toggleEnabled(state));
+  ///
+  /// If [node] is null, starts from [rootNode].
+  void enableSubtree(TreeNode? node, [bool state = true]) {
+    subtreeGenerator(node ?? rootNode).forEach((n) => n.toggleEnabled(state));
   }
 
   /// Returns a list of every selected node in the subtree of [startingNode].
@@ -136,6 +156,7 @@ class TreeViewController {
 
 /// Extension to hide internal functionality.
 extension TreeViewControllerX on TreeViewController {
+  /// Sets _visibleNodes to [rootNode.`children`].
   void populateInitialNodes() {
     _visibleNodes = List<TreeNode>.from(rootNode.children);
   }
