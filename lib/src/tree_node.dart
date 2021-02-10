@@ -1,5 +1,3 @@
-import 'dart:collection';
-
 import 'internal.dart';
 
 // TODO: Missing Documentation
@@ -27,10 +25,12 @@ class TreeNode with LineMixin {
 
   /// Adds a single child to this node.
   void addChild(TreeNode child) {
+    // A node can't be child of its children neither parent of itself.
+    if (child == parent || child == this) return;
     // Avoid duplicating nodes.
     if (child.parent != null) child.parent!.removeChild(child);
 
-    child._parent = this;
+    child.parent = this;
     _children.add(child);
   }
 
@@ -40,7 +40,14 @@ class TreeNode with LineMixin {
   /// Removes a single child from this node and set its parent to `null`.
   void removeChild(TreeNode child) {
     final wasRemoved = _children.remove(child);
-    if (wasRemoved) child._parent = null;
+    if (wasRemoved) child.parent = null;
+  }
+
+  /// Removes all children from this node,
+  /// and sets the parent of every child of this node to null.
+  void clearChildren() {
+    _children.forEach((node) => node.parent = null);
+    _children.clear();
   }
 
   // * ~~~~~~~~~~ PARENT RELATED ~~~~~~~~~~ *
@@ -50,6 +57,17 @@ class TreeNode with LineMixin {
   /// This property is set by [TreeNode.addChild].
   TreeNode? get parent => _parent;
   TreeNode? _parent;
+  @protected
+  set parent(TreeNode? newParent) => _parent = newParent;
+
+  /// Returns the path from the root node to this node, but excludes this.
+  ///
+  /// Example: [root, child, grandChild, ... `this.parent`]
+  List<TreeNode> get ancestors {
+    return findPathFromRoot(this)
+        .where((n) => n != this)
+        .toList(growable: false);
+  }
 
   // * ~~~~~~~~~~ EXPANSION RELATED ~~~~~~~~~~ *
 
@@ -125,16 +143,11 @@ class TreeNode with LineMixin {
   /// Whether or not this node is the last child of its parent.
   bool get hasNextSibling => isRoot ? false : this != parent!.children.last;
 
-  /// Applies the function [fn] to every node in the subtree
-  /// starting from this node in breadth first traversal.
+  /// Applies the function [fn] to this and every node in the subtree
+  /// that starts at this node in breadth first traversal.
   void visitSubtree(TreeViewCallback fn) {
-    final queue = Queue<TreeNode>()..add(this);
-
-    while (queue.isNotEmpty) {
-      final node = queue.removeFirst();
-      fn(node);
-      queue.addAll(node.children);
-    }
+    fn(this);
+    subtreeGenerator(this).forEach(fn);
   }
 
   /// Starting from this node, searches the subtree
