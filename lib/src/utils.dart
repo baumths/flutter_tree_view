@@ -46,3 +46,11 @@ Iterable<TreeNode> reversedSubtreeGenerator(TreeNode node) sync* {
     yield child;
   }
 }
+
+/// Returns a List containing the path from [node] to the root node.
+///
+/// Includes root [0] and `node [last]`. [root, child, grandChild, ..., `node`]
+Iterable<TreeNode> findPathFromRoot(TreeNode node) sync* {
+  if (node.parent != null) yield* findPathFromRoot(node.parent!);
+  yield node;
+}
