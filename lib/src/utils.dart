@@ -18,7 +18,7 @@ typedef RemoveNodeBuilder = Widget Function(
 );
 
 /// Callback to build a widget for [TreeNode].
-typedef NodeBuilder = NodeWidget Function(BuildContext context, TreeNode node);
+typedef NodeBuilder = Widget Function(BuildContext context, TreeNode node);
 
 // * ~~~~~~~~~~ HELPER FUNCTIONS ~~~~~~~~~~ *
 

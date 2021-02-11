@@ -66,7 +66,7 @@ class _TreeViewState extends State<TreeView> {
   /// The callback to build the widget that will get animated
   /// when a node is inserted/removed from de tree.
   Widget _buildNode(TreeNode node, Animation<double> animation) {
-    return SizeAndFadeTransition(
+    return _NodeTransition(
       key: node.id == null ? UniqueKey() : ValueKey<int>(node.id!),
       animation: animation,
       child: widget.nodeBuilder(context, node),
@@ -88,5 +88,27 @@ class _TreeViewState extends State<TreeView> {
   void dispose() {
     controller.removeCallbacks();
     super.dispose();
+  }
+}
+
+class _NodeTransition extends StatelessWidget {
+  const _NodeTransition({
+    Key? key,
+    required this.animation,
+    required this.child,
+  }) : super(key: key);
+
+  final Animation<double> animation;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizeTransition(
+      sizeFactor: animation,
+      child: FadeTransition(
+        opacity: animation,
+        child: child,
+      ),
+    );
   }
 }
