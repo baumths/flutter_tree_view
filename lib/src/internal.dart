@@ -1,5 +1,6 @@
 export 'package:flutter/material.dart';
 
+export 'expand_node_icon.dart';
 export 'lines_painter.dart';
 export 'node_widget.dart';
 export 'tree_node.dart';
