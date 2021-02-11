@@ -8,19 +8,19 @@ enum LineStyle {
   /// Draws the horizontal line that connects to the side of the nodes.
   connected,
 
-  /// Not implemented yet
+  /// Draws straight lines prefixing blocks of child nodes.
   scoped,
 }
 
 /// Class to control how the theme of the [TreeView].
 ///
-/// A single line will be drawn at the middle of [singleLineWidth] with
+/// A single line will be drawn at the middle of [indent] with
 /// thickness of [lineThickness] as shown below, play around to find the
 /// combination of values that better fits you.
-/// Make sure `singleLineWidth >= lineThickness`.
+/// Make sure `indent >= lineThickness`.
 ///
 /// ```dart
-///  /*        <- singleLineWidth ->
+///  /*        <- indent ->
 ///    -------------------------------------
 ///    |                 |                 |
 ///    |                 |                 |
@@ -37,11 +37,8 @@ class TreeViewTheme {
     Color? lineColor,
     this.lineStyle = LineStyle.connected,
     this.lineThickness = 2.0,
-    this.singleLineWidth = 24.0,
+    this.indent = 20.0,
     this.shouldDrawLinkLine = true,
-    this.parentNodeIcon = Icons.folder,
-    this.leafNodeIcon = Icons.article,
-    this.nodeIconColor,
     this.nodeTileColor,
     this.nodeSelectedTileColor,
     this.nodeHoverColor,
@@ -49,8 +46,8 @@ class TreeViewTheme {
     this.nodeShape,
   })  : _lineColor = lineColor,
         assert(
-          singleLineWidth >= lineThickness,
-          "The width of a line must not be smaller than it's thickness",
+          indent >= lineThickness,
+          'The indent must not be less than lineThickness',
         );
 
   /// The color used to draw the lines.
@@ -64,15 +61,12 @@ class TreeViewTheme {
   /// Defaults to `2.0`
   final double lineThickness;
 
-  /// The space a single line occupies, the line will be drawn in
-  /// the middle of this space.
+  /// Used to calculate the spacing of each nesting level of [TreeNode].
   ///
-  /// The total node left padding is calculated based on the number of lines
-  /// multiplied by [singleLineWidth], therefore, the smaller the width,
-  /// less space the node is going to take.
+  /// [TreeNode] indentation: `[TreeNode.depth] * [TreeViewTheme.indent]`.
   ///
-  /// Defaults to `24.0`
-  final double singleLineWidth;
+  /// Defaults to `20.0`
+  final double indent;
 
   /// The style used to draw the lines of [TreeView].
   ///
@@ -87,27 +81,6 @@ class TreeViewTheme {
   ///
   /// Defaults to `true`.
   final bool shouldDrawLinkLine;
-
-  /* * Properties applied to [ NodeWidget ] */
-
-  /// The icon used as leading for [NodeWidget] when the node has children.
-  ///
-  /// If null, no icon will be displayed.
-  ///
-  /// Defaults to [Icons.folder].
-  final IconData? parentNodeIcon;
-
-  /// The icon used as leading for [NodeWidget] when the node is a leaf (no children).
-  ///
-  /// If null, no icon will be displayed.
-  ///
-  /// Defaults to [Icons.article].
-  final IconData? leafNodeIcon;
-
-  /// The color used for both [parentNodeIcon] and [leafNodeIcon].
-  ///
-  /// If null, [Theme.of(context).accentColor] will be used.
-  final Color? nodeIconColor;
 
   /// Defines the background color of `NodeWidget` when [TreeNode.isSelected] is false.
   ///
@@ -143,11 +116,8 @@ class TreeViewTheme {
         lineStyle,
         lineStyle,
         lineThickness,
-        singleLineWidth,
+        indent,
         shouldDrawLinkLine,
-        parentNodeIcon,
-        leafNodeIcon,
-        nodeIconColor,
         nodeTileColor,
         nodeSelectedTileColor,
         nodeHoverColor,
@@ -161,11 +131,8 @@ class TreeViewTheme {
     return lineColor == other.lineColor &&
         lineStyle == other.lineStyle &&
         lineThickness == other.lineThickness &&
-        singleLineWidth == other.singleLineWidth &&
+        indent == other.indent &&
         shouldDrawLinkLine == other.shouldDrawLinkLine &&
-        parentNodeIcon == other.parentNodeIcon &&
-        leafNodeIcon == other.leafNodeIcon &&
-        nodeIconColor == other.nodeIconColor &&
         nodeTileColor == other.nodeTileColor &&
         nodeSelectedTileColor == other.nodeSelectedTileColor &&
         nodeHoverColor == other.nodeHoverColor &&
@@ -177,7 +144,7 @@ class TreeViewTheme {
     Color? lineColor,
     LineStyle? lineStyle,
     double? lineThickness,
-    double? singleLineWidth,
+    double? indent,
     bool? shouldDrawLinkLine,
     IconData? parentNodeIcon,
     IconData? leafNodeIcon,
@@ -192,11 +159,8 @@ class TreeViewTheme {
       lineColor: lineColor ?? this.lineColor,
       lineStyle: lineStyle ?? this.lineStyle,
       lineThickness: lineThickness ?? this.lineThickness,
-      singleLineWidth: singleLineWidth ?? this.singleLineWidth,
+      indent: indent ?? this.indent,
       shouldDrawLinkLine: shouldDrawLinkLine ?? this.shouldDrawLinkLine,
-      parentNodeIcon: parentNodeIcon ?? this.parentNodeIcon,
-      leafNodeIcon: leafNodeIcon ?? this.leafNodeIcon,
-      nodeIconColor: nodeIconColor ?? this.nodeIconColor,
       nodeTileColor: nodeTileColor ?? this.nodeTileColor,
       nodeSelectedTileColor:
           nodeSelectedTileColor ?? this.nodeSelectedTileColor,
