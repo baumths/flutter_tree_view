@@ -6,11 +6,9 @@ class NodeWidget extends StatefulWidget {
     required this.node,
     required this.title,
     required this.theme,
-    required this.controller,
     this.trailing = const [],
-    this.leading,
     this.contentPadding,
-    this.horizontalTitleGap,
+    this.horizontalTitleGap = 0,
     this.dense,
     this.onTap,
     this.onToggle,
@@ -19,17 +17,11 @@ class NodeWidget extends StatefulWidget {
 
   final TreeNode node;
   final TreeViewTheme theme;
-  final TreeViewController controller;
 
   /// The Widget to be used as `title` of [ListTile].
   ///
   /// Usually a [Text] widget.
   final Widget title;
-
-  /// Widget to use as leading of [ListTile].
-  ///
-  /// If null, defaults to an [Icon] customized by [TreeViewTheme].
-  final Widget? leading;
 
   /// List of items to display in a [Row]
   /// before [ToggleNodeIconButton] inside [ListTile.trailing]
@@ -47,11 +39,8 @@ class NodeWidget extends StatefulWidget {
 
   /// The horizontal gap between the titles and the leading/trailing widgets.
   ///
-  /// If null, then the value of [ListTileTheme.horizontalTitleGap] is used.
-  /// If that is also null, then a default value of 16 is used.
-  ///
-  /// `Copied from [ListTile.horizontalTitleGap].`
-  final double? horizontalTitleGap;
+  /// Defaults to 0.
+  final double horizontalTitleGap;
 
   /// Whether this list tile is part of a vertically dense list.
   ///
@@ -91,15 +80,27 @@ class _NodeWidgetState extends State<NodeWidget> {
     super.dispose();
   }
 
+  /// Calculates the indentation of [node] for the current [theme.lineStyle].
+  double calculateIndentation() {
+    double indentation = widget.node.depth * widget.theme.indent;
+
+    if (widget.theme.lineStyle == LineStyle.connected) {
+      indentation += widget.theme.indent;
+    }
+    return indentation;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final indentation = calculateIndentation();
+
     return ListTile(
+      minLeadingWidth: indentation,
       horizontalTitleGap: widget.horizontalTitleGap,
       contentPadding: widget.contentPadding ?? EdgeInsets.zero,
       selected: widget.node.isSelected,
       enabled: widget.node.isEnabled,
       dense: widget.dense,
-      title: widget.title,
       tileColor: widget.theme.nodeTileColor,
       selectedTileColor: widget.theme.nodeSelectedTileColor,
       hoverColor: widget.theme.nodeHoverColor,
@@ -107,23 +108,14 @@ class _NodeWidgetState extends State<NodeWidget> {
       shape: widget.theme.nodeShape,
       onTap: widget.onTap,
       onLongPress: widget.onLongPress,
+      title: widget.title,
       trailing: _buildTrailing(),
       leading: LinesWidget(
         node: widget.node,
         theme: widget.theme,
-        child: widget.leading ?? _buildLeading(),
+        indentation: indentation,
       ),
     );
-  }
-
-  Icon? _buildLeading() {
-    final color = widget.theme.nodeIconColor ?? Theme.of(context).accentColor;
-    if (widget.node.hasChildren) {
-      if (widget.theme.parentNodeIcon == null) return null;
-      return Icon(widget.theme.parentNodeIcon, color: color);
-    }
-    if (widget.theme.leafNodeIcon == null) return null;
-    return Icon(widget.theme.leafNodeIcon, color: color);
   }
 
   Widget? _buildTrailing() {
@@ -140,111 +132,64 @@ class _NodeWidgetState extends State<NodeWidget> {
   }
 
   Widget get _expandIcon {
-    return ToggleNodeIconButton(
+    return ExpandNodeIcon(
       node: widget.node,
-      onToggle: widget.node.isEnabled ? widget.onToggle : null,
-      controller: widget.controller,
-    );
-  }
-}
-
-/// Creates an [ExpandIcon] Widget with toggling node functionality.
-class ToggleNodeIconButton extends StatelessWidget {
-  const ToggleNodeIconButton({
-    Key? key,
-    required this.node,
-    required this.controller,
-    required this.onToggle,
-  }) : super(key: key);
-
-  final TreeNode node;
-  final TreeViewController controller;
-  final VoidCallback? onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    return ExpandIcon(
-      padding: EdgeInsets.zero,
-      isExpanded: node.isExpanded,
-      onPressed: node.isEnabled
-          ? (_) {
-              node.toggleExpanded();
-              onToggle?.call();
-            }
-          : null,
-    );
-  }
-}
-
-/// Uses [animation] to animate [child] with [SizeTransition] & [FadeTransition].
-class SizeAndFadeTransition extends StatelessWidget {
-  const SizeAndFadeTransition({
-    Key? key,
-    required this.animation,
-    required this.child,
-  }) : super(key: key);
-
-  final Animation<double> animation;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizeTransition(
-      sizeFactor: animation,
-      child: FadeTransition(
-        opacity: animation,
-        child: child,
-      ),
+      onToggle: widget.onToggle,
     );
   }
 }
 
 /// Widget responsible for indenting nodes and drawing lines (if enabled).
 class LinesWidget extends StatelessWidget {
+  /// Creates a [LinesWidget].
   const LinesWidget({
     Key? key,
     required this.node,
     required this.theme,
+    required this.indentation,
     this.child,
   }) : super(key: key);
 
+  /// The node to draw lines for.
   final TreeNode node;
+
+  /// The theme to use while drawing lines.
   final TreeViewTheme theme;
 
+  /// The widget to be displayed to the right of the lines.
   final Widget? child;
 
-  double get indentation {
-    return theme.lineStyle == LineStyle.connected
-        ? (node.depth + 1) * theme.singleLineWidth
-        : node.depth * theme.singleLineWidth;
-  }
+  /// The left padding of [node].
+  final double indentation;
 
-  Padding _buildPadding() {
-    return Padding(
-      padding: EdgeInsets.only(left: indentation),
-      child: SizedBox(
-        height: double.infinity,
-        child: child,
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  /// Decides on which type of lines to draw for
+  /// [node] based on [theme.lineStyle].
+  Widget chooseLines({required Widget child}) {
     switch (theme.lineStyle) {
       case LineStyle.scoped:
         return CustomPaint(
           painter: LinesPainter.scoped(node: node, theme: theme),
-          child: _buildPadding(),
+          child: child,
         );
       case LineStyle.connected:
         return CustomPaint(
           painter: LinesPainter.connected(node: node, theme: theme),
-          child: _buildPadding(),
+          child: child,
         );
       case LineStyle.disabled:
       default:
-        return _buildPadding();
+        return child;
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return chooseLines(
+      child: SizedBox(
+        width: indentation,
+        height: double.infinity,
+        child: child,
+      ),
+    );
   }
 }
