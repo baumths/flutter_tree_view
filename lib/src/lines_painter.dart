@@ -24,54 +24,26 @@ enum TreeLine {
 /// draw the lines that compose a single node in the [TreeView] widget.
 class LinesPainter extends CustomPainter {
   LinesPainter.connected({required this.node, required this.theme}) {
-    node.lines = buildConnectedLines(node.parent!.lines);
     linesToBeDrawn = <TreeLine>[
-      ...node.lines,
+      ...node.connectedLines,
       if (theme.shouldDrawLinkLine && node.hasChildren && node.isExpanded)
         TreeLine.link,
     ];
   }
 
   LinesPainter.scoped({required this.node, required this.theme}) {
-    node.lines = buildScopedLines();
-    linesToBeDrawn = List<TreeLine>.from(node.lines);
+    linesToBeDrawn = node.scopedLines;
   }
-
-  /// List of lines to be drawn for a single node.
-  late final List<TreeLine> linesToBeDrawn;
 
   final TreeNode node;
 
   final TreeViewTheme theme;
 
+  late final List<TreeLine> linesToBeDrawn;
+
   int get lineCount => linesToBeDrawn.last == TreeLine.link
       ? linesToBeDrawn.length - 1
       : linesToBeDrawn.length;
-
-  List<TreeLine> buildConnectedLines(List<TreeLine> parentLines) {
-    if (node.isRoot) return const [];
-    if (node.isMostTopLevel) {
-      return [
-        node.hasNextSibling ? TreeLine.intersection : TreeLine.connection,
-      ];
-    }
-    return [
-      ...parentLines.sublist(0, parentLines.length - 1),
-      parentLines.last == TreeLine.intersection
-          ? TreeLine.straight
-          : TreeLine.blank,
-      node.hasNextSibling ? TreeLine.intersection : TreeLine.connection,
-    ];
-  }
-
-  List<TreeLine> buildScopedLines() {
-    if (node.isMostTopLevel) return const [];
-    return List<TreeLine>.generate(
-      node.depth,
-      (_) => TreeLine.straight,
-      growable: false,
-    );
-  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -87,7 +59,7 @@ class LinesPainter extends CustomPainter {
 
       final offset = LineOffset(
         height: size.height,
-        width: theme.singleLineWidth,
+        width: theme.indent,
         index: index,
         lineCount: lineCount,
       );

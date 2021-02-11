@@ -1,7 +1,7 @@
 import 'internal.dart';
 
 // TODO: Missing Documentation
-class TreeNode with LineMixin {
+class TreeNode {
   /// Creates a [TreeNode].
   TreeNode({this.id, this.data});
 
@@ -188,18 +188,6 @@ class TreeNode with LineMixin {
   TreeViewCallback? _expansionCallback;
 }
 
-/// Caches the lines for a [TreeNode].
-mixin LineMixin {
-  /// Cache to avoid rebuilding the list of lines.
-  List<TreeLine>? _linesCache;
-
-  /// List of [TreeLine] to be used as template
-  /// to draw the lines for this node in the [TreeView].
-  List<TreeLine> get lines => _linesCache ?? [];
-
-  set lines(List<TreeLine> lines) => _linesCache = lines;
-}
-
 /// Extension to hide internal functionality.
 extension TreeNodeX on TreeNode {
   /// Whether or not this node can be removed from the view.
@@ -226,4 +214,29 @@ extension TreeNodeX on TreeNode {
   /// Sets `_expansionCallback` to null meaning that
   /// this node is no longer in the view.
   void removeExpansionCallback() => _expansionCallback = null;
+
+  // * ~~~~~~~~~~ LINES ~~~~~~~~~~ *
+
+  List<TreeLine> get connectedLines {
+    if (isRoot) return const [];
+    if (isMostTopLevel) {
+      return [hasNextSibling ? TreeLine.intersection : TreeLine.connection];
+    }
+    final parentLines = parent!.connectedLines;
+    return [
+      ...parentLines.sublist(0, parentLines.length - 1),
+      parentLines.last == TreeLine.intersection
+          ? TreeLine.straight
+          : TreeLine.blank,
+      hasNextSibling ? TreeLine.intersection : TreeLine.connection,
+    ];
+  }
+
+  List<TreeLine> get scopedLines {
+    return List<TreeLine>.generate(
+      depth,
+      (_) => TreeLine.straight,
+      growable: false,
+    );
+  }
 }
