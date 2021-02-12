@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:flutter_tree_view/flutter_tree_view.dart';
+import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
 import 'map_hierarchical_data.dart';
 import 'sample_data.dart';

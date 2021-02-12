@@ -10,7 +10,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   flutter:
     sdk: flutter
-  flutter_tree_view:
+  flutter_fancy_tree_view:
     path: ../
 
 

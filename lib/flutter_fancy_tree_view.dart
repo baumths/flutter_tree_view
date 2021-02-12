@@ -1,4 +1,4 @@
-library flutter_tree_view;
+library flutter_fancy_tree_view;
 
 export 'src/expand_node_icon.dart';
 export 'src/node_widget.dart';

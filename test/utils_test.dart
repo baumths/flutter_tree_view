@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:flutter_tree_view/src/internal.dart';
+import 'package:flutter_fancy_tree_view/src/internal.dart';
 
 void main() {
   late TreeNode rootNode;

@@ -1,4 +1,4 @@
-import 'package:flutter_tree_view/flutter_tree_view.dart';
+import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
 List<TreeNode> mapHierarchicalData(
   List<Map<String, dynamic>> children,

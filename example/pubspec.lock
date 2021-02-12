@@ -62,18 +62,18 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_test:
-    dependency: "direct dev"
-    description: flutter
-    source: sdk
-    version: "0.0.0"
-  flutter_tree_view:
+  flutter_fancy_tree_view:
     dependency: "direct main"
     description:
       path: ".."
       relative: true
     source: path
     version: "0.1.0-nullsafety.0"
+  flutter_test:
+    dependency: "direct dev"
+    description: flutter
+    source: sdk
+    version: "0.0.0"
   matcher:
     dependency: transitive
     description:
