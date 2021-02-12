@@ -16,7 +16,9 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final TreeViewController treeController;
-  TreeViewTheme treeTheme = const TreeViewTheme();
+  TreeViewTheme treeTheme = TreeViewTheme(
+    nodeSelectedTileColor: Colors.grey.shade300,
+  );
 
   @override
   void initState() {
@@ -27,7 +29,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
-    treeController.dispose();
     super.dispose();
   }
 
@@ -35,6 +36,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    const iconColor = Colors.blue;
     return Scaffold(
       body: Center(
         child: SizedBox(
@@ -46,13 +48,25 @@ class _HomePageState extends State<HomePage> {
               return NodeWidget(
                 node: node,
                 theme: treeTheme,
-                controller: treeController,
-                title: Text(node.data as String),
+                title: Row(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 2, right: 8),
+                      child: node.hasChildren
+                          ? const Icon(Icons.folder, color: iconColor)
+                          : const Icon(Icons.article, color: iconColor),
+                    ),
+                    Flexible(child: Text(node.data as String)),
+                  ],
+                ),
                 onTap: () => showSnackBar(context, 'Node Tapped: ${node.data}'),
                 onLongPress: () => setState(node.disable),
                 trailing: [
                   IconButton(
-                    icon: const Icon(Icons.star),
+                    icon: Icon(
+                      Icons.star,
+                      color: node.isSelected ? iconColor : Colors.grey,
+                    ),
                     tooltip: node.isSelected ? 'Deselect' : 'Select',
                     color:
                         node.isSelected ? Theme.of(context).accentColor : null,
@@ -66,7 +80,28 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-      appBar: AppBar(title: const Text('TreeView Example')),
+      appBar: AppBar(
+        title: const Text('TreeView Example'),
+        leading: IconButton(
+          icon: const Icon(Icons.expand),
+          onPressed: () async {
+            setState(() {
+              treeController.selectSubtree(treeController.find(2));
+            });
+            // final node = treeController.find(21112);
+            // if (node != null) {
+            //   treeController.expandNode(node);
+            //   setState(() {
+            //     node.select();
+            //   });
+            //   await Future.delayed(const Duration(seconds: 3));
+            //   setState(() {
+            //     node.deselect();
+            //   });
+            // }
+          },
+        ),
+      ),
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.end,

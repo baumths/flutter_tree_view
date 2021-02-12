@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_tree_view/flutter_tree_view.dart';
 
 List<TreeNode> mapHierarchicalData(
@@ -8,7 +7,7 @@ List<TreeNode> mapHierarchicalData(
 
   return children.map((child) {
     final node = TreeNode(
-      key: ValueKey<int>(int.parse(child['name'].split('.').join())),
+      id: int.parse(child['name'].split('.').join()),
       data: child['name'],
     );
 
