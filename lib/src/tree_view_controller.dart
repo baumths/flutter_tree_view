@@ -118,7 +118,8 @@ class TreeViewController {
   /// to [state] (defaults to `true`).
   ///
   /// If [node] is null, starts from [TreeViewController.rootNode].
-  void selectSubtree(TreeNode? node, [bool state = true]) {
+  void selectSubtree([TreeNode? node, bool state = true]) {
+    node?.toggleSelected(state);
     subtreeGenerator(node ?? rootNode).forEach((n) => n.toggleSelected(state));
   }
 
@@ -126,14 +127,15 @@ class TreeViewController {
   /// to [state] (defaults to `true`).
   ///
   /// If [node] is null, starts from [TreeViewController.rootNode].
-  void enableSubtree(TreeNode? node, [bool state = true]) {
+  void enableSubtree([TreeNode? node, bool state = true]) {
+    node?.toggleEnabled(state);
     subtreeGenerator(node ?? rootNode).forEach((n) => n.toggleEnabled(state));
   }
 
   /// Returns a list of every selected node in the subtree of [startingNode].
   ///
   /// If [startingNode] is null, starts from [TreeViewController.rootNode].
-  List<TreeNode> selectedNodes(TreeNode? startingNode) {
+  List<TreeNode> selectedNodes([TreeNode? startingNode]) {
     return subtreeGenerator(startingNode ?? rootNode)
         .where((n) => n.isSelected)
         .toList(growable: false);
@@ -142,7 +144,7 @@ class TreeViewController {
   /// Returns a list of every enabled node in the subtree of [startingNode].
   ///
   /// If [startingNode] is null, starts from [TreeViewController.rootNode].
-  List<TreeNode> enabledNodes(TreeNode? startingNode) {
+  List<TreeNode> enabledNodes([TreeNode? startingNode]) {
     return subtreeGenerator(startingNode ?? rootNode)
         .where((n) => n.isEnabled)
         .toList(growable: false);
