@@ -43,7 +43,7 @@ class NodeWidget extends StatefulWidget {
   final bool useExpandNodeIcon;
 
   /// List of items to display in a [Row]
-  /// before [ToggleNodeIconButton] inside [ListTile.trailing]
+  /// before [ExpandNodeIcon] inside [ListTile.trailing]
   final List<Widget> trailing;
 
   /// The tile's internal padding. (Doesn't affect lines space)

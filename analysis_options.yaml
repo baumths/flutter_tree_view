@@ -3,4 +3,4 @@ include: package:pedantic/analysis_options.yaml
 linter:
   rules:
     prefer_const_constructors: true
-    public_member_api_docs: false
+    public_member_api_docs: true
