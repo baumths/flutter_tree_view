@@ -1,11 +1,23 @@
 import 'internal.dart';
 
+/// A wrapper around [ListTile].
+///
+/// Most theming properties were moved to [TreeViewTheme].
+///
+/// Includes the indentation of nodes, the addition of Lines (if applicable),
+/// the [ExpandNodeIcon] to the right of the Widget that already
+/// expand/collapse the node and animate itself.
+///
+/// Take a look at the example in the
+/// [online demo](https://mbaumgartenbr.github.io/flutter_tree_view).
 class NodeWidget extends StatefulWidget {
+  /// Creates a [NodeWidget].
   const NodeWidget({
     Key? key,
     required this.node,
-    required this.title,
     required this.theme,
+    required this.title,
+    this.useExpandNodeIcon = true,
     this.trailing = const [],
     this.contentPadding,
     this.horizontalTitleGap = 0,
@@ -15,13 +27,20 @@ class NodeWidget extends StatefulWidget {
     this.onLongPress,
   }) : super(key: key);
 
+  /// The node to be displayed by this widget.
   final TreeNode node;
+
+  /// The theme to be used for this widget.
   final TreeViewTheme theme;
 
   /// The Widget to be used as `title` of [ListTile].
   ///
   /// Usually a [Text] widget.
   final Widget title;
+
+  /// If set to `false`, [ExpandNodeIcon] will be removed
+  /// from the trailing of [ListTile].
+  final bool useExpandNodeIcon;
 
   /// List of items to display in a [Row]
   /// before [ToggleNodeIconButton] inside [ListTile.trailing]
@@ -65,6 +84,18 @@ class NodeWidget extends StatefulWidget {
 }
 
 class _NodeWidgetState extends State<NodeWidget> {
+  late double indentation;
+
+  /// Calculates the indentation of [node] for the current [theme.lineStyle].
+  double calculateIndentation() {
+    var indentation = widget.node.calculateIndentation(widget.theme.indent);
+
+    if (widget.theme.lineStyle == LineStyle.connected) {
+      indentation += widget.theme.indent;
+    }
+    return indentation;
+  }
+
   /// Updates the view.
   void update() => setState(() {});
 
@@ -72,6 +103,13 @@ class _NodeWidgetState extends State<NodeWidget> {
   void initState() {
     super.initState();
     widget.node.addUpdateCallback(update);
+    indentation = calculateIndentation();
+  }
+
+  @override
+  void didUpdateWidget(covariant NodeWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    indentation = calculateIndentation();
   }
 
   @override
@@ -80,20 +118,8 @@ class _NodeWidgetState extends State<NodeWidget> {
     super.dispose();
   }
 
-  /// Calculates the indentation of [node] for the current [theme.lineStyle].
-  double calculateIndentation() {
-    double indentation = widget.node.depth * widget.theme.indent;
-
-    if (widget.theme.lineStyle == LineStyle.connected) {
-      indentation += widget.theme.indent;
-    }
-    return indentation;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final indentation = calculateIndentation();
-
     return ListTile(
       minLeadingWidth: indentation,
       horizontalTitleGap: widget.horizontalTitleGap,
@@ -113,20 +139,21 @@ class _NodeWidgetState extends State<NodeWidget> {
       leading: LinesWidget(
         node: widget.node,
         theme: widget.theme,
-        indentation: indentation,
       ),
     );
   }
 
   Widget? _buildTrailing() {
     if (widget.trailing.isEmpty) {
-      return widget.node.hasChildren ? _expandIcon : null;
+      return widget.useExpandNodeIcon && widget.node.hasChildren
+          ? _expandIcon
+          : null;
     }
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         ...widget.trailing,
-        if (widget.node.hasChildren) _expandIcon,
+        if (widget.node.hasChildren && widget.useExpandNodeIcon) _expandIcon,
       ],
     );
   }
@@ -146,8 +173,6 @@ class LinesWidget extends StatelessWidget {
     Key? key,
     required this.node,
     required this.theme,
-    required this.indentation,
-    this.child,
   }) : super(key: key);
 
   /// The node to draw lines for.
@@ -155,12 +180,6 @@ class LinesWidget extends StatelessWidget {
 
   /// The theme to use while drawing lines.
   final TreeViewTheme theme;
-
-  /// The widget to be displayed to the right of the lines.
-  final Widget? child;
-
-  /// The left padding of [node].
-  final double indentation;
 
   /// Decides on which type of lines to draw for
   /// [node] based on [theme.lineStyle].
@@ -186,9 +205,8 @@ class LinesWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return chooseLines(
       child: SizedBox(
-        width: indentation,
+        width: node.calculateIndentation(theme.indent),
         height: double.infinity,
-        child: child,
       ),
     );
   }

@@ -23,6 +23,7 @@ enum TreeLine {
 /// This class is used to calculate and
 /// draw the lines that compose a single node in the [TreeView] widget.
 class LinesPainter extends CustomPainter {
+  /// Creates a [LinesPainter] using LineStyle.connected.
   LinesPainter.connected({required this.node, required this.theme}) {
     linesToBeDrawn = <TreeLine>[
       ...node.connectedLines,
@@ -31,17 +32,21 @@ class LinesPainter extends CustomPainter {
     ];
   }
 
+  /// Creates a [LinesPainter] using LineStyle.scoped.
   LinesPainter.scoped({required this.node, required this.theme}) {
     linesToBeDrawn = node.scopedLines;
   }
 
+  /// The node to draw lines for.
   final TreeNode node;
 
+  /// The theme to use to draw the lines.
   final TreeViewTheme theme;
 
+  /// The list of lines that will be drawn.
   late final List<TreeLine> linesToBeDrawn;
 
-  int get lineCount => linesToBeDrawn.last == TreeLine.link
+  int get _lineCount => linesToBeDrawn.last == TreeLine.link
       ? linesToBeDrawn.length - 1
       : linesToBeDrawn.length;
 
@@ -57,11 +62,11 @@ class LinesPainter extends CustomPainter {
     for (var index = 0; index < linesToBeDrawn.length; index++) {
       if (linesToBeDrawn[index] == TreeLine.blank) continue;
 
-      final offset = LineOffset(
+      final offset = _LineOffset(
         height: size.height,
         width: theme.indent,
         index: index,
-        lineCount: lineCount,
+        lineCount: _lineCount,
       );
 
       canvas.drawPath(offset.draw(linesToBeDrawn[index]), paint);
@@ -72,8 +77,8 @@ class LinesPainter extends CustomPainter {
   bool shouldRepaint(covariant LinesPainter oldDelegate) => false;
 }
 
-class LineOffset {
-  LineOffset({
+class _LineOffset {
+  _LineOffset({
     required this.height,
     required this.width,
     required this.index,

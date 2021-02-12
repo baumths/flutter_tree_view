@@ -1,8 +1,10 @@
 import 'internal.dart';
 
-// TODO: Missing Documentation
+/// A simple, fancy and highly customizable hierarchy visualization Widget.
 class TreeView extends StatefulWidget {
   /// Creates a [TreeView].
+  ///
+  /// Take a look at [NodeWidget] for your [nodeBuilder].
   const TreeView({
     Key? key,
     required this.nodeBuilder,
@@ -11,7 +13,8 @@ class TreeView extends StatefulWidget {
     this.theme = const TreeViewTheme(),
   }) : super(key: key);
 
-  /// The instance of [TreeController] to expand/collapse nodes.
+  /// The instance of [TreeController] to control nodes from outside of
+  /// the [TreeView] widget subtree.
   final TreeViewController controller;
 
   /// The instance of [TreeViewTheme] that controls the theme of the [TreeView].
@@ -25,6 +28,50 @@ class TreeView extends StatefulWidget {
 
   /// Called, as needed, to build node widgets.
   /// Nodes are only built when they're scrolled into view.
+  ///
+  /// If you are using your own widget, make sure to add the indentation to it
+  /// using [TreeNode.calculateIndentation] with the amount of indent defined
+  /// in [TreeViewTheme.indent] for consistency. Example:
+  ///
+  /// ```dart
+  /// /* Using Padding: */
+  /// @override
+  /// Widget build(BuildContext context) {
+  ///   return Padding(
+  ///     padding: EdgeInsets.only(
+  ///       left: treeNode.calculateIndentation(treeViewTheme.indent),
+  ///     ),
+  ///     child: MyCustomNodeWidget(/* [...] */),
+  ///   );
+  /// }
+  /// /* Using LinesWidget: */
+  /// @override
+  /// Widget build(BuildContext context) {
+  ///   /* This allows the addition of custom Widgets
+  ///      at the beginning of each node, like a custom color or button.*/
+  ///   return Row(
+  ///     children: [
+  ///       LinesWidget(
+  ///         node: treeNode,
+  ///         theme: treeViewTheme,
+  ///       ),
+  ///       /* add some spacing in between */
+  ///       const SizedBox(width: 16),
+  ///
+  ///       /* The content (title, description) */
+  ///       MyCustomNodeWidget(/* [...] */),
+  ///
+  ///       /* A button to expand/collapse nodes */
+  ///       ExpandNodeIcon(
+  ///         node: treeNode,
+  ///         onToggle: () => print(treeNode),
+  ///       ),
+  ///     ],
+  ///   );
+  /// }
+  /// /* You could also use SizedBox/Container to align
+  ///    the nodes to the right and indent from there. */
+  /// ```
   final NodeBuilder nodeBuilder;
 
   @override

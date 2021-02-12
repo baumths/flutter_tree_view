@@ -1,11 +1,41 @@
 import 'internal.dart';
 
-// TODO: Missing Documentation
+/// This class represents one node in the Tree.
+///
+/// * ### Adding children:
+///
+///   Use either `addChild` or `addChildren` to modify the children of this node.
+/// The [children] property is not present in the constructor to make it easy
+/// to set the parent of this node automatically.
+///
+/// * ### Removing children:
+///
+///   Use either `removeChild` or `clearChildren` to remove any child from this
+/// node, both methods set children's parent property to `null`.
+///
+/// * ### Updating the view:
+///
+///   For convenience use `addUpdateCallback` & `removeUpdateCallback` to set
+/// a callback that's called whenever `isSelected` or `isEnabled` state changes.
+///
+///   If you're using [NodeWidget], it automatically adds and removes the
+/// `updateCallback` for you.
+///
+/// * ### Expansion:
+///
+///   __If the node is currently visible__ calling either `expand`, `collapse`
+/// or `toggleExpanded` will trigger a callback to update the [TreeView].
+/// Useful to avoid using [TreeViewController] within the [TreeView] subtree.
 class TreeNode {
   /// Creates a [TreeNode].
+  ///
+  /// Set [id] if you want to dynamically manage this node later.
+  /// The [TreeViewController.find] method can be used to locate any node
+  /// through its id.
+  /// [TreeNode.find] can also be used, but its scope is reduced to its subtree.
   TreeNode({this.id, this.data});
 
-  /// An id to find this node in the Tree.
+  /// An id to easily find this node in the Tree.
   final int? id;
 
   /// Any data you may want to store or pass around.
@@ -44,10 +74,15 @@ class TreeNode {
   }
 
   /// Removes all children from this node,
-  /// and sets the parent of every child of this node to null.
-  void clearChildren() {
+  /// sets the parent of every child of this node to null.
+  ///
+  /// Returns the old children to easily move nodes to another parent.
+  List<TreeNode> clearChildren() {
     _children.forEach((node) => node.parent = null);
+    final _backup = List<TreeNode>.from(_children, growable: false);
+
     _children.clear();
+    return _backup;
   }
 
   // * ~~~~~~~~~~ PARENT RELATED ~~~~~~~~~~ *
@@ -143,6 +178,19 @@ class TreeNode {
   /// Whether or not this node is the last child of its parent.
   bool get hasNextSibling => isRoot ? false : this != parent!.children.last;
 
+  /// Calculates the amount of indentation of this node. `(depth * [indent])`
+  ///
+  /// [indent] => the amount of space added per level (example below).
+  /// ```
+  /// /* given: indent = 20.0
+  /// __________________________________
+  /// |___node___                      | depth = 0, indentation =  0
+  /// |          |___node___           | depth = 1, indentation = 20
+  /// |           <-indent->|___node___| depth = 2, indentation = 40
+  /// | <-------- indentation -------> | */
+  /// ```
+  double calculateIndentation(double indent) => depth * indent;
+
   /// Applies the function [fn] to this and every node in the subtree
   /// that starts at this node in breadth first traversal.
   void visitSubtree(TreeViewCallback fn) {
@@ -167,7 +215,6 @@ class TreeNode {
   /// Make sure to call `removeUpdateCallback` when the widget holding this node
   /// gets disposed, otherwise this node could be calling `setState` on other
   /// widgets and break your [TreeView].
-  VoidCallback? get updateCallback => _updateCallback;
   VoidCallback? _updateCallback;
 
   /// Sets the callback [cb] that gets called when
@@ -217,6 +264,8 @@ extension TreeNodeX on TreeNode {
 
   // * ~~~~~~~~~~ LINES ~~~~~~~~~~ *
 
+  /// A list of [TreeLine] that defines how connected lines will be drawn
+  /// when [TreeViewTheme.lineStyle] is set to [LineStyle.connected].
   List<TreeLine> get connectedLines {
     if (isRoot) return const [];
     if (isMostTopLevel) {
@@ -232,6 +281,8 @@ extension TreeNodeX on TreeNode {
     ];
   }
 
+  /// A list of [TreeLine] that defines how scoped lines will be drawn
+  /// when [TreeViewTheme.lineStyle] is set to [LineStyle.scoped].
   List<TreeLine> get scopedLines {
     return List<TreeLine>.generate(
       depth,

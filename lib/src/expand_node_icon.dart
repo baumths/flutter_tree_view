@@ -1,8 +1,11 @@
 import 'internal.dart';
 
-/// Creates an [ExpandIcon] Widget with node toggling functionality.
+/// An wrapper around [ExpandIcon] with node toggling functionality.
 class ExpandNodeIcon extends StatelessWidget {
-  /// Creates a [ExpandNodeIcon].
+  /// Creates an [ExpandNodeIcon].
+  ///
+  /// _You don't have to expand/collapse the node in [onToggle],
+  /// this widget already does that._
   const ExpandNodeIcon({
     Key? key,
     required this.node,

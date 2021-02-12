@@ -2,25 +2,24 @@ import 'internal.dart';
 
 /// Defines the style of lines.
 enum LineStyle {
-  /// Disable lines, makes the tree less expensive.
+  /// Makes the tree less expensive removing [CustomPainter] completely
+  /// from the widget tree.
   disabled,
 
-  /// Draws the horizontal line that connects to the side of the nodes.
+  /// Draws lines that connects to the side of the nodes.
   connected,
 
   /// Draws straight lines prefixing blocks of child nodes.
   scoped,
 }
 
-/// Class to control how the theme of the [TreeView].
+/// A simple class to control the theming of [TreeView] and [NodeWidget].
 ///
-/// A single line will be drawn at the middle of [indent] with
-/// thickness of [lineThickness] as shown below, play around to find the
-/// combination of values that better fits you.
-/// Make sure `indent >= lineThickness`.
+/// Makes it easy to customize [NodeWidget] and [LinesWidget].
 ///
+/// Example of indent & lineThickness relationship.
 /// ```dart
-///  /*        <- indent ->
+///  /*             <- indent ->
 ///    -------------------------------------
 ///    |                 |                 |
 ///    |                 |                 |
@@ -29,10 +28,14 @@ enum LineStyle {
 ///    |                 |                 |
 ///    -------------------------------------  */
 /// ```
+/// A single line will be drawn at the middle of [indent] with
+/// thickness of [lineThickness] as shown above.
 ///
+/// Play around to find the combination of values that better fits you.
 ///
+/// Make sure `indent >= lineThickness`.
 class TreeViewTheme {
-  /// Constructor for [TreeViewTheme].
+  /// Creates a [TreeViewTheme].
   const TreeViewTheme({
     Color? lineColor,
     this.lineStyle = LineStyle.connected,
@@ -77,19 +80,22 @@ class TreeViewTheme {
   /// its children lines, useful when the parent has margin/padding and the
   /// children lines doesn't connect to the bottom of it.
   ///
-  /// This property only gets applied if [lineStyle] is [LineStyle.connected]
+  /// This property only gets applied if [lineStyle] is either
+  /// [LineStyle.connected] or [LineStyle.scoped].
   ///
   /// Defaults to `true`.
   final bool shouldDrawLinkLine;
 
-  /// Defines the background color of `NodeWidget` when [TreeNode.isSelected] is false.
+  /// Defines the background color of `NodeWidget` when
+  /// [TreeNode.isSelected] is false.
   ///
   /// When the value is null, the `nodeTileColor` is set to
   /// [ListTileTheme.tileColor] if it's not null and to
   /// [Colors.transparent] if it's null.
   final Color? nodeTileColor;
 
-  /// Defines the background color of `NodeWidget` when [TreeNode.isSelected] is true.
+  /// Defines the background color of `NodeWidget` when
+  /// [TreeNode.isSelected] is true.
   ///
   /// When the value is null, the `nodeSelectedTileColor` is set to
   /// [ListTileTheme.selectedTileColor] if it's not null and to
@@ -102,11 +108,12 @@ class TreeViewTheme {
   /// The color for the node's [Material] when it has the input focus.
   final Color? nodeFocusColor;
 
-  /// The shape of the node's [InkWell].
+  /// The shape of [NodeWidget]'s [InkWell].
   ///
-  /// Defines the node's [InkWell.customBorder].
+  /// Defines the [NodeWidget]'s [InkWell.customBorder].
   ///
-  /// If this property is null then [CardTheme.shape] of [ThemeData.cardTheme] is used.
+  /// If this property is null then [CardTheme.shape] of
+  /// [ThemeData.cardTheme] is used.
   /// If that's null then the shape will be a [RoundedRectangleBorder]
   /// with a circular corner radius of 4.0.
   final ShapeBorder? nodeShape;
@@ -140,6 +147,7 @@ class TreeViewTheme {
         nodeShape == other.nodeShape;
   }
 
+  /// Returns a copy of this object with new attributes.
   TreeViewTheme copyWith({
     Color? lineColor,
     LineStyle? lineStyle,
