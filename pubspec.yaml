@@ -7,7 +7,7 @@ homepage: https://mbaumgartenbr.github.io/flutter_tree_view
 repository: https://github.com/mbaumgartenbr/flutter_tree_view
 
 environment:
-  sdk: ">=2.12.0-0 <3.0.0"
+  sdk: ">=2.12.0 <3.0.0"
   flutter: ">=1.17.0"
 
 dependencies:
