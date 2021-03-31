@@ -1,17 +1,109 @@
 import 'internal.dart';
 
-/// Controller for managing the nodes that compose [TreeView].
+/// A simple Controller for managing the nodes that compose [TreeView].
 ///
-/// This controller was extracted from [TreeView] for use cases where you
-/// need to toggle/find a node from outside the [TreeView] Widget subtree.
+/// This class was extracted from [TreeView] for use cases where you
+/// need to toggle/find a node from above of [TreeView] in the widget tree.
 ///
-/// Makes it easy to pass the controller down the widget tree
-/// through dependency injection (like using the Provider package).
-class TreeViewController {
+/// This controller should have at most 1 listener (the [TreeView] itself) that
+/// removes itself when disposed, but you might as well call
+/// `dispose` just to be safe, as this is a [ChangeNotifier] after all.
+class TreeViewController extends TreeViewControllerBase with ChangeNotifier {
   /// Creates a [TreeViewController].
   TreeViewController({
-    required this.rootNode,
-  }) : assert(rootNode.isRoot, "The rootNode's parent must be null.");
+    required TreeNode rootNode,
+  })   : assert(rootNode.isRoot, "The rootNode's parent must be null."),
+        super(rootNode: rootNode);
+
+  /// Cache to avoid searching multiple times for the same node.
+  late final _searchedNodesCache = <String, TreeNode>{};
+
+  /// Starting from [TreeViewController.rootNode], searches the subtree
+  /// looking for a node id that match [id],
+  /// returns `null` if no node was found with the given [id].
+  TreeNode? find(String id) {
+    final cachedNode = _searchedNodesCache[id];
+
+    if (cachedNode != null) {
+      return cachedNode;
+    }
+
+    final searchedNode = rootNode.find(id);
+
+    if (searchedNode != null) {
+      _searchedNodesCache[searchedNode.id] = searchedNode;
+    }
+
+    return searchedNode;
+  }
+
+  // * ~~~~~~~~~~ EXPAND/COLLAPSE METHODS ~~~~~~~~~~ *
+
+  /// Expands [node].
+  ///
+  /// If the ancestors of [node] are collapsed, it will expand them too.
+  @override
+  void expandNode(TreeNode node) {
+    super.expandNode(node);
+    notifyListeners();
+  }
+
+  /// Expands [node] and every descendant node.
+  @override
+  void expandSubtree(TreeNode node) {
+    super.expandSubtree(node);
+    notifyListeners();
+  }
+
+  /// Expands every node within the path from root to [node].
+  ///
+  /// _Does not expand [node]._
+  @override
+  void expandUntil(TreeNode node) {
+    super.expandUntil(node);
+    notifyListeners();
+  }
+
+  /// Collapses [node] and it's subtree.
+  @override
+  void collapseNode(TreeNode node) {
+    super.collapseNode(node);
+    notifyListeners();
+  }
+
+  /// Expands every node in the tree.
+  void expandAll() => expandSubtree(rootNode);
+
+  /// Collapses all nodes.
+  /// Only the children of [TreeViewController.rootNode] will be visible.
+  void collapseAll() {
+    rootNode.children.forEach(super.collapseNode);
+    notifyListeners();
+  }
+
+  /// Toggles the expansion of [node] to the opposite state.
+  @override
+  void toggleExpanded(TreeNode node) {
+    super.toggleExpanded(node);
+    notifyListeners();
+  }
+}
+
+/// Base implementation of [TreeViewController].
+///
+/// This class is used to make state changes without notifying listeners.
+/// (improves performance™ when working with a large set of nodes).
+///
+/// Also enables testing of individual methods.
+class TreeViewControllerBase {
+  /// Creates a [TreeViewControllerBase] and populates the initial nodes.
+  TreeViewControllerBase({required this.rootNode}) {
+    _visibleNodes.addAll(rootNode.children);
+
+    _expandedNodes[rootNode.id] = true;
+  }
+
+  final _expandedNodes = <String, bool>{};
 
   /// The [TreeNode] that will store all top level nodes.
   ///
@@ -19,173 +111,75 @@ class TreeViewController {
   /// it is only used to index/find nodes easily.
   final TreeNode rootNode;
 
-  // * ~~~~~~~~~~ MANAGE NODES ~~~~~~~~~~ *
-
-  /// The list of nodes that are currently visible in the [TreeView].
+  /// The list of [TreeNode]s that are currently visible in the [TreeView].
   List<TreeNode> get visibleNodes => _visibleNodes;
-  late final List<TreeNode> _visibleNodes;
+  final _visibleNodes = <TreeNode>[];
+
+  // * ~~~~~~~~~~ HELPER METHODS ~~~~~~~~~~ *
+
+  /// Verifies if the [TreeNode] with [id] is expanded.
+  bool isExpanded(String id) => _expandedNodes[id] ?? false;
 
   /// Returns the node at [index] of [visibleNodes].
   TreeNode nodeAt(int index) => _visibleNodes[index];
 
   int _indexOf(TreeNode node) => _visibleNodes.indexOf(node);
 
-  void _insert(int index, TreeNode node) {
-    _visibleNodes.insert(index, node);
-    _expandCallback?.call(index);
-  }
-
-  void _insertAll(int index, List<TreeNode> nodes) {
-    // The list must be reversed for the order to not get messed up
-    nodes.reversed
-        .where((node) => !_visibleNodes.contains(node))
-        .forEach((node) => _insert(index, node));
-  }
-
-  void _removeAt(int index) {
-    final removedNode = _visibleNodes.removeAt(index)
-      ..removeExpansionCallback();
-
-    _collapseCallback?.call(index, removedNode);
-  }
-
-  void _removeAll(List<TreeNode> nodes) {
-    nodes
-        .where(_visibleNodes.contains)
-        .forEach((node) => _removeAt(_indexOf(node)));
-  }
-
-  // * ~~~~~~~~~~ EVENT RELATED ~~~~~~~~~~ *
-
-  /// Used to notify the [TreeView] which index to animate when expanding.
-  NodeExpandedCallback? _expandCallback;
-
-  /// Used to notify the [TreeView] which index to animate when collapsing.
-  NodeCollapsedCallback? _collapseCallback;
-
-  // * ~~~~~~~~~~ EXPAND METHODS ~~~~~~~~~~ *
-
-  /// Expands a single node.
+  /// Expands [node] if it is not expanded.
   ///
-  /// If the ancestors of this node are collapsed, it will expand them too.
+  /// If the path from root to [node] has collapsed nodes, it will expand them too.
+  @mustCallSuper
   void expandNode(TreeNode node) {
-    if (node.isRoot || node.isExpanded) return;
+    if (node.isRoot || isExpanded(node.id)) return;
 
     // Expand all ancestors of [node] if its parent is not expanded.
-    if (!node.parent!.isExpanded) expandUntil(node);
+    if (!isExpanded(node.parent!.id)) expandUntil(node);
 
     if (node.hasChildren) {
-      node.pExpand(); // Use private expand to avoid re-expanding.
-      _insertAll(_indexOf(node) + 1, node.children);
+      _expandedNodes[node.id] = true;
+
+      // The list must be reversed for the order to not get messed up
+      node.children.reversed
+          .where((child) => !_visibleNodes.contains(child))
+          .forEach(
+            (child) => _visibleNodes.insert(_indexOf(node) + 1, child),
+          );
     }
   }
 
-  /// Expands every node within the path from root to [node.parent].
-  ///
-  /// _Does not expand [node]._
-  void expandUntil(TreeNode node) => node.ancestors.forEach(expandNode);
+  /// Collapses [node] and every descendant in its subtree.
+  @mustCallSuper
+  void collapseNode(TreeNode node) {
+    if (node.isLeaf || !isExpanded(node.id)) return;
 
-  /// Expands [node] and every descendant node.
+    if (!node.isRoot) {
+      _expandedNodes.remove(node.id);
+    }
+
+    reversedSubtreeGenerator(node).where((descendant) {
+      return descendant.isRemovable && _visibleNodes.contains(descendant);
+    }).forEach((descendant) {
+      _expandedNodes.remove(descendant.id);
+      _visibleNodes.remove(descendant);
+    });
+  }
+
+  /// Toggles the state of [node] to its opposite.
+  @mustCallSuper
+  void toggleExpanded(TreeNode node) {
+    isExpanded(node.id) ? collapseNode(node) : expandNode(node);
+  }
+
+  /// Expands every descendant of [node].
+  @mustCallSuper
   void expandSubtree(TreeNode node) {
     expandNode(node);
     node.children.forEach(expandSubtree);
   }
 
-  /// Expands every node in the tree.
-  void expandAll() => expandSubtree(rootNode);
-
-  // * ~~~~~~~~~~ COLLAPSE METHODS ~~~~~~~~~~ *
-
-  /// Collapses [node] and its subtree.
-  void collapseNode(TreeNode node) {
-    if (node.isLeaf || !node.isExpanded) return;
-    node.pCollapse(); // Use private collapse to avoid re-collapsing.
-    _removeAll(removableDescendantsOf(node));
-  }
-
-  /// Collapses all nodes.
-  /// Only the children of [TreeViewController.rootNode] will be visible.
-  void collapseAll() => collapseNode(rootNode);
-
-  // * ~~~~~~~~~~ HELPER METHODS ~~~~~~~~~~ *
-
-  /// Starting from [TreeViewController.rootNode], searches the subtree
-  /// looking for a node id that match [id],
-  /// returns `null` if no node was found with the given [id].
-  TreeNode? find(int id) => rootNode.find(id);
-
-  /// Changes the `isSelected` property of [node] and its subtree
-  /// to [state] (defaults to `true`).
-  ///
-  /// If [node] is null, starts from [TreeViewController.rootNode].
-  void selectSubtree([TreeNode? node, bool state = true]) {
-    node?.toggleSelected(state);
-    subtreeGenerator(node ?? rootNode).forEach((n) => n.toggleSelected(state));
-  }
-
-  /// Changes the `isEnabled` property of [node] and its subtree
-  /// to [state] (defaults to `true`).
-  ///
-  /// If [node] is null, starts from [TreeViewController.rootNode].
-  void enableSubtree([TreeNode? node, bool state = true]) {
-    node?.toggleEnabled(state);
-    subtreeGenerator(node ?? rootNode).forEach((n) => n.toggleEnabled(state));
-  }
-
-  /// Returns a list of every selected node in the subtree of [startingNode].
-  ///
-  /// If [startingNode] is null, starts from [TreeViewController.rootNode].
-  List<TreeNode> selectedNodes([TreeNode? startingNode]) {
-    return subtreeGenerator(startingNode ?? rootNode)
-        .where((n) => n.isSelected)
-        .toList(growable: false);
-  }
-
-  /// Returns a list of every enabled node in the subtree of [startingNode].
-  ///
-  /// If [startingNode] is null, starts from [TreeViewController.rootNode].
-  List<TreeNode> enabledNodes([TreeNode? startingNode]) {
-    return subtreeGenerator(startingNode ?? rootNode)
-        .where((n) => n.isEnabled)
-        .toList(growable: false);
-  }
-
-  // * ~~~~~~~~~~ OTHER METHODS ~~~~~~~~~~ *
-
-  /// Returns a list with every node in the subtree of [node]
-  /// that is removable (`depth > 0`), in post order. *(e.g. 3, 2, 1)*
-  List<TreeNode> removableDescendantsOf(TreeNode node) {
-    return reversedSubtreeGenerator(node)
-        .where((node) => node.isRemovable)
-        .toList(growable: false);
-  }
-}
-
-/// Extension to hide internal functionality.
-extension TreeViewControllerX on TreeViewController {
-  /// Sets _visibleNodes to [TreeViewController.rootNode.`children`].
-  void populateInitialNodes() {
-    _visibleNodes = List<TreeNode>.from(rootNode.children);
-  }
-
-  /// Callback for expanding/collapsing nodes from its methods.
-  void toggleNode(TreeNode node) {
-    if (node.isExpanded) {
-      _insertAll(_indexOf(node) + 1, node.children);
-    } else {
-      _removeAll(removableDescendantsOf(node));
-    }
-  }
-
-  /// Sets the callback of `_expandCallback`.
-  void addExpandCallback(NodeExpandedCallback cb) => _expandCallback = cb;
-
-  /// Sets the callback of `_collapseCallback`.
-  void addCollapseCallback(NodeCollapsedCallback cb) => _collapseCallback = cb;
-
-  /// Sets both `_expandCallback` and `_collapseCallback` to `null`.
-  void removeCallbacks() {
-    _expandCallback = null;
-    _collapseCallback = null;
+  /// Expands every ascendant of [node], but not [node] itself.
+  @mustCallSuper
+  void expandUntil(TreeNode node) {
+    node.ancestors.forEach(expandNode);
   }
 }
