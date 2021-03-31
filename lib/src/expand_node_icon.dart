@@ -3,25 +3,14 @@ import 'internal.dart';
 /// An wrapper around [ExpandIcon] with node toggling functionality.
 class ExpandNodeIcon extends StatelessWidget {
   /// Creates an [ExpandNodeIcon].
-  ///
-  /// _You don't have to expand/collapse the node in [onToggle],
-  /// this widget already does that._
   const ExpandNodeIcon({
     Key? key,
-    required this.node,
-    required this.onToggle,
     this.size = 24.0,
     this.padding = const EdgeInsets.all(8.0),
     this.color,
     this.disabledColor,
     this.expandedColor,
   }) : super(key: key);
-
-  /// The node that this widget will toggle.
-  final TreeNode node;
-
-  /// Callback executed after [node] is toggled.
-  final VoidCallback? onToggle;
 
   /// The size of the icon.
   ///
@@ -74,19 +63,18 @@ class ExpandNodeIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scopedTreeNode = ScopedTreeNode.of(context);
+
     return ExpandIcon(
       size: size,
       color: color,
-      padding: padding,
       disabledColor: disabledColor,
       expandedColor: expandedColor,
-      isExpanded: node.isExpanded,
-      onPressed: node.isEnabled
-          ? (_) {
-              node.toggleExpanded();
-              onToggle?.call();
-            }
-          : null,
+      padding: padding,
+      isExpanded: scopedTreeNode.isExpanded,
+      onPressed: scopedTreeNode.node.isLeaf
+          ? null
+          : (_) => scopedTreeNode.toggleExpanded(context),
     );
   }
 }
