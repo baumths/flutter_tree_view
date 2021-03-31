@@ -8,15 +8,15 @@ void main() {
   late TreeNode node2;
 
   setUp(() {
-    root = TreeNode(data: 'Root');
-    node1 = TreeNode(id: 1, data: '1');
-    node2 = TreeNode(id: 2, data: '2');
+    root = TreeNode(id: '-1');
+    node1 = TreeNode(id: '1');
+    node2 = TreeNode(id: '2');
   });
 
   group('Tests for children -', () {
     test(
       'Should add node1 to root.children '
-      'when addChild is called with node1 on root.',
+      'When addChild is called with node1 on root.',
       () {
         expect(root.children, isEmpty);
 
@@ -30,7 +30,7 @@ void main() {
 
     test(
       'Should set root as parent of node1 '
-      'when addChild is called with node1 on root.',
+      'When addChild is called with node1 on root.',
       () {
         expect(node1.parent, isNull);
 
@@ -43,7 +43,7 @@ void main() {
 
     test(
       'Should add node1 and node2 to root.children '
-      'when addChildren is called with [node1, node2] on root.',
+      'When addChildren is called with [node1, node2] on root.',
       () {
         expect(root.children, isEmpty);
 
@@ -57,7 +57,7 @@ void main() {
 
     test(
       'Should set root as parent of node1 and node2 '
-      'when addChildren is called with [node1, node2] on root.',
+      'When addChildren is called with [node1, node2] on root.',
       () {
         expect(node1.parent, isNull);
         expect(node2.parent, isNull);
@@ -74,7 +74,7 @@ void main() {
 
     test(
       'Should change the parent of node1 and remove it from its parent children '
-      'when it is added to another node.',
+      'When it is added to another node.',
       () {
         expect(node1.parent, isNull);
 
@@ -92,7 +92,7 @@ void main() {
 
     test(
       'Should remove node1 from root.children and set its parent to null '
-      'when removeChild is called on root with node1.',
+      'When removeChild is called on root with node1.',
       () {
         root.addChild(node1);
 
@@ -105,7 +105,7 @@ void main() {
 
     test(
       'Should NOT add node1 to the children of node2'
-      'when node1 is parent of node2 and node2.addChild is called with node1.',
+      'When node1 is parent of node2 and node2.addChild is called with node1.',
       () {
         node1.addChild(node2);
         expect(node2.children, isEmpty);
@@ -129,7 +129,7 @@ void main() {
 
       test(
         'Should return null for root and root for node1 and node2 '
-        'when parent getter is called.',
+        'When parent getter is called.',
         () {
           expect(root.parent, isNull);
 
@@ -149,7 +149,7 @@ void main() {
         ancestorsOfNode2 = [root, node1];
       });
       test(
-        'Should return ancestorsOfNode2 when node2.ancestors is called.',
+        'Should return ancestorsOfNode2 When node2.ancestors is called.',
         () {
           expect(node2.ancestors, equals(ancestorsOfNode2));
         },
@@ -164,21 +164,21 @@ void main() {
     });
 
     test(
-      'Should return -1 when called on root.',
+      'Should return -1 When called on root.',
       () {
         expect(root.depth, equals(-1));
       },
     );
 
     test(
-      'Should return 0 when called on node1.',
+      'Should return 0 When called on node1.',
       () {
         expect(node1.depth, equals(0));
       },
     );
 
     test(
-      'Should return 1 when called on node2.',
+      'Should return 1 When called on node2.',
       () {
         expect(node2.depth, equals(1));
       },
@@ -186,53 +186,66 @@ void main() {
   });
 
   group('Tests for methods -', () {
-    group('visitSubtree -', () {
+    group('delete -', () {
+      late TreeNode grandChildNode1;
+      late TreeNode grandChildNode2;
+
       setUp(() {
-        root.addChild(node1);
-        node1.addChild(node2);
+        grandChildNode1 = TreeNode(id: '1-1', data: '1-1');
+        grandChildNode2 = TreeNode(id: '1-2', data: '1-2');
+
+        root.addChildren([node1, node2]);
+        node1.addChildren([grandChildNode1, grandChildNode2]);
       });
 
       test(
-        'Should set isSelected of root, node1 & node2 to true '
-        'when called on root node.',
+        'Should move the children of node1 to the children of root '
+        'When delete is called on node1.',
         () {
-          expect(root.isSelected, isFalse);
-          expect(node1.isSelected, isFalse);
-          expect(node2.isSelected, isFalse);
+          expect(node1.children, equals([grandChildNode1, grandChildNode2]));
+          expect(grandChildNode1.parent, equals(node1));
+          expect(grandChildNode2.parent, equals(node1));
+          expect(root.children, equals([node1, node2]));
 
-          root.visitSubtree((node) => node.select());
+          node1.delete();
 
-          expect(root.isSelected, isTrue);
-          expect(node1.isSelected, isTrue);
-          expect(node2.isSelected, isTrue);
+          expect(node1.parent, isNull);
+          expect(node1.children, isEmpty);
+          expect(
+            root.children,
+            equals([node2, grandChildNode1, grandChildNode2]),
+          );
+          expect(grandChildNode1.parent, equals(root));
+          expect(grandChildNode2.parent, equals(root));
         },
       );
     });
+
     group('find -', () {
       test(
-        'Should return null when called on root with id = 3.',
+        'Should return null When called on root with id = 3.',
         () {
           root.addChildren([node1, node2]);
-          expect(root.find(3), isNull);
+          expect(root.find('3'), isNull);
         },
       );
       test(
         'Should return node1, node2 '
-        'when called on root with id = 1, id = 2 respectively.',
+        'When called on root with id = 1, id = 2 respectively.',
         () {
           root.addChildren([node1, node2]);
-          expect(root.find(1), equals(node1));
-          expect(root.find(2), equals(node2));
+          expect(root.find('1'), equals(node1));
+          expect(root.find('2'), equals(node2));
         },
       );
       test(
         'Should return node2 '
-        'when called with id = 2 on either root or node1.',
+        'When called with id = 2 on either root or node1.',
         () {
           root.addChild(node1);
           node1.addChild(node2);
-          expect(root.find(2), equals(node2));
-          expect(node1.find(2), equals(node2));
+          expect(root.find('2'), equals(node2));
+          expect(node1.find('2'), equals(node2));
         },
       );
     });
