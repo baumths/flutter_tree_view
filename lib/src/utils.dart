@@ -1,25 +1,5 @@
 import 'internal.dart';
 
-// * ~~~~~~~~~~ TYPE DEFS ~~~~~~~~~~ *
-
-/// Callback for interacting with nodes.
-typedef TreeViewCallback = void Function(TreeNode node);
-
-/// Callback for notifying [TreeView] when a node is expanded.
-typedef NodeExpandedCallback = void Function(int index);
-
-/// Callback for notifying [TreeView] when a node is collapsed.
-typedef NodeCollapsedCallback = void Function(int index, TreeNode node);
-
-/// Callback used to animate the removal of nodes.
-typedef RemoveNodeBuilder = Widget Function(
-  TreeNode node,
-  Animation<double> animation,
-);
-
-/// Callback to build a widget for [TreeNode].
-typedef NodeBuilder = Widget Function(BuildContext context, TreeNode node);
-
 // * ~~~~~~~~~~ HELPER FUNCTIONS ~~~~~~~~~~ *
 
 /// Yields every descendant in the subtree of [node]. In Breadth first traversal.
@@ -49,7 +29,7 @@ Iterable<TreeNode> reversedSubtreeGenerator(TreeNode node) sync* {
 
 /// Returns a List containing the path from [node] to the root node.
 ///
-/// Includes root [0] and `node [last]`. [root, child, grandChild, ..., `node`]
+/// Includes root [first] and `node [last]`. [root, child, grandChild, ..., `node`]
 Iterable<TreeNode> findPathFromRoot(TreeNode node) sync* {
   if (node.parent != null) yield* findPathFromRoot(node.parent!);
   yield node;
