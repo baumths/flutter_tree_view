@@ -1,3 +1,7 @@
+import 'dart:collection';
+
+import 'package:flutter/foundation.dart';
+
 import 'internal.dart';
 
 /// This class represents one node in the Tree.
@@ -12,40 +16,34 @@ import 'internal.dart';
 ///
 ///   Use either `removeChild` or `clearChildren` to remove any child from this
 /// node, both methods set children's parent property to `null`.
-///
-/// * ### Updating the view:
-///
-///   For convenience use `addUpdateCallback` & `removeUpdateCallback` to set
-/// a callback that's called whenever `isSelected` or `isEnabled` state changes.
-///
-///   If you're using [NodeWidget], it automatically adds and removes the
-/// `updateCallback` for you.
-///
-/// * ### Expansion:
-///
-///   __If the node is currently visible__ calling either `expand`, `collapse`
-/// or `toggleExpanded` will trigger a callback to update the [TreeView].
-/// Useful to avoid using [TreeViewController] within the [TreeView] subtree.
 class TreeNode {
   /// Creates a [TreeNode].
   ///
-  /// Set [id] if you want to dynamically manage this node later.
+  /// Use [id] to dynamically manage this node later.
   /// The [TreeViewController.find] method can be used to locate any node
   /// through its id.
   /// [TreeNode.find] can also be used, but its scope is reduced to its subtree.
-  TreeNode({this.id, this.data});
+  TreeNode({required this.id, this.label = '', this.data});
 
   /// An id to easily find this node in the Tree.
-  final int? id;
+  final String id;
+
+  /// The label (name, title, ...) of this node.
+  ///
+  /// This will be used in [NodeWidget] if [NodeWidget.content] is null.
+  final String label;
 
   /// Any data you may want to store or pass around.
-  final dynamic data;
+  final Object? data;
 
   // * ~~~~~~~~~~ CHILDREN RELATED ~~~~~~~~~~ *
 
-  /// The list of child nodes.
-  List<TreeNode> get children => _children;
   final List<TreeNode> _children = [];
+
+  /// The list of child nodes.
+  UnmodifiableListView<TreeNode> get children {
+    return UnmodifiableListView(_children);
+  }
 
   /// Whether this node has children or not.
   bool get hasChildren => _children.isNotEmpty;
@@ -53,12 +51,20 @@ class TreeNode {
   /// Convenience operator to get the [index]th child.
   TreeNode operator [](int index) => _children[index];
 
-  /// Adds a single child to this node.
+  /// Returns an [Iterable] of every [TreeNode] under this.
+  Iterable<TreeNode> get descendants => subtreeGenerator(this);
+
+  /// Adds a single child to this node and sets its [parent] property to `this`.
   void addChild(TreeNode child) {
-    // A node can't be child of its children neither parent of itself.
-    if (child == parent || child == this) return;
+    assert(
+      child != parent && child != this,
+      "A node can't be neither child of its children nor parent of itself.",
+    );
+
     // Avoid duplicating nodes.
-    if (child.parent != null) child.parent!.removeChild(child);
+    if (child.parent != null) {
+      child.parent!.removeChild(child);
+    }
 
     child.parent = this;
     _children.add(child);
@@ -70,7 +76,38 @@ class TreeNode {
   /// Removes a single child from this node and set its parent to `null`.
   void removeChild(TreeNode child) {
     final wasRemoved = _children.remove(child);
-    if (wasRemoved) child.parent = null;
+
+    if (wasRemoved) {
+      child.parent = null;
+    }
+  }
+
+  /// This method removes this node from the tree.
+  ///
+  /// Moves every child in [this.children] to [this.parent.children] and
+  /// removes [this] from [this.parent.children].
+  ///
+  /// Example:
+  /// ```
+  /// /*
+  /// rootNode
+  ///   |-- childNode1
+  ///   │     |-- grandChildNode1
+  ///   │     '-- grandChildNode2
+  ///   '-- childNode2
+  ///
+  /// childNode1.delete() is called, the tree becomes:
+  ///
+  /// rootNode
+  ///   |-- childNode2
+  ///   |-- grandChildNode1
+  ///   '-- grandChildNode2
+  /// */
+  /// ```
+  /// If [parent] is null, this method has no effects.
+  void delete() {
+    parent?.addChildren([..._children]);
+    parent?.removeChild(this);
   }
 
   /// Removes all children from this node,
@@ -104,63 +141,6 @@ class TreeNode {
         .toList(growable: false);
   }
 
-  // * ~~~~~~~~~~ EXPANSION RELATED ~~~~~~~~~~ *
-
-  /// Whether or not this node is expanded.
-  bool get isExpanded => isRoot ? true : _isExpanded;
-  bool _isExpanded = false;
-
-  /// Sets `isExpanded` to `true`.
-  void expand() {
-    pExpand();
-    _expansionCallback?.call(this);
-  }
-
-  /// Sets `isExpanded` of this node and every node under it to `false`.
-  void collapse() {
-    pCollapse();
-    _expansionCallback?.call(this);
-  }
-
-  /// Toggles `isExpanded` to the opposite state.
-  void toggleExpanded() => isExpanded ? collapse() : expand();
-
-  // * ~~~~~~~~~~ SELECTION RELATED ~~~~~~~~~~ *
-
-  /// Whether or not this node is selected.
-  bool get isSelected => _isSelected;
-  bool _isSelected = false;
-
-  /// Sets `isSelected` to `true`.
-  void select() => toggleSelected(true);
-
-  /// Sets `isSelected` to `false`.
-  void deselect() => toggleSelected(false);
-
-  /// Toggles `isSelected` to the opposite state.
-  void toggleSelected([bool? value]) {
-    _isSelected = value ?? !_isSelected;
-    _updateCallback?.call(); // Update the view if not null.
-  }
-
-  // * ~~~~~~~~~~ ENABLE/DISABLE RELATED ~~~~~~~~~~ *
-
-  /// Whether or not this node can be interacted with.
-  bool get isEnabled => _isEnabled;
-  bool _isEnabled = true;
-
-  /// Sets `isEnabled` to `true`.
-  void enable() => toggleEnabled(true);
-
-  /// Sets `isEnabled` to `false`.
-  void disable() => toggleEnabled(false);
-
-  /// Toggles `isEnabled` to opposite state.
-  void toggleEnabled([bool? value]) {
-    _isEnabled = value ?? !_isEnabled;
-    _updateCallback?.call(); // Update the view if not null.
-  }
-
   // * ~~~~~~~~~~ NODE RELATED ~~~~~~~~~~ *
 
   /// The distance between this node and the root node.
@@ -176,11 +156,17 @@ class TreeNode {
   bool get isMostTopLevel => depth == 0;
 
   /// Whether or not this node is the last child of its parent.
+  ///
+  /// If this method throws, the tree was malformed.
   bool get hasNextSibling => isRoot ? false : this != parent!.children.last;
 
   /// Calculates the amount of indentation of this node. `(depth * [indent])`
   ///
   /// [indent] => the amount of space added per level (example below).
+  ///
+  /// [lineStyle] => the current style being applied to lines (leave empty if
+  /// not using lines).
+  ///
   /// ```
   /// /* given: indent = 20.0
   /// __________________________________
@@ -191,48 +177,36 @@ class TreeNode {
   /// ```
   double calculateIndentation(double indent) => depth * indent;
 
-  /// Applies the function [fn] to this and every node in the subtree
-  /// that starts at this node in breadth first traversal.
-  void visitSubtree(TreeViewCallback fn) {
-    fn(this);
-    subtreeGenerator(this).forEach(fn);
-  }
-
   /// Starting from this node, searches the subtree
   /// looking for a node id that match [id],
   /// returns `null` if no node was found with the given [id].
-  TreeNode? find(int id) => nullableSubtreeGenerator(this).firstWhere(
+  TreeNode? find(String id) => nullableSubtreeGenerator(this).firstWhere(
         (descendant) => descendant == null ? false : descendant.id == id,
         orElse: () => null,
       );
 
   // * ~~~~~~~~~~ OTHER ~~~~~~~~~~ *
 
-  /// Callback for when either `isEnabled` or `isSelected` state changes.
-  ///
-  /// Usually used with [StatefulWidget]'s `setState`.
-  ///
-  /// Make sure to call `removeUpdateCallback` when the widget holding this node
-  /// gets disposed, otherwise this node could be calling `setState` on other
-  /// widgets and break your [TreeView].
-  VoidCallback? _updateCallback;
-
-  /// Sets the callback [cb] that gets called when
-  /// `isEnabled` or `isSelected` state changes.
-  void addUpdateCallback(VoidCallback cb) => _updateCallback = cb;
-
-  /// Sets `updateCallback` to null.
-  void removeUpdateCallback() => _updateCallback = null;
+  @override
+  String toString() => 'TreeNode(id: $id, label: $label, data: $data)';
 
   @override
-  String toString() => 'TreeNode(id: $id, data: $data)';
+  bool operator ==(covariant TreeNode other) {
+    if (identical(this, other)) return true;
 
-  // * ~~~~~~~~~~ PRIVATE ~~~~~~~~~~ *
+    return other.id == id &&
+        other.data == data &&
+        other.label == label &&
+        listEquals(other.children, children);
+  }
 
-  /// Callback used to notify [TreeView] when the expansion of this node changes.
-  ///
-  /// This property is null when the [Widget] it belongs to is not rendered.
-  TreeViewCallback? _expansionCallback;
+  @override
+  int get hashCode => hashValues(
+        id.hashCode,
+        data.hashCode,
+        label.hashCode,
+        hashList(children),
+      );
 }
 
 /// Extension to hide internal functionality.
@@ -242,48 +216,42 @@ extension TreeNodeX on TreeNode {
   /// For the view to not be empty, nodes with depth of 0 must not be removed.
   bool get isRemovable => depth > 0;
 
-  /// Package private expand.
+  /// The line used to prefix this [TreeNode].
+  TreeLine get prefixLine {
+    return hasNextSibling ? TreeLine.intersection : TreeLine.connection;
+  }
+
+  /// Checks if parent has sibling after it and chooses the line accordingly.
   ///
-  /// Used to avoid repetitively changing `isExpanded`
-  /// when [TreeViewController.`expandNode`] is called.
-  void pExpand() => _isExpanded = true;
+  /// If parent has a sibling after it, there should be a line connecting it to
+  /// its sibling, otherwise a blank line should be drawn.
+  TreeLine lastParentLineEquivalent(TreeLine line) {
+    return line == TreeLine.intersection ? TreeLine.straight : TreeLine.blank;
+  }
 
-  /// Package private collapse.
-  ///
-  /// Used to avoid repetitively changing `isExpanded`
-  /// when [TreeViewController.`collapseNode`] is called.
-  void pCollapse() => visitSubtree((node) => node._isExpanded = false);
-
-  /// Sets the callback [cb] to notify [TreeView]
-  /// when the expansion of this node changes.
-  void addExpansionCallback(TreeViewCallback cb) => _expansionCallback = cb;
-
-  /// Sets `_expansionCallback` to null meaning that
-  /// this node is no longer in the view.
-  void removeExpansionCallback() => _expansionCallback = null;
-
-  // * ~~~~~~~~~~ LINES ~~~~~~~~~~ *
-
-  /// A list of [TreeLine] that defines how connected lines will be drawn
+  /// A list of [TreeLine]s that defines how connected lines will be drawn
   /// when [TreeViewTheme.lineStyle] is set to [LineStyle.connected].
   List<TreeLine> get connectedLines {
-    if (isRoot) return const [];
-    if (isMostTopLevel) {
-      return [hasNextSibling ? TreeLine.intersection : TreeLine.connection];
-    }
+    if (isRoot || isMostTopLevel) return const [];
+
+    if (depth == 1) return [prefixLine];
+
     final parentLines = parent!.connectedLines;
+
     return [
+      // Copy parent lines, except the last one.
       ...parentLines.sublist(0, parentLines.length - 1),
-      parentLines.last == TreeLine.intersection
-          ? TreeLine.straight
-          : TreeLine.blank,
-      hasNextSibling ? TreeLine.intersection : TreeLine.connection,
+      // Swap the last line of parent to connect or not to siblings.
+      lastParentLineEquivalent(parentLines.last),
+      prefixLine,
     ];
   }
 
   /// A list of [TreeLine] that defines how scoped lines will be drawn
   /// when [TreeViewTheme.lineStyle] is set to [LineStyle.scoped].
   List<TreeLine> get scopedLines {
+    if (isRoot || isMostTopLevel) return const [];
+
     return List<TreeLine>.generate(
       depth,
       (_) => TreeLine.straight,

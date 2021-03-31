@@ -15,14 +15,14 @@ void main() {
   late List<TreeNode> rootSubtree;
 
   setUp(() {
-    rootNode = TreeNode(data: 'Root');
-    node1 = TreeNode(data: '1');
-    node11 = TreeNode(data: '11');
-    node111 = TreeNode(data: '111');
-    node12 = TreeNode(data: '12');
-    node121 = TreeNode(data: '121');
-    node122 = TreeNode(data: '122');
-    node2 = TreeNode(data: '2');
+    rootNode = TreeNode(id: '-1');
+    node1 = TreeNode(id: '1');
+    node11 = TreeNode(id: '11');
+    node111 = TreeNode(id: '111');
+    node12 = TreeNode(id: '12');
+    node121 = TreeNode(id: '121');
+    node122 = TreeNode(id: '122');
+    node2 = TreeNode(id: '2');
 
     node11.addChild(node111);
     node12.addChildren([node121, node122]);
@@ -44,7 +44,7 @@ void main() {
     });
     test(
       'Should return a list of length 7 that match rootSubtree '
-      'when called with rootNode.',
+      'When called with rootNode.',
       () {
         final result = subtreeGenerator(rootNode);
         expect(result, hasLength(7));
@@ -54,7 +54,7 @@ void main() {
 
     test(
       'Should return a list of length 5 that match node1Subtree '
-      'when called with node1.',
+      'When called with node1.',
       () {
         final result = subtreeGenerator(node1);
         expect(result, hasLength(5));
@@ -64,7 +64,7 @@ void main() {
 
     test(
       'Should return a list of length 1 that match node11Subtree '
-      'when called with node11.',
+      'When called with node11.',
       () {
         final result = subtreeGenerator(node11);
         expect(result, hasLength(1));
@@ -74,7 +74,7 @@ void main() {
 
     test(
       'Should return a list of length 2 that match node12Subtree '
-      'when called with node12.',
+      'When called with node12.',
       () {
         final result = subtreeGenerator(node12);
         expect(result, hasLength(2));
@@ -84,7 +84,7 @@ void main() {
 
     test(
       'Should return an empty list each '
-      'when called with: node111, node121, node122, node2.',
+      'When called with: node111, node121, node122, node2.',
       () {
         expect(subtreeGenerator(node111), isEmpty);
 
@@ -105,7 +105,7 @@ void main() {
 
     test(
       'Should return reversedRootSubtree '
-      'when called with rootNode',
+      'When called with rootNode',
       () {
         expect(reversedSubtreeGenerator(rootNode), equals(reversedRootSubtree));
       },
@@ -121,7 +121,7 @@ void main() {
     });
 
     test(
-      'Should return ancestorsOfNode111 when called on node111',
+      'Should return ancestorsOfNode111 When called on node111',
       () {
         final result = findPathFromRoot(node111).toList(growable: false);
         expect(result, equals(ancestorsOfNode111));
@@ -129,7 +129,7 @@ void main() {
     );
 
     test(
-      'Should return ancestorsOfNode122 when called on node122',
+      'Should return ancestorsOfNode122 When called on node122',
       () {
         final result = findPathFromRoot(node122).toList(growable: false);
         expect(result, equals(ancestorsOfNode122));

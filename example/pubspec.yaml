@@ -1,5 +1,5 @@
 name: example
-description: A new Flutter project.
+description: An example for the flutter_fancy_tree_view package.
 publish_to: 'none'
 version: 1.0.0
 
@@ -13,11 +13,13 @@ dependencies:
   flutter_fancy_tree_view:
     path: ../
 
+  flutter_speed_dial: ^3.0.5
+
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  pedantic: 1.10.0-nullsafety.3
+  pedantic: ^1.11.0
 
 flutter:
   uses-material-design: true

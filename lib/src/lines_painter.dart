@@ -5,17 +5,14 @@ enum TreeLine {
   /// No line should be drawn, (used to align adjacent lines)
   blank,
 
-  /// 'T' intersection (used when the node has next sibling)
-  intersection,
-
   /// 'L' connection (used for the last child of a node)
   connection,
 
+  /// 'T' intersection (used when the node has next sibling)
+  intersection,
+
   /// '|' from top to bottom (used to connect nodes)
   straight,
-
-  /// '|' from center to bottom (used to connect parent and children lines)
-  link,
 }
 
 // TODO: Implement curved corners for [TreeLine].`connection`
@@ -23,32 +20,14 @@ enum TreeLine {
 /// This class is used to calculate and
 /// draw the lines that compose a single node in the [TreeView] widget.
 class LinesPainter extends CustomPainter {
-  /// Creates a [LinesPainter] using LineStyle.connected.
-  LinesPainter.connected({required this.node, required this.theme}) {
-    linesToBeDrawn = <TreeLine>[
-      ...node.connectedLines,
-      if (theme.shouldDrawLinkLine && node.hasChildren && node.isExpanded)
-        TreeLine.link,
-    ];
-  }
-
-  /// Creates a [LinesPainter] using LineStyle.scoped.
-  LinesPainter.scoped({required this.node, required this.theme}) {
-    linesToBeDrawn = node.scopedLines;
-  }
-
-  /// The node to draw lines for.
-  final TreeNode node;
+  /// Creates a [LinesPainter].
+  LinesPainter({required this.theme, required this.linesToBeDrawn});
 
   /// The theme to use to draw the lines.
   final TreeViewTheme theme;
 
   /// The list of lines that will be drawn.
   late final List<TreeLine> linesToBeDrawn;
-
-  int get _lineCount => linesToBeDrawn.last == TreeLine.link
-      ? linesToBeDrawn.length - 1
-      : linesToBeDrawn.length;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -66,7 +45,7 @@ class LinesPainter extends CustomPainter {
         height: size.height,
         width: theme.indent,
         index: index,
-        lineCount: _lineCount,
+        lineCount: linesToBeDrawn.length,
       );
 
       canvas.drawPath(offset.draw(linesToBeDrawn[index]), paint);
@@ -74,7 +53,9 @@ class LinesPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant LinesPainter oldDelegate) => false;
+  bool shouldRepaint(covariant LinesPainter oldDelegate) {
+    return oldDelegate.theme != theme;
+  }
 }
 
 class _LineOffset {
@@ -99,14 +80,11 @@ class _LineOffset {
 
   Path draw(TreeLine line) {
     switch (line) {
-      case TreeLine.straight:
-        return _drawStraight();
-
       case TreeLine.intersection:
         return _drawIntersection();
 
-      case TreeLine.link:
-        return _drawLink();
+      case TreeLine.straight:
+        return _drawStraight();
 
       case TreeLine.connection:
       default:
@@ -128,8 +106,4 @@ class _LineOffset {
     ..lineTo(centerX, height)
     ..moveTo(centerX, centerY)
     ..lineTo(xEnd, centerY);
-
-  Path _drawLink() => Path()
-    ..moveTo(centerX, centerY)
-    ..lineTo(centerX, height);
 }

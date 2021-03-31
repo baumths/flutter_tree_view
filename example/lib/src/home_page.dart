@@ -1,152 +1,169 @@
 import 'package:flutter/material.dart';
 
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
-
-import 'map_hierarchical_data.dart';
-import 'sample_data.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
 part 'home_utils.dart';
 
+const kDarkBlue = Color(0xFF1565C0);
+
 class HomePage extends StatefulWidget {
-  HomePage({Key? key}) : super(key: key);
+  const HomePage({Key? key, required this.treeController}) : super(key: key);
+
+  final TreeViewController treeController;
 
   @override
   _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  late final TreeViewController treeController;
-  TreeViewTheme treeTheme = TreeViewTheme(
-    nodeSelectedTileColor: Colors.grey.shade300,
+  late TreeViewController treeController;
+
+  late var treeTheme = const TreeViewTheme();
+
+  late Widget _nodeIcon = const NodeWidgetLeadingIcon();
+
+  late final _altController = TreeViewController(
+    rootNode: TreeNode(id: 'ALT 🌲️ ROOT')
+      ..addChildren(
+        [
+          TreeNode(id: 'A', label: 'A')
+            ..addChild(
+              TreeNode(id: 'A 1', label: 'A 1'),
+            ),
+          TreeNode(id: 'B', label: 'B'),
+          TreeNode(id: 'C', label: 'C')
+            ..addChildren(
+              [
+                TreeNode(id: 'C1', label: 'C 1'),
+                TreeNode(id: 'C2', label: 'C 2')
+                  ..addChild(
+                    TreeNode(id: 'C21', label: 'C 2 1'),
+                  ),
+                for (var index = 3; index < 11; index++)
+                  TreeNode(id: 'C$index', label: 'C $index')
+              ],
+            ),
+        ],
+      ),
   );
 
   @override
   void initState() {
-    final rootNode = generateTreeNodes(sampleData);
-    treeController = TreeViewController(rootNode: rootNode);
     super.initState();
+    treeController = widget.treeController;
   }
 
   @override
   void dispose() {
+    _altController.dispose();
     super.dispose();
   }
 
-  // TODO: Make a better example UI.
-
   @override
   Widget build(BuildContext context) {
-    const iconColor = Colors.blue;
     return Scaffold(
       body: Center(
-        child: SizedBox(
-          width: 600,
-          child: TreeView(
-            controller: treeController,
-            theme: treeTheme,
-            nodeBuilder: (_, node) {
-              return NodeWidget(
-                node: node,
-                theme: treeTheme,
-                title: Row(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 2, right: 8),
-                      child: node.hasChildren
-                          ? const Icon(Icons.folder, color: iconColor)
-                          : const Icon(Icons.article, color: iconColor),
-                    ),
-                    Flexible(child: Text(node.data as String)),
-                  ],
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: 600,
+            child: TreeView(
+              controller: treeController,
+              theme: treeTheme,
+              nodeHeight: 40.0,
+              nodeBuilder: (_, treeNode) => NodeWidget(
+                leading: _nodeIcon,
+                onTap: () => showSnackBar(
+                  context,
+                  treeNode.toString(),
+                  duration: const Duration(seconds: 3),
                 ),
-                onTap: () => showSnackBar(context, 'Node Tapped: ${node.data}'),
-                onLongPress: () => setState(node.disable),
-                trailing: [
-                  IconButton(
-                    icon: Icon(
-                      Icons.star,
-                      color: node.isSelected ? iconColor : Colors.grey,
-                    ),
-                    tooltip: node.isSelected ? 'Deselect' : 'Select',
-                    color:
-                        node.isSelected ? Theme.of(context).accentColor : null,
-                    onPressed: node.isEnabled
-                        ? () => setState(node.toggleSelected)
-                        : null,
-                  ),
-                ],
-              );
-            },
+              ),
+            ),
           ),
         ),
+      ),
+      floatingActionButton: _SpeedDial(
+        treeController: treeController,
+        changeLineStyle: _changeLineStyle,
+        changeNodeIcon: _changeNodeIcon,
+        changeTreeController: _changeTreeController,
       ),
       appBar: AppBar(
-        title: const Text('TreeView Example'),
-        leading: IconButton(
-          icon: const Icon(Icons.expand),
-          onPressed: () async {
-            setState(() {
-              treeController.selectSubtree(treeController.find(2));
-            });
-            // final node = treeController.find(21112);
-            // if (node != null) {
-            //   treeController.expandNode(node);
-            //   setState(() {
-            //     node.select();
-            //   });
-            //   await Future.delayed(const Duration(seconds: 3));
-            //   setState(() {
-            //     node.deselect();
-            //   });
-            // }
-          },
-        ),
-      ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          _ToggleNodesFAB(controller: treeController),
-          const SizedBox(height: 8),
-          FloatingActionButton.extended(
-            onPressed: nextStyle,
-            label: const Text('CHANGE STYLE'),
-            icon: const Icon(Icons.refresh),
-            backgroundColor: Colors.orange.shade900,
+        title: const Center(child: Text('TreeView Example')),
+        actions: [
+          IconButton(
+            tooltip: 'REVEAL NODE',
+            icon: const Icon(Icons.search_rounded),
+            onPressed: _revealNodeDialog,
           ),
+          const SizedBox(width: 16),
         ],
       ),
     );
   }
 
-  void nextStyle() {
-    setState(() {
-      switch (treeTheme.lineStyle) {
-        case LineStyle.disabled:
+  void _changeTreeController() {
+    if (treeController == widget.treeController) {
+      setState(() {
+        treeController = _altController;
+      });
+    } else {
+      setState(() {
+        treeController = widget.treeController;
+      });
+    }
+  }
+
+  void _revealNodeDialog() async {
+    final nodeId = await showDialog<String>(
+      context: context,
+      builder: (context) => const Dialog(child: FindNodeDialog()),
+    );
+    if (nodeId == null) return;
+
+    final node = treeController.find(nodeId);
+
+    if (node != null) {
+      treeController.expandUntil(node);
+    } else {
+      showSnackBar(context, "Couldn't find a TreeNode with ID = $nodeId");
+    }
+  }
+
+  void _changeNodeIcon() {
+    if (_nodeIcon is NodeWidgetLeadingIcon) {
+      setState(() {
+        _nodeIcon = const ExpandNodeIcon(
+          color: kDarkBlue,
+          disabledColor: Colors.grey,
+        );
+      });
+    } else {
+      setState(() {
+        _nodeIcon = const NodeWidgetLeadingIcon();
+      });
+    }
+  }
+
+  void _changeLineStyle() {
+    switch (treeTheme.lineStyle) {
+      case LineStyle.disabled:
+        setState(() {
           treeTheme = treeTheme.copyWith(lineStyle: LineStyle.connected);
-          showSnackBar(
-            context,
-            'Line Style: Connected',
-            duration: const Duration(seconds: 3),
-          );
-          break;
-        case LineStyle.connected:
+        });
+        break;
+      case LineStyle.connected:
+        setState(() {
           treeTheme = treeTheme.copyWith(lineStyle: LineStyle.scoped);
-          showSnackBar(
-            context,
-            'Line Style: Scoped',
-            duration: const Duration(seconds: 3),
-          );
-          break;
-        case LineStyle.scoped:
+        });
+        break;
+      case LineStyle.scoped:
+        setState(() {
           treeTheme = treeTheme.copyWith(lineStyle: LineStyle.disabled);
-          showSnackBar(
-            context,
-            'Line Style: Disabled',
-            duration: const Duration(seconds: 3),
-          );
-          break;
-      }
-    });
+        });
+        break;
+    }
   }
 }
