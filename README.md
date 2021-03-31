@@ -10,6 +10,6 @@
 
 [demo]: https://mbaumgartenbr.github.io/flutter_tree_view/
 [example]: https://github.com/mbaumgartenbr/flutter_tree_view/tree/main/example
-[connected]: https://raw.githubusercontent.com/mbaumgartenbr/flutter_tree_view/main/.github/assets/example_lines_connecting.png
-[scoped]: https://raw.githubusercontent.com/mbaumgartenbr/flutter_tree_view/main/.github/assets/example_lines_scoped.png
-[disabled]: https://raw.githubusercontent.com/mbaumgartenbr/flutter_tree_view/main/.github/assets/example_lines_disabled.png
+[connected]: .github/assets/example_lines_connecting.png
+[scoped]: .github/assets/example_lines_scoped.png
+[disabled]: .github/assets/example_lines_disabled.png
