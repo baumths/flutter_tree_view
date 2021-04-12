@@ -104,7 +104,7 @@ void main() {
     );
 
     test(
-      'Should NOT add node1 to the children of node2'
+      'Should NOT add node1 to the children of node2 '
       'When node1 is parent of node2 and node2.addChild is called with node1.',
       () {
         node1.addChild(node2);
