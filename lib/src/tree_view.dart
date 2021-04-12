@@ -154,9 +154,7 @@ class _TreeViewState extends State<TreeView> {
           nodeBuilder,
           childCount: controller.visibleNodes.length,
           findChildIndexCallback: (Key key) {
-            // ? Is there a better way of finding the index of nodes?
-
-            final index = controller.visibleNodes.indexOf(
+            final index = controller.indexOf(
               (key as ValueKey<TreeNode>).value,
             );
             return index < 0 ? null : index;

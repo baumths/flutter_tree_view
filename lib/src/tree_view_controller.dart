@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import 'internal.dart';
 
 /// A simple Controller for managing the nodes that compose [TreeView].
@@ -10,10 +12,20 @@ import 'internal.dart';
 /// `dispose` just to be safe, as this is a [ChangeNotifier] after all.
 class TreeViewController extends TreeViewControllerBase with ChangeNotifier {
   /// Creates a [TreeViewController].
+  ///
+  /// The [useBinarySearch] parameter determines whether
+  /// [TreeViewControllerBase.indexOf] should use flutter's [binarySearch]
+  /// instead of [List.indexOf] when looking for the index of a node.
+  ///
+  /// The binary search will compare the [TreeNode.id] of two nodes. If set to
+  /// `true`, make sure that [TreeNode.id] is
+  /// [ASCII](http://www.asciitable.com/) formatted otherwise this could lead
+  /// to adding/removing the wrong nodes from the tree.
   TreeViewController({
     required TreeNode rootNode,
-  })   : assert(rootNode.isRoot, "The rootNode's parent must be null."),
-        super(rootNode: rootNode);
+    bool useBinarySearch = false,
+  })  : assert(rootNode.isRoot, "The rootNode's parent must be null."),
+        super(rootNode: rootNode, useBinarySearch: useBinarySearch);
 
   /// Cache to avoid searching multiple times for the same node.
   late final _searchedNodesCache = <String, TreeNode>{};
@@ -97,13 +109,28 @@ class TreeViewController extends TreeViewControllerBase with ChangeNotifier {
 /// Also enables testing of individual methods.
 class TreeViewControllerBase {
   /// Creates a [TreeViewControllerBase] and populates the initial nodes.
-  TreeViewControllerBase({required this.rootNode}) {
-    _visibleNodes.addAll(rootNode.children);
+  TreeViewControllerBase({
+    required this.rootNode,
+    this.useBinarySearch = false,
+  }) {
+    rootNode.children.forEach((child) {
+      _visibleNodes.add(child);
+      _visibleNodesMap[child.id] = true;
+    });
 
     _expandedNodes[rootNode.id] = true;
   }
 
-  final _expandedNodes = <String, bool>{};
+  /// Whether [TreeViewControllerBase.indexOf] should use flutter's [binarySearch]
+  /// instead of [List.indexOf] when looking for the index of a node.
+  ///
+  /// The binary search will compare the [TreeNode.id] of two nodes. So if you
+  /// enable this, make sure that [TreeNode.id] is
+  /// [ASCII](http://www.asciitable.com/) formatted.
+  final bool useBinarySearch;
+
+  late final _expandedNodes = <String, bool>{};
+  late final _visibleNodesMap = <String, bool>{};
 
   /// The [TreeNode] that will store all top level nodes.
   ///
@@ -120,10 +147,23 @@ class TreeViewControllerBase {
   /// Verifies if the [TreeNode] with [id] is expanded.
   bool isExpanded(String id) => _expandedNodes[id] ?? false;
 
+  /// Verifies if the [TreeNode] with [id] is visible.
+  bool isVisible(String id) => _visibleNodesMap[id] ?? false;
+
   /// Returns the node at [index] of [visibleNodes].
   TreeNode nodeAt(int index) => _visibleNodes[index];
 
-  int _indexOf(TreeNode node) => _visibleNodes.indexOf(node);
+  /// Returns the index of [node] in [TreeViewControllerBase.visibleNodes],
+  /// `-1` if not present.
+  ///
+  /// Take a look at [TreeViewControllerBase.useBinarySearch] if your
+  /// [TreeNode.id]'s are [ASCII](http://www.asciitable.com/) formatted.
+  int indexOf(TreeNode node) {
+    if (useBinarySearch) {
+      return binarySearch(_visibleNodes, node);
+    }
+    return _visibleNodes.indexOf(node);
+  }
 
   /// Expands [node] if it is not expanded.
   ///
@@ -138,12 +178,14 @@ class TreeViewControllerBase {
     if (node.hasChildren) {
       _expandedNodes[node.id] = true;
 
-      // The list must be reversed for the order to not get messed up
-      node.children.reversed
-          .where((child) => !_visibleNodes.contains(child))
-          .forEach(
-            (child) => _visibleNodes.insert(_indexOf(node) + 1, child),
-          );
+      final index = indexOf(node) + 1;
+
+      node.children.reversed.forEach((child) {
+        if (isVisible(child.id)) return;
+
+        _visibleNodes.insert(index, child);
+        _visibleNodesMap[child.id] = true;
+      });
     }
   }
 
@@ -156,11 +198,12 @@ class TreeViewControllerBase {
       _expandedNodes.remove(node.id);
     }
 
-    reversedSubtreeGenerator(node).where((descendant) {
-      return descendant.isRemovable && _visibleNodes.contains(descendant);
-    }).forEach((descendant) {
-      _expandedNodes.remove(descendant.id);
-      _visibleNodes.remove(descendant);
+    subtreeGenerator(node).forEach((descendant) {
+      if (descendant.isRemovable && isVisible(descendant.id)) {
+        _expandedNodes.remove(descendant.id);
+        _visibleNodes.remove(descendant);
+        _visibleNodesMap.remove(descendant.id);
+      }
     });
   }
 
