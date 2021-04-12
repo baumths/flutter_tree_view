@@ -16,7 +16,7 @@ import 'internal.dart';
 ///
 ///   Use either `removeChild` or `clearChildren` to remove any child from this
 /// node, both methods set children's parent property to `null`.
-class TreeNode {
+class TreeNode extends Comparable<TreeNode> {
   /// Creates a [TreeNode].
   ///
   /// Use [id] to dynamically manage this node later.
@@ -56,10 +56,8 @@ class TreeNode {
 
   /// Adds a single child to this node and sets its [parent] property to `this`.
   void addChild(TreeNode child) {
-    assert(
-      child != parent && child != this,
-      "A node can't be neither child of its children nor parent of itself.",
-    );
+    // A node can't be neither child of its children nor parent of itself.
+    if (child == parent || child == this) return;
 
     // Avoid duplicating nodes.
     if (child.parent != null) {
@@ -186,6 +184,9 @@ class TreeNode {
       );
 
   // * ~~~~~~~~~~ OTHER ~~~~~~~~~~ *
+
+  @override
+  int compareTo(TreeNode other) => id.compareTo(other.id);
 
   @override
   String toString() => 'TreeNode(id: $id, label: $label, data: $data)';
