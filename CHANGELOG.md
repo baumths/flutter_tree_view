@@ -1,3 +1,9 @@
+## [0.2.1] 11-04-2021
+
+* Added useBinarySearch option to TreeViewController.
+* Many performance improvements by reducing the amount of loops that
+  expandNode and collapseNode took.
+
 ## [0.2.0] 31-03-2021
 
 * Stable null safety release.
