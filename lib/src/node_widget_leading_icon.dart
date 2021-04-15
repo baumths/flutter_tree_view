@@ -37,6 +37,8 @@ class NodeWidgetLeadingIcon extends StatelessWidget {
     this.collapseIcon,
     this.leafIcon = const Icon(Icons.article_rounded),
     this.padding = const EdgeInsets.all(8.0),
+    this.useFoldersOnly = false,
+    this.leafIconDisabledColor,
     this.splashRadius,
     this.onPressed,
   }) : super(key: key);
@@ -71,6 +73,14 @@ class NodeWidgetLeadingIcon extends StatelessWidget {
   /// to input gestures.
   final EdgeInsetsGeometry padding;
 
+  /// If set to `true`, [leafIcon] will be ignored and every
+  /// [ScopedTreeNode.node] will be expandable, even nodes without children.
+  final bool useFoldersOnly;
+
+  /// The color used by [leafIcon] when it's [IconButton] is disabled
+  /// (i.e. [onPressed] is `null`).
+  final Color? leafIconDisabledColor;
+
   /// The splash radius used in [IconButton].
   ///
   /// If null, default splash radius of [Material.defaultSplashRadius] is used.
@@ -80,11 +90,11 @@ class NodeWidgetLeadingIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final scopedTreeNode = ScopedTreeNode.of(context);
 
-    if (scopedTreeNode.node.isLeaf) {
+    if (!useFoldersOnly && scopedTreeNode.node.isLeaf) {
       return IconButton(
         splashRadius: splashRadius,
         padding: padding,
-        disabledColor: Theme.of(context).iconTheme.color,
+        disabledColor: leafIconDisabledColor,
         icon: leafIcon,
         onPressed: onPressed,
       );

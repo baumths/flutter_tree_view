@@ -72,9 +72,7 @@ class ExpandNodeIcon extends StatelessWidget {
       expandedColor: expandedColor,
       padding: padding,
       isExpanded: scopedTreeNode.isExpanded,
-      onPressed: scopedTreeNode.node.isLeaf
-          ? null
-          : (_) => scopedTreeNode.toggleExpanded(context),
+      onPressed: (_) => scopedTreeNode.toggleExpanded(context),
     );
   }
 }
