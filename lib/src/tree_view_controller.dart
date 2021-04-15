@@ -24,8 +24,44 @@ class TreeViewController extends TreeViewControllerBase with ChangeNotifier {
   TreeViewController({
     required TreeNode rootNode,
     bool useBinarySearch = false,
+    this.onAboutToExpand,
   })  : assert(rootNode.isRoot, "The rootNode's parent must be null."),
         super(rootNode: rootNode, useBinarySearch: useBinarySearch);
+
+  /// This method is called right before a [TreeNode] is expanded.
+  ///
+  /// Allows to dynamically populate the [TreeView]. Example:
+  ///
+  /// ```dart
+  /// final rootNode = TreeNode(id: '#root')
+  ///   ..addChildren(
+  ///     fetchTopLevelNodesFromDatabase(),
+  ///   );
+  ///
+  /// final treeController = TreeController(
+  ///   rootNode: rootNode,
+  ///   onAboutToExpand: (TreeNode nodeAboutToExpand) {
+  ///     if (nodeAboutToExpand == rootNode) {
+  ///       return;
+  ///     }
+  ///     final List<String> childrenIds = fetchChildrenOfNodeFromDatabase(
+  ///       nodeAboutToExpand.id,
+  ///     );
+  ///
+  ///     if (childrenIds.isEmpty) {
+  ///       return;
+  ///     }
+  ///
+  ///     nodeAboutToExpand.addChildren(
+  ///       childrenIds.map((String childId) {
+  ///         return TreeNode(id: childId);
+  ///       }),
+  ///     );
+  ///   },
+  /// );
+  /// ```
+  /// No checks are done to [node] before calling this method, i.e. [isExpanded].
+  final void Function(TreeNode node)? onAboutToExpand;
 
   /// Cache to avoid searching multiple times for the same node.
   late final _searchedNodesCache = <String, TreeNode>{};
@@ -56,6 +92,8 @@ class TreeViewController extends TreeViewControllerBase with ChangeNotifier {
   /// If the ancestors of [node] are collapsed, it will expand them too.
   @override
   void expandNode(TreeNode node) {
+    onAboutToExpand?.call(node);
+
     super.expandNode(node);
     notifyListeners();
   }
@@ -175,16 +213,18 @@ class TreeViewControllerBase {
     // Expand all ancestors of [node] if its parent is not expanded.
     if (!isExpanded(node.parent!.id)) expandUntil(node);
 
+    _expandedNodes[node.id] = true;
+
     if (node.hasChildren) {
-      _expandedNodes[node.id] = true;
+      var index = indexOf(node) + 1;
 
-      final index = indexOf(node) + 1;
-
-      node.children.reversed.forEach((child) {
+      node.children.forEach((child) {
         if (isVisible(child.id)) return;
 
         _visibleNodes.insert(index, child);
         _visibleNodesMap[child.id] = true;
+
+        index++;
       });
     }
   }
@@ -192,7 +232,7 @@ class TreeViewControllerBase {
   /// Collapses [node] and every descendant in its subtree.
   @mustCallSuper
   void collapseNode(TreeNode node) {
-    if (node.isLeaf || !isExpanded(node.id)) return;
+    if (!isExpanded(node.id)) return;
 
     if (!node.isRoot) {
       _expandedNodes.remove(node.id);
