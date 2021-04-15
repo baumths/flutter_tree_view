@@ -21,29 +21,36 @@ class _HomePageState extends State<HomePage> {
 
   late var treeTheme = const TreeViewTheme();
 
-  late Widget _nodeIcon = const NodeWidgetLeadingIcon();
+  late Widget _nodeIcon = const NodeWidgetLeadingIcon(
+    useFoldersOnly: true,
+    leafIconDisabledColor: kDarkBlue,
+  );
 
-  late final _altController = TreeViewController(
-    rootNode: TreeNode(id: 'ALT 🌲️ ROOT')
+  static const _dynamicChildrenMap = <String, List<String>>{
+    'A': ['A1'],
+    'C': ['C1', 'C2', 'C3', 'C4', 'C5'],
+    'C2': ['C21'],
+    'C4': ['C41', 'C42'],
+    'C41': ['C411'],
+  };
+
+  late final _dynamicController = TreeViewController(
+    onAboutToExpand: (TreeNode nodeBeingExpanded) {
+      final children = _dynamicChildrenMap[nodeBeingExpanded.id];
+
+      if (children != null) {
+        nodeBeingExpanded.addChildren(
+          children.map((child) => TreeNode(id: child, label: child)),
+        );
+      }
+    },
+    rootNode: TreeNode(id: 'ROOT')
       ..addChildren(
         [
-          TreeNode(id: 'A', label: 'A')
-            ..addChild(
-              TreeNode(id: 'A 1', label: 'A 1'),
-            ),
+          //? Initial Nodes
+          TreeNode(id: 'A', label: 'A'),
           TreeNode(id: 'B', label: 'B'),
-          TreeNode(id: 'C', label: 'C')
-            ..addChildren(
-              [
-                TreeNode(id: 'C1', label: 'C 1'),
-                TreeNode(id: 'C2', label: 'C 2')
-                  ..addChild(
-                    TreeNode(id: 'C21', label: 'C 2 1'),
-                  ),
-                for (var index = 3; index < 11; index++)
-                  TreeNode(id: 'C$index', label: 'C $index')
-              ],
-            ),
+          TreeNode(id: 'C', label: 'C'),
         ],
       ),
   );
@@ -56,7 +63,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
-    _altController.dispose();
+    _dynamicController.dispose();
     super.dispose();
   }
 
@@ -107,7 +114,7 @@ class _HomePageState extends State<HomePage> {
   void _changeTreeController() {
     if (treeController == widget.treeController) {
       setState(() {
-        treeController = _altController;
+        treeController = _dynamicController;
       });
     } else {
       setState(() {
@@ -142,7 +149,10 @@ class _HomePageState extends State<HomePage> {
       });
     } else {
       setState(() {
-        _nodeIcon = const NodeWidgetLeadingIcon();
+        _nodeIcon = const NodeWidgetLeadingIcon(
+          useFoldersOnly: true,
+          leafIconDisabledColor: kDarkBlue,
+        );
       });
     }
   }

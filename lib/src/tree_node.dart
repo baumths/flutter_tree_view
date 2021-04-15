@@ -38,28 +38,31 @@ class TreeNode extends Comparable<TreeNode> {
 
   // * ~~~~~~~~~~ CHILDREN RELATED ~~~~~~~~~~ *
 
-  final List<TreeNode> _children = [];
+  final Set<TreeNode> _children = {};
 
   /// The list of child nodes.
-  UnmodifiableListView<TreeNode> get children {
-    return UnmodifiableListView(_children);
+  UnmodifiableSetView<TreeNode> get children {
+    return UnmodifiableSetView(_children);
   }
 
   /// Whether this node has children or not.
   bool get hasChildren => _children.isNotEmpty;
 
   /// Convenience operator to get the [index]th child.
-  TreeNode operator [](int index) => _children[index];
+  TreeNode operator [](int index) => _children.elementAt(index);
 
   /// Returns an [Iterable] of every [TreeNode] under this.
   Iterable<TreeNode> get descendants => subtreeGenerator(this);
+
+  /// Returns the last child of this node or `null` if [children] is empty.
+  TreeNode? get lastChild => _children.isEmpty ? null : _children.last;
 
   /// Adds a single child to this node and sets its [parent] property to `this`.
   void addChild(TreeNode child) {
     // A node can't be neither child of its children nor parent of itself.
     if (child == parent || child == this) return;
 
-    // Avoid duplicating nodes.
+    // Avoid duplicating nodes in the tree.
     if (child.parent != null) {
       child.parent!.removeChild(child);
     }
@@ -134,9 +137,7 @@ class TreeNode extends Comparable<TreeNode> {
   ///
   /// Example: [root, child, grandChild, ... `this.parent`]
   List<TreeNode> get ancestors {
-    return findPathFromRoot(this)
-        .where((n) => n != this)
-        .toList(growable: false);
+    return findPathFromRoot(this).toList()..removeLast();
   }
 
   // * ~~~~~~~~~~ NODE RELATED ~~~~~~~~~~ *
@@ -156,7 +157,7 @@ class TreeNode extends Comparable<TreeNode> {
   /// Whether or not this node is the last child of its parent.
   ///
   /// If this method throws, the tree was malformed.
-  bool get hasNextSibling => isRoot ? false : this != parent!.children.last;
+  bool get hasNextSibling => isRoot ? false : this != parent!.lastChild;
 
   /// Calculates the amount of indentation of this node. `(depth * [indent])`
   ///
@@ -195,19 +196,11 @@ class TreeNode extends Comparable<TreeNode> {
   bool operator ==(covariant TreeNode other) {
     if (identical(this, other)) return true;
 
-    return other.id == id &&
-        other.data == data &&
-        other.label == label &&
-        listEquals(other.children, children);
+    return other.id == id && other.data == data && other.label == label;
   }
 
   @override
-  int get hashCode => hashValues(
-        id.hashCode,
-        data.hashCode,
-        label.hashCode,
-        hashList(children),
-      );
+  int get hashCode => hashValues(id.hashCode, data.hashCode, label.hashCode);
 }
 
 /// Extension to hide internal functionality.

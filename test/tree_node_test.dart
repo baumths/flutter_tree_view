@@ -15,6 +15,23 @@ void main() {
 
   group('Tests for children -', () {
     test(
+      'Should not add duplicate child.',
+      () {
+        expect(root.children, isEmpty);
+
+        root.addChild(node1);
+
+        expect(root.children, hasLength(1));
+        expect(root.children, equals({node1}));
+
+        root.addChild(node1);
+
+        expect(root.children, hasLength(1));
+        expect(root.children, equals({node1}));
+      },
+    );
+
+    test(
       'Should add node1 to root.children '
       'When addChild is called with node1 on root.',
       () {
@@ -191,8 +208,8 @@ void main() {
       late TreeNode grandChildNode2;
 
       setUp(() {
-        grandChildNode1 = TreeNode(id: '1-1', data: '1-1');
-        grandChildNode2 = TreeNode(id: '1-2', data: '1-2');
+        grandChildNode1 = TreeNode(id: '1-1');
+        grandChildNode2 = TreeNode(id: '1-2');
 
         root.addChildren([node1, node2]);
         node1.addChildren([grandChildNode1, grandChildNode2]);

@@ -6,7 +6,10 @@ import 'internal.dart';
 Iterable<TreeNode> subtreeGenerator(TreeNode node) sync* {
   for (final child in node.children) {
     yield child;
-    if (child.hasChildren) yield* subtreeGenerator(child);
+
+    if (child.hasChildren) {
+      yield* subtreeGenerator(child);
+    }
   }
 }
 
@@ -21,8 +24,13 @@ Iterable<TreeNode?> nullableSubtreeGenerator(TreeNode node) sync* {
 
 /// Yields every descendant in the subtree of [node]. In post-order traversal.
 Iterable<TreeNode> reversedSubtreeGenerator(TreeNode node) sync* {
-  for (final child in node.children.reversed) {
-    if (child.hasChildren) yield* reversedSubtreeGenerator(child);
+  for (var index = node.children.length - 1; index >= 0; index--) {
+    final child = node[index];
+
+    if (child.hasChildren) {
+      yield* reversedSubtreeGenerator(child);
+    }
+
     yield child;
   }
 }
@@ -31,6 +39,8 @@ Iterable<TreeNode> reversedSubtreeGenerator(TreeNode node) sync* {
 ///
 /// Includes root [first] and `node [last]`. [root, child, grandChild, ..., `node`]
 Iterable<TreeNode> findPathFromRoot(TreeNode node) sync* {
-  if (node.parent != null) yield* findPathFromRoot(node.parent!);
+  if (node.parent != null) {
+    yield* findPathFromRoot(node.parent!);
+  }
   yield node;
 }
