@@ -1,3 +1,12 @@
+## [0.3.0] 11-04-2021
+
+* [ExpandNodeIcon] and [NodeWidgetLeadingIcon] are able to expand/collapse
+  leaf nodes.
+* [TreeNode.children] changed from [List] to [Set] to avoid duplicate children.
+* The [TreeViewController] received a new callback.
+  - The new `onAboutToExpand` is useful to dynamically populate the [TreeView].
+* Some performance improvements when expanding/collapsing nodes.
+
 ## [0.2.1] 11-04-2021
 
 * Added useBinarySearch option to TreeViewController.
