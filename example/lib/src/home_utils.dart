@@ -34,12 +34,11 @@ class _SpeedDial extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final _primaryColor = Theme.of(context).primaryColor;
-
     return SpeedDial(
       overlayColor: Colors.transparent,
       overlayOpacity: 0.0,
-      backgroundColor: _primaryColor,
+      backgroundColor: kDarkBlue,
+      foregroundColor: Colors.white,
       closeManually: true,
       curve: Curves.fastOutSlowIn,
       activeIcon: Icons.close,
@@ -50,32 +49,82 @@ class _SpeedDial extends StatelessWidget {
           child: const Icon(Icons.apps_outlined),
           backgroundColor: Colors.deepPurple.shade600,
           onTap: changeTreeController,
+          foregroundColor: Colors.white,
         ),
         SpeedDialChild(
           label: 'Change Line Style',
           child: const Icon(Icons.refresh),
           backgroundColor: Colors.orange.shade900,
           onTap: changeLineStyle,
+          foregroundColor: Colors.white,
         ),
         SpeedDialChild(
           label: 'Change Node Icons',
           child: const Icon(Icons.swap_vert_rounded),
           backgroundColor: Colors.yellow.shade900,
           onTap: changeNodeIcon,
+          foregroundColor: Colors.white,
         ),
         SpeedDialChild(
           label: 'Collapse All',
           child: const Icon(Icons.unfold_less),
           backgroundColor: Colors.red,
           onTap: treeController.collapseAll,
+          foregroundColor: Colors.white,
         ),
         SpeedDialChild(
           label: 'Expand All',
           child: const Icon(Icons.unfold_more),
           backgroundColor: Colors.green,
           onTap: treeController.expandAll,
+          foregroundColor: Colors.white,
         ),
       ],
+    );
+  }
+}
+
+class _LineThicknessSlider extends StatefulWidget {
+  const _LineThicknessSlider({
+    Key? key,
+    this.onChanged,
+  }) : super(key: key);
+
+  final ValueChanged<double>? onChanged;
+
+  @override
+  __LineThicknessSliderState createState() => __LineThicknessSliderState();
+}
+
+class __LineThicknessSliderState extends State<_LineThicknessSlider> {
+  var value = 2.0;
+
+  void update(double val) {
+    setState(() => value = val);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 192,
+      height: 40,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(blurRadius: 4, color: Colors.black45),
+        ],
+      ),
+      child: Slider(
+        value: value,
+        onChanged: update,
+        max: 8,
+        divisions: 7,
+        min: 1,
+        label: 'Line Thickness: $value',
+        activeColor: kDarkBlue,
+        onChangeEnd: widget.onChanged,
+      ),
     );
   }
 }

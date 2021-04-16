@@ -15,8 +15,6 @@ enum TreeLine {
   straight,
 }
 
-// TODO: Implement curved corners for [TreeLine].`connection`
-
 /// This class is used to calculate and
 /// draw the lines that compose a single node in the [TreeView] widget.
 class LinesPainter extends CustomPainter {
@@ -46,6 +44,7 @@ class LinesPainter extends CustomPainter {
         width: theme.indent,
         index: index,
         lineCount: linesToBeDrawn.length,
+        roundLineCorners: theme.roundLineCorners,
       );
 
       canvas.drawPath(offset.draw(linesToBeDrawn[index]), paint);
@@ -64,11 +63,14 @@ class _LineOffset {
     required this.width,
     required this.index,
     required this.lineCount,
+    required this.roundLineCorners,
   });
   final double height;
   final double width;
   final int index;
   final int lineCount;
+
+  final bool roundLineCorners;
 
   late final double xStart = width * index;
 
@@ -77,6 +79,25 @@ class _LineOffset {
   late final double centerX = xStart + width * 0.5;
 
   late final double centerY = height * 0.5;
+
+  late final double oneQuarterOfTotalHeight = height * 0.25;
+
+  /// When drawing rounded corners, the quadratic bézier starts 1/4 from the
+  /// top and draws until it reaches 1/4 of the difference between [xEnd] minus
+  /// [centerX].
+  ///
+  /// ```dart
+  /// /*
+  ///     [<-         ->] <--- oneQuarterDiffFromRight
+  ///      ____,____,___[_] <- 1/4 gets removed
+  ///     \  |    |    |  /
+  ///     \  |    |    |  /
+  ///     \  |    |    |  /
+  ///     \  |    |    |  /       | <- a single line
+  ///     \---------------/    ____ <- the total width of a single line
+  ///  */
+  /// ```
+  late final double oneQuarterDiffFromRight = xEnd - ((xEnd - centerX) * 0.5);
 
   Path draw(TreeLine line) {
     switch (line) {
@@ -96,14 +117,49 @@ class _LineOffset {
     ..moveTo(centerX, 0)
     ..lineTo(centerX, height);
 
-  Path _drawConnection() => Path()
-    ..moveTo(centerX, 0)
-    ..lineTo(centerX, centerY)
-    ..lineTo(xEnd, centerY);
+  Path _drawConnection() {
+    final path = Path() //
+      ..moveTo(centerX, 0);
 
-  Path _drawIntersection() => Path()
-    ..moveTo(centerX, 0)
-    ..lineTo(centerX, height)
-    ..moveTo(centerX, centerY)
-    ..lineTo(xEnd, centerY);
+    if (roundLineCorners) {
+      path //
+        ..lineTo(centerX, oneQuarterOfTotalHeight)
+        ..quadraticBezierTo(
+          centerX,
+          centerY,
+          oneQuarterDiffFromRight,
+          centerY,
+        )
+        ..lineTo(xEnd, centerY);
+    } else {
+      path.lineTo(centerX, centerY);
+    }
+
+    path.lineTo(xEnd, centerY);
+
+    return path;
+  }
+
+  Path _drawIntersection() {
+    final path = Path()
+      ..moveTo(centerX, 0)
+      ..lineTo(centerX, height);
+
+    if (roundLineCorners) {
+      path
+        ..moveTo(centerX, oneQuarterOfTotalHeight)
+        ..quadraticBezierTo(
+          centerX,
+          centerY,
+          oneQuarterDiffFromRight,
+          centerY,
+        );
+    } else {
+      path.moveTo(centerX, centerY);
+    }
+
+    path.lineTo(xEnd, centerY);
+
+    return path;
+  }
 }

@@ -70,26 +70,37 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SizedBox(
-            width: 600,
-            child: TreeView(
-              controller: treeController,
-              theme: treeTheme,
-              nodeHeight: 40.0,
-              nodeBuilder: (_, treeNode) => NodeWidget(
-                leading: _nodeIcon,
-                onTap: () => showSnackBar(
-                  context,
-                  treeNode.toString(),
-                  duration: const Duration(seconds: 3),
+      body: Stack(
+        children: [
+          Center(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: 600,
+                child: TreeView(
+                  controller: treeController,
+                  theme: treeTheme,
+                  nodeHeight: 40.0,
+                  nodeBuilder: (_, treeNode) => NodeWidget(
+                    leading: _nodeIcon,
+                    onTap: () => showSnackBar(
+                      context,
+                      treeNode.toString(),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+          Positioned(
+            bottom: 24,
+            right: 80,
+            child: _LineThicknessSlider(
+              onChanged: _lineThicknessChanged,
+            ),
+          )
+        ],
       ),
       floatingActionButton: _SpeedDial(
         treeController: treeController,
@@ -114,10 +125,16 @@ class _HomePageState extends State<HomePage> {
   void _changeTreeController() {
     if (treeController == widget.treeController) {
       setState(() {
+        treeTheme = treeTheme.copyWith(
+          roundLineCorners: true,
+        );
         treeController = _dynamicController;
       });
     } else {
       setState(() {
+        treeTheme = treeTheme.copyWith(
+          roundLineCorners: false,
+        );
         treeController = widget.treeController;
       });
     }
@@ -152,6 +169,16 @@ class _HomePageState extends State<HomePage> {
         _nodeIcon = const NodeWidgetLeadingIcon(
           useFoldersOnly: true,
           leafIconDisabledColor: kDarkBlue,
+        );
+      });
+    }
+  }
+
+  void _lineThicknessChanged(double value) {
+    if (treeTheme.lineThickness != value) {
+      setState(() {
+        treeTheme = treeTheme.copyWith(
+          lineThickness: value,
         );
       });
     }

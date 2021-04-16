@@ -1,4 +1,7 @@
-## [0.3.0] 11-04-2021
+## [0.3.1] 16-04-2021
+* Implemented rounded corners for connected lines.
+
+## [0.3.0] 15-04-2021
 
 * [ExpandNodeIcon] and [NodeWidgetLeadingIcon] are able to expand/collapse
   leaf nodes.

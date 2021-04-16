@@ -41,6 +41,7 @@ class TreeViewTheme {
     this.lineStyle = LineStyle.connected,
     this.lineThickness = 2.0,
     this.indent = 40.0,
+    this.roundLineCorners = false,
   }) : assert(
           indent >= lineThickness,
           'The indent must not be less than lineThickness',
@@ -68,8 +69,19 @@ class TreeViewTheme {
   /// Defaults to `LineStyle.connected`
   final LineStyle lineStyle;
 
+  /// Set to `true` if you want to round the corners of [LineStyle.connected].
+  ///
+  /// Defaults to `false`.
+  final bool roundLineCorners;
+
   @override
-  int get hashCode => hashValues(lineStyle, lineStyle, lineThickness, indent);
+  int get hashCode => hashValues(
+        lineStyle,
+        lineStyle,
+        lineThickness,
+        indent,
+        roundLineCorners,
+      );
 
   @override
   bool operator ==(covariant TreeViewTheme other) {
@@ -78,7 +90,8 @@ class TreeViewTheme {
     return lineColor == other.lineColor &&
         lineStyle == other.lineStyle &&
         lineThickness == other.lineThickness &&
-        indent == other.indent;
+        indent == other.indent &&
+        roundLineCorners == other.roundLineCorners;
   }
 
   /// Returns a copy of this object with new attributes.
@@ -87,12 +100,14 @@ class TreeViewTheme {
     LineStyle? lineStyle,
     double? lineThickness,
     double? indent,
+    bool? roundLineCorners,
   }) {
     return TreeViewTheme(
       lineColor: lineColor ?? this.lineColor,
       lineStyle: lineStyle ?? this.lineStyle,
       lineThickness: lineThickness ?? this.lineThickness,
       indent: indent ?? this.indent,
+      roundLineCorners: roundLineCorners ?? this.roundLineCorners,
     );
   }
 }
