@@ -1,0 +1,20 @@
+name: Deploy example to gh-pages
+
+on:
+  workflow_dispatch:
+  create:
+    tags:
+      - v*
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: stable
+      - uses: erickzanardo/flutter-gh-pages@v3
+        with:
+          workingDir: example
