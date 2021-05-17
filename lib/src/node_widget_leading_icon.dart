@@ -1,6 +1,8 @@
-import 'internal.dart';
+import 'package:flutter/material.dart';
 
-/// A widget to expand/collapse the [TreeNode] within the nearest [ScopedTreeNode].
+import 'tree_node_scope.dart';
+
+/// A widget to expand/collapse the [TreeNode] within the nearest [TreeNodeScope].
 class NodeWidgetLeadingIcon extends StatelessWidget {
   /// A [Key] for the [expandIcon], necessary for flutter to know which widget
   /// to replace when animating.
@@ -49,7 +51,7 @@ class NodeWidgetLeadingIcon extends StatelessWidget {
   /// this callback is called right after it.
   final VoidCallback? onPressed;
 
-  /// The icon displayed when [ScopedTreeNode.node] is collapsed and
+  /// The icon displayed when [TreeNodeScope.node] is collapsed and
   /// is not a Leaf. Defaults to [NodeWidgetLeadingIcon.kExpandIcon].
   ///
   /// If you use a custom [expandIcon], make sure to give it a [Key] so that
@@ -57,7 +59,7 @@ class NodeWidgetLeadingIcon extends StatelessWidget {
   /// [NodeWidgetLeadingIcon.kExpandIconKey].
   final Icon? expandIcon;
 
-  /// The icon displayed when [ScopedTreeNode.node] is collapsed and
+  /// The icon displayed when [TreeNodeScope.node] is collapsed and
   /// is not a Leaf. Defaults to [NodeWidgetLeadingIcon.kCollapseIcon].
   ///
   /// If you use a custom [collapseIcon], make sure to give it a [Key] so that
@@ -65,7 +67,7 @@ class NodeWidgetLeadingIcon extends StatelessWidget {
   /// [NodeWidgetLeadingIcon.kCollapseIconKey].
   final Icon? collapseIcon;
 
-  /// The icon displayed when [ScopedTreeNode.node] is a Leaf.
+  /// The icon displayed when [TreeNodeScope.node] is a Leaf.
   /// Defaults to [NodeWidgetLeadingIcon.kLeafIcon].
   final Icon leafIcon;
 
@@ -74,7 +76,7 @@ class NodeWidgetLeadingIcon extends StatelessWidget {
   final EdgeInsetsGeometry padding;
 
   /// If set to `true`, [leafIcon] will be ignored and every
-  /// [ScopedTreeNode.node] will be expandable, even nodes without children.
+  /// [TreeNodeScope.node] will be expandable, even nodes without children.
   final bool useFoldersOnly;
 
   /// The color used by [leafIcon] when it's [IconButton] is disabled
@@ -88,9 +90,9 @@ class NodeWidgetLeadingIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scopedTreeNode = ScopedTreeNode.of(context);
+    final treeNodeScope = TreeNodeScope.of(context);
 
-    if (!useFoldersOnly && scopedTreeNode.node.isLeaf) {
+    if (!useFoldersOnly && treeNodeScope.node.isLeaf) {
       return IconButton(
         splashRadius: splashRadius,
         padding: padding,
@@ -103,7 +105,7 @@ class NodeWidgetLeadingIcon extends StatelessWidget {
       splashRadius: splashRadius,
       padding: padding,
       onPressed: () {
-        scopedTreeNode.toggleExpanded(context);
+        treeNodeScope.toggleExpanded(context);
         onPressed?.call();
       },
       icon: AnimatedSwitcher(
@@ -116,7 +118,7 @@ class NodeWidgetLeadingIcon extends StatelessWidget {
             child: child,
           );
         },
-        child: scopedTreeNode.isExpanded
+        child: treeNodeScope.isExpanded
             ? collapseIcon ?? kCollapseIcon
             : expandIcon ?? kExpandIcon,
       ),

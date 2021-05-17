@@ -1,4 +1,9 @@
-import 'internal.dart';
+import 'package:flutter/material.dart';
+
+import 'lines_painter.dart';
+import 'tree_node.dart';
+import 'tree_node_scope.dart';
+import 'tree_view_theme.dart';
 
 /// Widget responsible for indenting nodes and drawing lines (if enabled).
 class LinesWidget extends StatelessWidget {
@@ -7,23 +12,19 @@ class LinesWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final node = ScopedTreeNode.of(context).node;
-
-    final theme = TreeView.of(context).theme;
-
-    final indentation = node.calculateIndentation(theme.indent);
+    final treeNodeScope = TreeNodeScope.of(context);
 
     late final child = SizedBox(
-      width: indentation,
+      width: treeNodeScope.indentation,
       height: double.infinity,
     );
 
-    switch (theme.lineStyle) {
+    switch (treeNodeScope.theme.lineStyle) {
       case LineStyle.scoped:
         return CustomPaint(
           painter: LinesPainter(
-            linesToBeDrawn: node.scopedLines,
-            theme: theme,
+            linesToBeDrawn: treeNodeScope.node.scopedLines,
+            theme: treeNodeScope.theme,
           ),
           child: child,
         );
@@ -31,8 +32,8 @@ class LinesWidget extends StatelessWidget {
       case LineStyle.connected:
         return CustomPaint(
           painter: LinesPainter(
-            linesToBeDrawn: node.connectedLines,
-            theme: theme,
+            linesToBeDrawn: treeNodeScope.node.connectedLines,
+            theme: treeNodeScope.theme,
           ),
           child: child,
         );

@@ -24,24 +24,16 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  late TreeViewController _treeController;
+  late TreeNode _rootNode;
 
   TreeNode buildTreeStructure() {
-    return TreeNode(id: '🌲️ ROOT')..addChildren(generateTreeNodes(sampleData));
+    return TreeNode(id: 'ROOT')..addChildren(generateTreeNodes(sampleData));
   }
 
   @override
   void initState() {
     super.initState();
-    _treeController = TreeViewController(
-      rootNode: buildTreeStructure(),
-    );
-  }
-
-  @override
-  void dispose() {
-    _treeController.dispose();
-    super.dispose();
+    _rootNode = buildTreeStructure();
   }
 
   @override
@@ -54,7 +46,7 @@ class _MyAppState extends State<MyApp> {
         visualDensity: VisualDensity.adaptivePlatformDensity,
         iconTheme: const IconThemeData(color: kDarkBlue),
       ),
-      home: HomePage(treeController: _treeController),
+      home: HomePage(rootNode: _rootNode),
     );
   }
 }

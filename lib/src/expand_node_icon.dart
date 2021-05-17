@@ -1,4 +1,6 @@
-import 'internal.dart';
+import 'package:flutter/material.dart';
+
+import 'tree_node_scope.dart';
 
 /// An wrapper around [ExpandIcon] with node toggling functionality.
 class ExpandNodeIcon extends StatelessWidget {
@@ -63,7 +65,7 @@ class ExpandNodeIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scopedTreeNode = ScopedTreeNode.of(context);
+    final treeNodeScope = TreeNodeScope.of(context);
 
     return ExpandIcon(
       size: size,
@@ -71,8 +73,8 @@ class ExpandNodeIcon extends StatelessWidget {
       disabledColor: disabledColor,
       expandedColor: expandedColor,
       padding: padding,
-      isExpanded: scopedTreeNode.isExpanded,
-      onPressed: (_) => scopedTreeNode.toggleExpanded(context),
+      isExpanded: treeNodeScope.isExpanded,
+      onPressed: (_) => treeNodeScope.toggleExpanded(context),
     );
   }
 }
