@@ -1,3 +1,25 @@
+## [0.4.0] 11-05-2021
+### Simplification of the TreeView API.
+  
+* Dropped TreeViewController and merged it's logic into [TreeViewState]
+  to make the code less 'spaghetti'. Instead of the controller, use a
+  [GlobalKey<TreeViewState>] to control the [TreeView] from outside of
+  it's widget subtree and [TreeView.of] from within it's widget subtree.
+  - Made [TreeViewState] not private anymore.
+
+* New scrolling functionality.
+    - Added [scrollController] optional property to [TreeView].
+
+    - Added [shouldAutoScroll] property to [TreeView].
+
+    - Added [scrollTo] method to [TreeViewState].
+
+* Renamed ScopedTreeNode to TreeNodeScope.
+
+* Renamed InheritedTreeView to _TreeViewScope.
+
+* Removed `reversedSubtreeGenerator` from `utils.dart` as it was not being used.
+
 ## [0.3.1] 16-04-2021
 * Implemented rounded corners for connected lines.
 
@@ -5,14 +27,18 @@
 
 * [ExpandNodeIcon] and [NodeWidgetLeadingIcon] are able to expand/collapse
   leaf nodes.
+
 * [TreeNode.children] changed from [List] to [Set] to avoid duplicate children.
+
 * The [TreeViewController] received a new callback.
   - The new `onAboutToExpand` is useful to dynamically populate the [TreeView].
+
 * Some performance improvements when expanding/collapsing nodes.
 
 ## [0.2.1] 11-04-2021
 
 * Added useBinarySearch option to TreeViewController.
+
 * Many performance improvements by reducing the amount of loops that
   expandNode and collapseNode took.
 
