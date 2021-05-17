@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:flutter_fancy_tree_view/src/internal.dart';
+import 'package:flutter_fancy_tree_view/src/tree_node.dart';
+import 'package:flutter_fancy_tree_view/src/utils.dart';
 
 void main() {
   late TreeNode rootNode;
@@ -93,21 +94,6 @@ void main() {
         expect(subtreeGenerator(node122), isEmpty);
 
         expect(subtreeGenerator(node2), isEmpty);
-      },
-    );
-  });
-
-  group('Tests for reversedSubtreeGenerator -', () {
-    late List<TreeNode> reversedRootSubtree;
-    setUp(() {
-      reversedRootSubtree = rootSubtree.reversed.toList(growable: false);
-    });
-
-    test(
-      'Should return reversedRootSubtree '
-      'When called with rootNode',
-      () {
-        expect(reversedSubtreeGenerator(rootNode), equals(reversedRootSubtree));
       },
     );
   });
