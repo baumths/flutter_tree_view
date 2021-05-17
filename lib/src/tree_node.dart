@@ -1,8 +1,9 @@
-import 'dart:collection';
+import 'dart:collection' show UnmodifiableSetView;
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show protected;
 
-import 'internal.dart';
+import 'lines_painter.dart' show TreeLine;
+import 'utils.dart';
 
 /// This class represents one node in the Tree.
 ///
@@ -20,7 +21,7 @@ class TreeNode extends Comparable<TreeNode> {
   /// Creates a [TreeNode].
   ///
   /// Use [id] to dynamically manage this node later.
-  /// The [TreeViewController.find] method can be used to locate any node
+  /// The [TreeViewState.find] method can be used to locate any node
   /// through its id.
   /// [TreeNode.find] can also be used, but its scope is reduced to its subtree.
   TreeNode({required this.id, this.label = '', this.data});
@@ -41,9 +42,7 @@ class TreeNode extends Comparable<TreeNode> {
   final Set<TreeNode> _children = {};
 
   /// The list of child nodes.
-  UnmodifiableSetView<TreeNode> get children {
-    return UnmodifiableSetView(_children);
-  }
+  UnmodifiableSetView<TreeNode> get children => UnmodifiableSetView(_children);
 
   /// Whether this node has children or not.
   bool get hasChildren => _children.isNotEmpty;
@@ -159,23 +158,6 @@ class TreeNode extends Comparable<TreeNode> {
   /// If this method throws, the tree was malformed.
   bool get hasNextSibling => isRoot ? false : this != parent!.lastChild;
 
-  /// Calculates the amount of indentation of this node. `(depth * [indent])`
-  ///
-  /// [indent] => the amount of space added per level (example below).
-  ///
-  /// [lineStyle] => the current style being applied to lines (leave empty if
-  /// not using lines).
-  ///
-  /// ```
-  /// /* given: indent = 20.0
-  /// __________________________________
-  /// |___node___                      | depth = 0, indentation =  0
-  /// |          |___node___           | depth = 1, indentation = 20
-  /// |           <-indent->|___node___| depth = 2, indentation = 40
-  /// | <-------- indentation -------> | */
-  /// ```
-  double calculateIndentation(double indent) => depth * indent;
-
   /// Starting from this node, searches the subtree
   /// looking for a node id that match [id],
   /// returns `null` if no node was found with the given [id].
@@ -200,7 +182,7 @@ class TreeNode extends Comparable<TreeNode> {
   }
 
   @override
-  int get hashCode => hashValues(id.hashCode, data.hashCode, label.hashCode);
+  int get hashCode => id.hashCode ^ data.hashCode ^ label.hashCode;
 }
 
 /// Extension to hide internal functionality.

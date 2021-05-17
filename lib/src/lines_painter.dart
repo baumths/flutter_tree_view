@@ -1,4 +1,6 @@
-import 'internal.dart';
+import 'package:flutter/rendering.dart';
+
+import 'tree_view_theme.dart';
 
 /// Defines how a single line should be shaped
 enum TreeLine {

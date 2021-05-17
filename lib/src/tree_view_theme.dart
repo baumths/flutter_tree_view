@@ -1,4 +1,4 @@
-import 'internal.dart';
+import 'package:flutter/material.dart';
 
 /// Defines the style of lines.
 enum LineStyle {
@@ -13,7 +13,7 @@ enum LineStyle {
   scoped,
 }
 
-/// A simple class to control the theming of [TreeView] and [NodeWidget].
+/// A simple class to control the theming of [TreeView].
 ///
 /// Makes it easy to customize [NodeWidget] and [LinesWidget].
 ///

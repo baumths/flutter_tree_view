@@ -1,4 +1,8 @@
-import 'internal.dart';
+import 'package:flutter/material.dart';
+
+import 'lines_widget.dart';
+import 'node_widget_leading_icon.dart';
+import 'tree_node_scope.dart';
 
 /// A Simple widget to display [TreeNode]s in the [TreeView].
 ///
@@ -6,7 +10,7 @@ import 'internal.dart';
 /// the leading [NodeWidgetLeadingIcon] that already expands/collapses the
 /// node and animates itself.
 ///
-/// This widget will be wrapped in a [ScopedTreeNode] (an inherited widget) to
+/// This widget will be wrapped in a [TreeNodeScope] (an inherited widget) to
 /// give access to it's [TreeNode].
 ///
 /// Take a look at the [online demo](https://mbaumgartenbr.github.io/flutter_tree_view).
@@ -15,7 +19,7 @@ class NodeWidget extends StatelessWidget {
   ///
   /// Notice that the [leading] [NodeWidgetLeadingIcon] used is responsible for
   /// expanding/collapsing the node, if changed, the node would need to be
-  /// manually toggled through either [TreeViewController] or [ScopedTreeNode].
+  /// manually toggled through either [TreeView.of] or [TreeNodeScope].
   ///
   /// Take a look at [ExpandNodeIcon] that has a similar implementation.
   const NodeWidget({
@@ -52,7 +56,7 @@ class NodeWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scopedTreeNode = ScopedTreeNode.of(context);
+    final treeNodeScope = TreeNodeScope.of(context);
 
     return InkWell(
       onTap: onTap,
@@ -65,7 +69,7 @@ class NodeWidget extends StatelessWidget {
           if (content == null)
             Flexible(
               child: Text(
-                scopedTreeNode.node.label,
+                treeNodeScope.node.label,
                 style: Theme.of(context).textTheme.subtitle1,
                 overflow: TextOverflow.ellipsis,
               ),

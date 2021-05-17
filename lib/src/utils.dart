@@ -1,4 +1,4 @@
-import 'internal.dart';
+import 'tree_node.dart';
 
 // * ~~~~~~~~~~ HELPER FUNCTIONS ~~~~~~~~~~ *
 
@@ -19,19 +19,6 @@ Iterable<TreeNode?> nullableSubtreeGenerator(TreeNode node) sync* {
   for (final child in node.children) {
     yield child;
     if (child.hasChildren) yield* nullableSubtreeGenerator(child);
-  }
-}
-
-/// Yields every descendant in the subtree of [node]. In post-order traversal.
-Iterable<TreeNode> reversedSubtreeGenerator(TreeNode node) sync* {
-  for (var index = node.children.length - 1; index >= 0; index--) {
-    final child = node[index];
-
-    if (child.hasChildren) {
-      yield* reversedSubtreeGenerator(child);
-    }
-
-    yield child;
   }
 }
 
