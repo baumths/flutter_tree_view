@@ -1,4 +1,18 @@
-## [0.4.0] 11-05-2021
+## [0.5.0] 30-05-2021
+### Reverts most changes from 0.4.0
+
+* Removing the TreeViewController made nodes inside a different page or in
+  a drawer to lose their state.
+  - TreeViewController is back, all logic from _TreeViewState got moved back
+    to it.
+
+* Merged the utils methods into TreeNode (ancestors, descendants, ...).
+
+* The TreeView no longer auto scrolls nodes.
+  - Now scrolling has to be done by the user.
+
+
+## [0.4.0] 17-05-2021
 ### Simplification of the TreeView API.
   
 * Dropped TreeViewController and merged it's logic into [TreeViewState]
