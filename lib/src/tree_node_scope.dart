@@ -53,14 +53,14 @@ class TreeNodeScope extends InheritedWidget {
 
   // * ~~~~~~~~~~ EXPANSION METHODS ~~~~~~~~~~ *
 
-  /// Notifies [TreeViewState] to expand this node.
+  /// Notifies [TreeViewController] to expand this node.
   void expand(BuildContext context) {
-    TreeView.of(context).expandNode(node);
+    TreeView.of(context).controller.expandNode(node);
   }
 
-  /// Notifies [TreeViewState] to collapse this node.
+  /// Notifies [TreeViewController] to collapse this node.
   void collapse(BuildContext context) {
-    TreeView.of(context).collapseNode(node);
+    TreeView.of(context).controller.collapseNode(node);
   }
 
   /// Toggles [isExpanded] to the opposite state.
