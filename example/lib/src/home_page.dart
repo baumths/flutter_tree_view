@@ -8,23 +8,20 @@ part 'home_utils.dart';
 const kDarkBlue = Color(0xFF1565C0);
 
 class HomePage extends StatefulWidget {
-  const HomePage({Key? key, required this.rootNode}) : super(key: key);
+  const HomePage({Key? key, required this.treeController}) : super(key: key);
 
-  final TreeNode rootNode;
+  final TreeViewController treeController;
 
   @override
   _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  /// Used to toggle nodes from outside of the [TreeView]. Simply move this key
-  /// to wherever you need to use it. Make sure you don't recreate the key, it
-  /// could lead to State loss.
-  late final _treeViewKey = GlobalKey<TreeViewState>();
+  static const double nodeHeight = 48.0;
 
-  TreeViewState? get treeViewState => _treeViewKey.currentState;
+  late ScrollController scrollController;
 
-  late TreeNode _rootNode;
+  late TreeViewController treeController;
 
   late var treeTheme = const TreeViewTheme();
 
@@ -33,16 +30,37 @@ class _HomePageState extends State<HomePage> {
     leafIconDisabledColor: kDarkBlue,
   );
 
-  late final _dynamicRootNode = TreeNode(id: 'DYNAMIC ROOT')
-    //? Initial nodes
-    ..addChild(TreeNode(id: 'A', label: 'A'))
-    ..addChild(TreeNode(id: 'B', label: 'B'))
-    ..addChild(TreeNode(id: 'C', label: 'C'));
+  late final _dynamicController = TreeViewController(
+    onAboutToExpand: (TreeNode nodeAboutToExpand) {
+      if (treeController != _dynamicController) return;
+
+      final children = _dynamicChildrenMap[nodeAboutToExpand.id];
+
+      if (children != null) {
+        nodeAboutToExpand.addChildren(
+          children.map((child) => TreeNode(id: child, label: child)),
+        );
+      }
+    },
+    rootNode: TreeNode(id: 'Root')
+      //? Initial Dynamic Nodes
+      ..addChild(TreeNode(id: 'A', label: 'A'))
+      ..addChild(TreeNode(id: 'B', label: 'B'))
+      ..addChild(TreeNode(id: 'C', label: 'C')),
+  );
 
   @override
   void initState() {
     super.initState();
-    _rootNode = widget.rootNode;
+    scrollController = ScrollController();
+    treeController = widget.treeController;
+  }
+
+  @override
+  void dispose() {
+    _dynamicController.dispose();
+    scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -56,12 +74,13 @@ class _HomePageState extends State<HomePage> {
               child: SizedBox(
                 width: 600,
                 child: TreeView(
-                  key: _treeViewKey,
-                  rootNode: _rootNode,
+                  nodeHeight: nodeHeight,
+                  controller: treeController,
+                  scrollController: scrollController,
                   theme: treeTheme,
-                  onAboutToExpand: _populateChildrenOfDynamicNode,
                   nodeBuilder: (_, TreeNode treeNode) => NodeWidget(
                     leading: _nodeIcon,
+                    onLongPress: () => _describeAncestors(treeNode),
                     onTap: () => showSnackBar(
                       context,
                       treeNode.toString(),
@@ -82,10 +101,10 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       floatingActionButton: _SpeedDial(
-        treeViewKey: _treeViewKey,
+        controller: treeController,
         changeLineStyle: _changeLineStyle,
         changeNodeIcon: _changeNodeIcon,
-        changeTreeController: _changeRootNode,
+        changeTreeController: _changeController,
       ),
       appBar: AppBar(
         title: const Center(child: Text('TreeView Example')),
@@ -101,28 +120,16 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _populateChildrenOfDynamicNode(TreeNode node) {
-    if (_rootNode != _dynamicRootNode) return;
-
-    final children = _dynamicChildrenMap[node.id];
-
-    if (children != null) {
-      node.addChildren(
-        children.map((child) => TreeNode(id: child, label: child)),
-      );
-    }
-  }
-
-  void _changeRootNode() {
-    if (_rootNode == widget.rootNode) {
+  void _changeController() {
+    if (treeController == widget.treeController) {
       setState(() {
         treeTheme = treeTheme.copyWith(roundLineCorners: true);
-        _rootNode = _dynamicRootNode;
+        treeController = _dynamicController;
       });
     } else {
       setState(() {
         treeTheme = treeTheme.copyWith(roundLineCorners: false);
-        _rootNode = widget.rootNode;
+        treeController = widget.treeController;
       });
     }
   }
@@ -134,10 +141,18 @@ class _HomePageState extends State<HomePage> {
     );
     if (nodeId == null) return;
 
-    final node = treeViewState?.find(nodeId);
+    final node = treeController.find(nodeId);
 
     if (node != null) {
-      treeViewState?.expandUntil(node);
+      treeController.expandUntil(node);
+
+      final offsetOfNode = treeController.indexOf(node) * nodeHeight;
+
+      await scrollController.animateTo(
+        offsetOfNode,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.fastOutSlowIn,
+      );
     } else {
       showSnackBar(context, "Couldn't find a TreeNode with ID = $nodeId");
     }
@@ -187,6 +202,16 @@ class _HomePageState extends State<HomePage> {
         });
         break;
     }
+  }
+
+  void _describeAncestors(TreeNode node) {
+    final ancestors = node.ancestors.map((e) => e.id).join('/');
+
+    showSnackBar(
+      context,
+      'Path of "${node.label}": /$ancestors/${node.id}',
+      duration: const Duration(seconds: 3),
+    );
   }
 }
 

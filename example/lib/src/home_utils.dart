@@ -18,14 +18,13 @@ void showSnackBar(
 class _SpeedDial extends StatelessWidget {
   const _SpeedDial({
     Key? key,
-    required this.treeViewKey,
+    required this.controller,
     required this.changeLineStyle,
     required this.changeNodeIcon,
     required this.changeTreeController,
   }) : super(key: key);
 
-  final GlobalKey<TreeViewState> treeViewKey;
-  TreeViewState? get treeViewState => treeViewKey.currentState;
+  final TreeViewController controller;
 
   final VoidCallback changeLineStyle;
 
@@ -70,14 +69,14 @@ class _SpeedDial extends StatelessWidget {
           label: 'Collapse All',
           child: const Icon(Icons.unfold_less),
           backgroundColor: Colors.red,
-          onTap: treeViewState?.collapseAll,
+          onTap: controller.collapseAll,
           foregroundColor: Colors.white,
         ),
         SpeedDialChild(
           label: 'Expand All',
           child: const Icon(Icons.unfold_more),
           backgroundColor: Colors.green,
-          onTap: treeViewState?.expandAll,
+          onTap: controller.expandAll,
           foregroundColor: Colors.white,
         ),
       ],
