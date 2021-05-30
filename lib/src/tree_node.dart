@@ -1,9 +1,6 @@
 import 'dart:collection' show UnmodifiableSetView;
 
-import 'package:flutter/foundation.dart' show protected;
-
 import 'lines_painter.dart' show TreeLine;
-import 'utils.dart';
 
 /// This class represents one node in the Tree.
 ///
@@ -21,7 +18,7 @@ class TreeNode extends Comparable<TreeNode> {
   /// Creates a [TreeNode].
   ///
   /// Use [id] to dynamically manage this node later.
-  /// The [TreeViewState.find] method can be used to locate any node
+  /// The [TreeViewController.find] method can be used to locate any node
   /// through its id.
   /// [TreeNode.find] can also be used, but its scope is reduced to its subtree.
   TreeNode({required this.id, this.label = '', this.data});
@@ -51,7 +48,26 @@ class TreeNode extends Comparable<TreeNode> {
   TreeNode operator [](int index) => _children.elementAt(index);
 
   /// Returns an [Iterable] of every [TreeNode] under this.
-  Iterable<TreeNode> get descendants => subtreeGenerator(this);
+  Iterable<TreeNode> get descendants sync* {
+    for (final child in _children) {
+      yield child;
+
+      if (child.hasChildren) {
+        yield* child.descendants;
+      }
+    }
+  }
+
+  /// Same as [descendants] but with nullable return, useful when
+  /// filtering nodes to use `orElse: () => null` when no node was found.
+  Iterable<TreeNode?> get nullableDescendants sync* {
+    for (final child in _children) {
+      yield child;
+      if (child.hasChildren) {
+        yield* child.nullableDescendants;
+      }
+    }
+  }
 
   /// Returns the last child of this node or `null` if [children] is empty.
   TreeNode? get lastChild => _children.isEmpty ? null : _children.last;
@@ -66,7 +82,7 @@ class TreeNode extends Comparable<TreeNode> {
       child.parent!.removeChild(child);
     }
 
-    child.parent = this;
+    child._parent = this;
     _children.add(child);
   }
 
@@ -78,7 +94,7 @@ class TreeNode extends Comparable<TreeNode> {
     final wasRemoved = _children.remove(child);
 
     if (wasRemoved) {
-      child.parent = null;
+      child._parent = null;
     }
   }
 
@@ -115,7 +131,7 @@ class TreeNode extends Comparable<TreeNode> {
   ///
   /// Returns the old children to easily move nodes to another parent.
   List<TreeNode> clearChildren() {
-    _children.forEach((node) => node.parent = null);
+    _children.forEach((node) => node._parent = null);
     final _backup = List<TreeNode>.from(_children, growable: false);
 
     _children.clear();
@@ -124,19 +140,21 @@ class TreeNode extends Comparable<TreeNode> {
 
   // * ~~~~~~~~~~ PARENT RELATED ~~~~~~~~~~ *
 
-  /// If `null`, this node is the root of the tree.
+  /// If `null`, this node is the root of the tree
+  /// or it doesn't belong to any node yet.
   ///
   /// This property is set by [TreeNode.addChild].
   TreeNode? get parent => _parent;
   TreeNode? _parent;
-  @protected
-  set parent(TreeNode? newParent) => _parent = newParent;
 
-  /// Returns the path from the root node to this node, but excludes this.
+  /// Returns the path from the root node to this node, not including this.
   ///
-  /// Example: [root, child, grandChild, ... `this.parent`]
-  List<TreeNode> get ancestors {
-    return findPathFromRoot(this).toList()..removeLast();
+  /// Example: [root, child, grandChild, ..., this.parent].
+  Iterable<TreeNode> get ancestors sync* {
+    if (parent != null) {
+      yield* parent!.ancestors;
+      yield parent!;
+    }
   }
 
   // * ~~~~~~~~~~ NODE RELATED ~~~~~~~~~~ *
@@ -161,7 +179,7 @@ class TreeNode extends Comparable<TreeNode> {
   /// Starting from this node, searches the subtree
   /// looking for a node id that match [id],
   /// returns `null` if no node was found with the given [id].
-  TreeNode? find(String id) => nullableSubtreeGenerator(this).firstWhere(
+  TreeNode? find(String id) => nullableDescendants.firstWhere(
         (descendant) => descendant == null ? false : descendant.id == id,
         orElse: () => null,
       );

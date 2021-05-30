@@ -137,6 +137,58 @@ void main() {
       },
     );
   });
+  group('Tests for descendants -', () {
+    late List<TreeNode> rootSubtree;
+
+    late TreeNode node11;
+    late TreeNode node21;
+
+    setUp(() {
+      node11 = TreeNode(id: '1.1');
+      node21 = TreeNode(id: '2.1');
+
+      node1.addChild(node11);
+      node2.addChild(node21);
+      root.addChildren([node1, node2]);
+
+      rootSubtree = [node1, node11, node2, node21];
+    });
+
+    tearDown(() {
+      root.clearChildren();
+      node1.clearChildren();
+      node2.clearChildren();
+    });
+
+    test(
+      'Should return a list of length 4 that match rootSubtree '
+      'When root.descendants.toList is called.',
+      () {
+        final result = root.descendants.toList();
+        expect(result, hasLength(4));
+        expect(result, equals(rootSubtree));
+      },
+    );
+
+    test(
+      'Should return a list of length 1 '
+      'When node1.descendants.toList is called.',
+      () {
+        final result = node1.descendants.toList();
+        expect(result, hasLength(1));
+        expect(result, equals([node11]));
+      },
+    );
+
+    test(
+      'Should return an empty list '
+      'When node11.descendants.toList is called.',
+      () {
+        final result = node11.descendants.toList();
+        expect(result, isEmpty);
+      },
+    );
+  });
 
   group('Tests for parent -', () {
     group('parent -', () {
@@ -160,15 +212,17 @@ void main() {
     });
     group('ancestors -', () {
       late List<TreeNode> ancestorsOfNode2;
+
       setUp(() {
         root.addChild(node1);
         node1.addChild(node2);
+
         ancestorsOfNode2 = [root, node1];
       });
       test(
         'Should return ancestorsOfNode2 When node2.ancestors is called.',
         () {
-          expect(node2.ancestors, equals(ancestorsOfNode2));
+          expect(node2.ancestors.toList(), equals(ancestorsOfNode2));
         },
       );
     });
