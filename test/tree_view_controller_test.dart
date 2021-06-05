@@ -34,7 +34,7 @@ void main() {
     test(
       'Should populate rootNode correctly.',
       () {
-        expect(controller.rootNode, equals(root));
+        expect(controller.rootNode, root);
       },
     );
 
@@ -51,8 +51,6 @@ void main() {
       'Should return the right value '
       'When a node is Expanded.',
       () {
-        expect(controller.isExpanded(root.id), isTrue);
-
         expect(controller.isExpanded(node1.id), isFalse);
 
         controller.expandNode(node1);
@@ -99,7 +97,6 @@ void main() {
 
         controller.collapseNode(root);
 
-        expect(controller.isExpanded(root.id), isTrue);
         expect(controller.visibleNodes, containsAll([node1, node2]));
       },
     );
@@ -126,7 +123,7 @@ void main() {
       'Should expand the entire tree '
       'When expandSubtree is called with root.',
       () {
-        expect(controller.visibleNodes, equals([node1, node2]));
+        expect(controller.visibleNodes, [node1, node2]);
 
         controller.expandSubtree(root);
 
@@ -137,7 +134,7 @@ void main() {
 
         expect(
           controller.visibleNodes,
-          equals([node1, node11, node12, node121, node2, node21]),
+          [node1, node11, node12, node121, node2, node21],
         );
       },
     );
@@ -152,10 +149,121 @@ void main() {
 
         expect(
           controller.visibleNodes,
-          equals([node1, node11, node12, node121, node2]),
+          [node1, node11, node12, node121, node2],
         );
         expect(controller.isExpanded(node121.id), isFalse);
       },
     );
   });
+
+  test(
+    'Should render a newly added node to the tree without keeping '
+    'the expansion state of nodes '
+    'When refreshNode is called.',
+    () {
+      controller.expandNode(node1);
+
+      final newNode = TreeNode(id: 'NewNode');
+      root.addChild(newNode);
+
+      expect(controller.visibleNodes, [node1, node11, node12, node2]);
+
+      controller.refreshNode(root);
+
+      expect(controller.visibleNodes, [node1, node2, newNode]);
+    },
+  );
+
+  test(
+    'Should render a newly added node to the tree '
+    'keeping the expansion state of nodes '
+    'When refreshNode is called with keepExpandedNodes set to true.',
+    () {
+      controller.expandNode(node1);
+
+      final newNode = TreeNode(id: 'NewNode');
+      root.addChild(newNode);
+
+      expect(controller.visibleNodes, [node1, node11, node12, node2]);
+
+      controller.refreshNode(root, keepExpandedNodes: true);
+
+      expect(controller.visibleNodes, [node1, node11, node12, node2, newNode]);
+    },
+  );
+
+  test(
+    'Should not display a node that was removed from the tree '
+    'When refreshNode is called after deleting a node.',
+    () {
+      final allNodes = root.descendants.toList();
+      controller.expandSubtree(root);
+      expect(controller.visibleNodes, allNodes);
+
+      // Delete node12 moving it's child node121 to the children of node1.
+      node12.delete();
+      controller.refreshNode(node1);
+
+      expect(controller.visibleNodes, [node1, node11, node121, node2, node21]);
+    },
+  );
+
+  test(
+    'Should correctly display the new top level node '
+    'When refreshNode is called after moving a node to the children of root.',
+    () {
+      final allNodes = root.descendants.toList();
+      controller.expandSubtree(root);
+      expect(controller.visibleNodes, allNodes);
+
+      root.addChild(node11);
+      controller.refreshNode(root, keepExpandedNodes: true);
+
+      expect(
+        controller.visibleNodes,
+        [node1, node12, node121, node2, node21, node11],
+      );
+    },
+  );
+
+  test(
+    'Should correctly display the new hierarchy '
+    'When refreshNode is called after moving a node to a different parent.',
+    () {
+      final allNodes = root.descendants.toList();
+      controller.expandSubtree(root);
+      expect(controller.visibleNodes, allNodes);
+
+      node121.addChild(node11);
+      controller.refreshNode(node1, keepExpandedNodes: true);
+
+      expect(
+        controller.visibleNodes,
+        [node1, node12, node121, node11, node2, node21],
+      );
+    },
+  );
+
+  test(
+    'Should correctly display swapped parent and child '
+    'When refreshNode is called.',
+    () {
+      final allNodes = root.descendants.toList();
+      controller.expandSubtree(root);
+      expect(controller.visibleNodes, allNodes);
+
+      node1.addChild(node121);
+      node121.addChild(node12);
+
+      expect(node12.children, isEmpty);
+      expect(node121.children, {node12});
+
+      controller.refreshNode(node1, keepExpandedNodes: true);
+
+      expect(
+        controller.visibleNodes,
+        [node1, node11, node121, node12, node2, node21],
+      );
+    },
+  );
 }

@@ -22,12 +22,12 @@ void main() {
         root.addChild(node1);
 
         expect(root.children, hasLength(1));
-        expect(root.children, equals({node1}));
+        expect(root.children, [node1]);
 
         root.addChild(node1);
 
         expect(root.children, hasLength(1));
-        expect(root.children, equals({node1}));
+        expect(root.children, [node1]);
       },
     );
 
@@ -41,7 +41,7 @@ void main() {
 
         expect(root.children, isNotEmpty);
         expect(root.children, hasLength(1));
-        expect(root.children.first, equals(node1));
+        expect(root.children.first, node1);
       },
     );
 
@@ -54,7 +54,7 @@ void main() {
         root.addChild(node1);
 
         expect(node1.parent, isNotNull);
-        expect(node1.parent, equals(root));
+        expect(node1.parent, root);
       },
     );
 
@@ -68,7 +68,7 @@ void main() {
 
         expect(root.children, isNotEmpty);
         expect(root.children, hasLength(2));
-        expect(root.children, equals([node1, node2]));
+        expect(root.children, [node1, node2]);
       },
     );
 
@@ -82,10 +82,10 @@ void main() {
         root.addChildren([node1, node2]);
 
         expect(node1.parent, isNotNull);
-        expect(node1.parent, equals(root));
+        expect(node1.parent, root);
 
         expect(node2.parent, isNotNull);
-        expect(node2.parent, equals(root));
+        expect(node2.parent, root);
       },
     );
 
@@ -96,12 +96,12 @@ void main() {
         expect(node1.parent, isNull);
 
         root.addChild(node1);
-        expect(node1.parent, equals(root));
-        expect(root.children.first, equals(node1));
+        expect(node1.parent, root);
+        expect(root.children.first, node1);
 
         node2.addChild(node1);
-        expect(node1.parent, equals(node2));
-        expect(node2.children.first, equals(node1));
+        expect(node1.parent, node2);
+        expect(node2.children.first, node1);
 
         expect(root.children, isEmpty);
       },
@@ -130,16 +130,14 @@ void main() {
         node2.addChild(node1);
         expect(node2.children, isEmpty);
 
-        expect(node2.parent, equals(node1));
+        expect(node2.parent, node1);
 
         expect(node1.children, hasLength(1));
-        expect(node1.children, equals([node2]));
+        expect(node1.children, [node2]);
       },
     );
   });
   group('Tests for descendants -', () {
-    late List<TreeNode> rootSubtree;
-
     late TreeNode node11;
     late TreeNode node21;
 
@@ -150,8 +148,6 @@ void main() {
       node1.addChild(node11);
       node2.addChild(node21);
       root.addChildren([node1, node2]);
-
-      rootSubtree = [node1, node11, node2, node21];
     });
 
     tearDown(() {
@@ -166,7 +162,7 @@ void main() {
       () {
         final result = root.descendants.toList();
         expect(result, hasLength(4));
-        expect(result, equals(rootSubtree));
+        expect(result, [node1, node11, node2, node21]);
       },
     );
 
@@ -176,7 +172,7 @@ void main() {
       () {
         final result = node1.descendants.toList();
         expect(result, hasLength(1));
-        expect(result, equals([node11]));
+        expect(result, [node11]);
       },
     );
 
@@ -203,26 +199,22 @@ void main() {
           expect(root.parent, isNull);
 
           expect(node1.parent, isNotNull);
-          expect(node1.parent, equals(root));
+          expect(node1.parent, root);
 
           expect(node2.parent, isNotNull);
-          expect(node2.parent, equals(root));
+          expect(node2.parent, root);
         },
       );
     });
     group('ancestors -', () {
-      late List<TreeNode> ancestorsOfNode2;
-
       setUp(() {
         root.addChild(node1);
         node1.addChild(node2);
-
-        ancestorsOfNode2 = [root, node1];
       });
       test(
         'Should return ancestorsOfNode2 When node2.ancestors is called.',
         () {
-          expect(node2.ancestors.toList(), equals(ancestorsOfNode2));
+          expect(node2.ancestors.toList(), [root, node1]);
         },
       );
     });
@@ -237,21 +229,21 @@ void main() {
     test(
       'Should return -1 When called on root.',
       () {
-        expect(root.depth, equals(-1));
+        expect(root.depth, -1);
       },
     );
 
     test(
       'Should return 0 When called on node1.',
       () {
-        expect(node1.depth, equals(0));
+        expect(node1.depth, 0);
       },
     );
 
     test(
       'Should return 1 When called on node2.',
       () {
-        expect(node2.depth, equals(1));
+        expect(node2.depth, 1);
       },
     );
   });
@@ -273,21 +265,61 @@ void main() {
         'Should move the children of node1 to the children of root '
         'When delete is called on node1.',
         () {
-          expect(node1.children, equals([grandChildNode1, grandChildNode2]));
-          expect(grandChildNode1.parent, equals(node1));
-          expect(grandChildNode2.parent, equals(node1));
-          expect(root.children, equals([node1, node2]));
+          expect(node1.children, [grandChildNode1, grandChildNode2]);
+          expect(grandChildNode1.parent, node1);
+          expect(grandChildNode2.parent, node1);
+          expect(root.children, [node1, node2]);
 
           node1.delete();
 
           expect(node1.parent, isNull);
           expect(node1.children, isEmpty);
-          expect(
-            root.children,
-            equals([node2, grandChildNode1, grandChildNode2]),
-          );
-          expect(grandChildNode1.parent, equals(root));
-          expect(grandChildNode2.parent, equals(root));
+
+          expect(root.children, [node2, grandChildNode1, grandChildNode2]);
+          expect(grandChildNode1.parent, root);
+          expect(grandChildNode2.parent, root);
+        },
+      );
+
+      test(
+        'Should NOT move the children of node1 to the children of root '
+        'When delete(recursive: true) is called on node1.',
+        () {
+          expect(node1.children, [grandChildNode1, grandChildNode2]);
+          expect(grandChildNode1.parent, node1);
+          expect(grandChildNode2.parent, node1);
+          expect(root.children, [node1, node2]);
+
+          node1.delete(recursive: true);
+
+          expect(node1.parent, isNull);
+          expect(node1.children, isEmpty);
+          expect(node1.descendants.toList(), isEmpty);
+
+          expect(root.children, [node2]);
+          expect(grandChildNode1.parent, isNull);
+          expect(grandChildNode2.parent, isNull);
+        },
+      );
+    });
+
+    group('clearChildren -', () {
+      setUp(() {
+        root.addChildren([node1, node2]);
+      });
+      test(
+        'Should clear the children of root and set their parent to null '
+        'When clearChildren is called on root.',
+        () {
+          expect(root.children, [node1, node2]);
+          expect(node1.parent, root);
+          expect(node2.parent, root);
+
+          root.clearChildren();
+
+          expect(root.children, isEmpty);
+          expect(node1.parent, isNull);
+          expect(node2.parent, isNull);
         },
       );
     });
@@ -305,8 +337,8 @@ void main() {
         'When called on root with id = 1, id = 2 respectively.',
         () {
           root.addChildren([node1, node2]);
-          expect(root.find('1'), equals(node1));
-          expect(root.find('2'), equals(node2));
+          expect(root.find('1'), node1);
+          expect(root.find('2'), node2);
         },
       );
       test(
@@ -315,8 +347,8 @@ void main() {
         () {
           root.addChild(node1);
           node1.addChild(node2);
-          expect(root.find('2'), equals(node2));
-          expect(node1.find('2'), equals(node2));
+          expect(root.find('2'), node2);
+          expect(node1.find('2'), node2);
         },
       );
     });
