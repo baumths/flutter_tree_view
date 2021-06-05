@@ -21,6 +21,9 @@ class TreeNode extends Comparable<TreeNode> {
   /// The [TreeViewController.find] method can be used to locate any node
   /// through its id.
   /// [TreeNode.find] can also be used, but its scope is reduced to its subtree.
+  ///
+  /// Make sure to call [TreeViewController.refreshNode] to update the view
+  /// after adding/deleting nodes.
   TreeNode({required this.id, this.label = '', this.data});
 
   /// An id to easily find this node in the Tree.
@@ -73,16 +76,17 @@ class TreeNode extends Comparable<TreeNode> {
   TreeNode? get lastChild => _children.isEmpty ? null : _children.last;
 
   /// Adds a single child to this node and sets its [parent] property to `this`.
+  ///
+  /// If [child]'s `parent != null`, it will be removed from the children of
+  /// it's old parent before being added to this.
   void addChild(TreeNode child) {
     // A node can't be neither child of its children nor parent of itself.
     if (child == parent || child == this) return;
 
-    // Avoid duplicating nodes in the tree.
-    if (child.parent != null) {
-      child.parent!.removeChild(child);
-    }
+    child.parent?.removeChild(child);
 
     child._parent = this;
+
     _children.add(child);
   }
 
@@ -98,7 +102,7 @@ class TreeNode extends Comparable<TreeNode> {
     }
   }
 
-  /// This method removes this node from the tree.
+  /// Removes this node from the tree.
   ///
   /// Moves every child in [this.children] to [this.parent.children] and
   /// removes [this] from [this.parent.children].
@@ -120,22 +124,32 @@ class TreeNode extends Comparable<TreeNode> {
   ///   '-- grandChildNode2
   /// */
   /// ```
+  /// Set `recursive` to `true` if you want to delete the entire subtree.
+  /// (Ps: if the subtree is too large, this might take a while.)
+  ///
   /// If [parent] is null, this method has no effects.
-  void delete() {
-    parent?.addChildren([..._children]);
-    parent?.removeChild(this);
+  void delete({bool recursive = false}) {
+    if (isRoot) return;
+
+    if (recursive) {
+      clearChildren().forEach((child) => child.delete(recursive: true));
+    } else {
+      _parent!.addChildren(clearChildren());
+    }
+    _parent!.removeChild(this);
   }
 
-  /// Removes all children from this node,
-  /// sets the parent of every child of this node to null.
+  /// Removes all children from this node and sets their parent to null.
   ///
   /// Returns the old children to easily move nodes to another parent.
   List<TreeNode> clearChildren() {
-    _children.forEach((node) => node._parent = null);
-    final _backup = List<TreeNode>.from(_children, growable: false);
+    final _removedChildren = _children.map((child) {
+      child._parent = null;
+      return child;
+    }).toList(growable: false);
 
     _children.clear();
-    return _backup;
+    return _removedChildren;
   }
 
   // * ~~~~~~~~~~ PARENT RELATED ~~~~~~~~~~ *
@@ -208,7 +222,7 @@ extension TreeNodeX on TreeNode {
   /// Whether or not this node can be removed from the view.
   ///
   /// For the view to not be empty, nodes with depth of 0 must not be removed.
-  bool get isRemovable => depth > 0;
+  bool get isRemovable => depth != 0;
 
   /// The line used to prefix this [TreeNode].
   TreeLine get prefixLine {
