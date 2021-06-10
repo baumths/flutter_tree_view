@@ -71,6 +71,8 @@ class _AddNodeDialogState extends State<AddNodeDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+
     return SizedBox(
       width: 400,
       child: ListView(
@@ -137,7 +139,9 @@ class _AddNodeDialogState extends State<AddNodeDialog> {
                 ),
               ],
             ),
-          )
+          ),
+          if (mediaQuery.size.width < 600)
+            SizedBox(height: mediaQuery.viewInsets.bottom),
         ],
       ),
     );
