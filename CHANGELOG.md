@@ -1,3 +1,11 @@
+## [0.5.1+1] 10-06-2021
+- Fixes logic that marks nodes to refresh
+  
+  > Before only child nodes were getting marked as needing refresh,
+  > causing the grand children and it's subtrees not to refresh,
+  > breaking lines hierarchy.
+
+
 ## [0.5.1] 10-06-2021
 - Adds new refreshNode Feature to [TreeViewController]
 - Updates TreeNode's [delete] and [clearChildren] logic
