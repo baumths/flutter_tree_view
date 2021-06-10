@@ -1,3 +1,10 @@
+## [0.5.1] 10-06-2021
+- Adds new refreshNode Feature to [TreeViewController]
+- Updates TreeNode's [delete] and [clearChildren] logic
+- Adds linesToBeDrawn check in shouldRepaint of [LinesPainter]
+
+- New example App UI
+
 ## [0.5.0] 30-05-2021
 ### Reverts most changes from 0.4.0
 

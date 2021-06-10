@@ -55,7 +55,8 @@ class LinesPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant LinesPainter oldDelegate) {
-    return oldDelegate.theme != theme;
+    return oldDelegate.linesToBeDrawn != linesToBeDrawn ||
+        oldDelegate.theme != theme;
   }
 }
 

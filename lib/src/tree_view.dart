@@ -169,10 +169,17 @@ class _TreeViewState extends State<TreeView> {
   Widget _nodeBuilder(BuildContext context, int index) {
     final node = controller.nodeAt(index);
 
+    final shouldRefresh = controller.shouldRefresh(node.id);
+
+    if (shouldRefresh) {
+      controller.nodeRefreshed(node.id);
+    }
+
     return TreeNodeScope(
       key: ValueKey<TreeNode>(node),
       node: node,
       theme: widget.theme,
+      shouldRefresh: shouldRefresh,
       isExpanded: controller.isExpanded(node.id),
       child: widget.nodeBuilder(context, node),
     );

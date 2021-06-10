@@ -25,8 +25,15 @@ class TreeNodeScope extends InheritedWidget {
     required this.node,
     required this.theme,
     this.isExpanded = false,
+    bool shouldRefresh = false,
     required Widget child,
-  }) : super(key: key, child: child);
+  })  : _shouldRefresh = shouldRefresh,
+        super(key: key, child: child);
+
+  /// Indicates whether this widget subtree should be rebuilt.
+  ///
+  /// Used to update the lines of [TreeNode]'s which parent's children changed.
+  final bool _shouldRefresh;
 
   /// Whether [TreeNodeScope.node] is currently expanded or not.
   final bool isExpanded;
@@ -83,7 +90,8 @@ class TreeNodeScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(TreeNodeScope oldWidget) {
-    return theme != oldWidget.theme ||
+    return _shouldRefresh ||
+        theme != oldWidget.theme ||
         isExpanded != oldWidget.isExpanded ||
         node != oldWidget.node;
   }

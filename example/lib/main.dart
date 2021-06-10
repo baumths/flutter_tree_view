@@ -1,60 +1,65 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
-import 'src/sample_data.dart';
+import 'src/app_controller.dart';
 import 'src/home_page.dart';
 
-void main() => runApp(MyApp());
+const kDarkBlue = Color(0xFF1565C0);
 
-/// Recursively convert a list of maps into a list of [TreeNode]s.
-List<TreeNode> generateTreeNodes(List<Map<String, dynamic>> children) {
-  if (children.isEmpty) return const [];
-
-  return children.map((child) {
-    return TreeNode(
-      id: '${child['id'] ?? ''}',
-      label: child['name'] ?? '',
-    )..addChildren(generateTreeNodes(child['children'] ?? const []));
-  }).toList(growable: false);
-}
+void main() => runApp(const MyApp());
 
 class MyApp extends StatefulWidget {
+  const MyApp({Key? key}) : super(key: key);
+
   @override
   _MyAppState createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
-  late TreeViewController _treeController;
-
-  TreeNode buildTreeStructure() {
-    return TreeNode(id: 'Root')..addChildren(generateTreeNodes(sampleData));
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _treeController = TreeViewController(
-      rootNode: buildTreeStructure(),
-    );
-  }
+  late final AppController appController = AppController();
 
   @override
   void dispose() {
-    _treeController.dispose();
+    appController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'TreeView Example',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primaryColor: kDarkBlue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-        iconTheme: const IconThemeData(color: kDarkBlue),
+    return AppControllerScope(
+      controller: appController,
+      child: MaterialApp(
+        title: 'TreeView Example',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          primaryColor: kDarkBlue,
+          visualDensity: VisualDensity.adaptivePlatformDensity,
+          iconTheme: const IconThemeData(color: kDarkBlue),
+        ),
+        home: FutureBuilder<void>(
+          future: appController.init(),
+          builder: (_, __) {
+            if (appController.isInitialized) {
+              return const _Unfocus(child: HomePage());
+            }
+            return const Center(child: CircularProgressIndicator());
+          },
+        ),
       ),
-      home: HomePage(treeController: _treeController),
+    );
+  }
+}
+
+class _Unfocus extends StatelessWidget {
+  const _Unfocus({Key? key, required this.child}) : super(key: key);
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: FocusScope.of(context).unfocus,
+      child: child,
     );
   }
 }
