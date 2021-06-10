@@ -180,9 +180,9 @@ class TreeViewController extends TreeViewControllerBase with ChangeNotifier {
   @override
   void refreshNode(TreeNode node, {bool keepExpandedNodes = false}) {
     if (node.hasChildren) {
-      node.children.forEach(
-        (child) => _nodesThatShouldRefresh[child.id] = true,
-      );
+      node.descendants
+          .where((descendant) => isVisible(descendant.id))
+          .forEach((child) => _nodesThatShouldRefresh[child.id] = true);
     }
 
     super.refreshNode(node, keepExpandedNodes: keepExpandedNodes);
