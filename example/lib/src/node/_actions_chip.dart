@@ -25,10 +25,10 @@ class _NodeActionsChipState extends State<_NodeActionsChip> {
       elevation: 6,
       itemBuilder: (_) => kPopupMenuItems,
       onSelected: (int selected) {
-        if (selected == 2) {
+        if (selected == 0) {
           showAddNodeDialog(context, nodeScope.node);
         } else {
-          _delete(context, deleteSubtree: selected > 0);
+          _delete(context, deleteSubtree: selected == 2);
         }
       },
       child: RawChip(
@@ -66,7 +66,7 @@ class _NodeActionsChipState extends State<_NodeActionsChip> {
 
 const kPopupMenuItems = <PopupMenuEntry<int>>[
   PopupMenuItem(
-    value: 2,
+    value: 0,
     height: 28,
     child: ListTile(
       dense: true,
@@ -78,7 +78,7 @@ const kPopupMenuItems = <PopupMenuEntry<int>>[
   ),
   PopupMenuDivider(height: 1),
   PopupMenuItem(
-    value: 0,
+    value: 1,
     height: 28,
     child: ListTile(
       dense: true,
@@ -90,7 +90,7 @@ const kPopupMenuItems = <PopupMenuEntry<int>>[
   ),
   PopupMenuDivider(height: 1),
   PopupMenuItem(
-    value: 1,
+    value: 2,
     height: 28,
     child: ListTile(
       dense: true,
