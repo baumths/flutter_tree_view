@@ -12,6 +12,6 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: stable
-      - uses: erickzanardo/flutter-gh-pages@v3
+      - uses: bluefireteam/flutter-gh-pages@v7
         with:
           workingDir: example
