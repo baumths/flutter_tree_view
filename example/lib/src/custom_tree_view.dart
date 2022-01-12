@@ -21,6 +21,7 @@ class _CustomTreeViewState extends State<CustomTreeView> {
       builder: (_, treeViewTheme, __) {
         return Scrollbar(
           isAlwaysShown: false,
+          controller: appController.scrollController,
           child: TreeView(
             controller: appController.treeController,
             theme: treeViewTheme,
