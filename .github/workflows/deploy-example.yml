@@ -2,12 +2,9 @@ name: Deploy example to gh-pages
 
 on:
   workflow_dispatch:
-  create:
 
 jobs:
   build:
-    # Fix for "create" not respecting tags, see https://github.com/actions/runner/issues/1007
-    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
 
     steps:
