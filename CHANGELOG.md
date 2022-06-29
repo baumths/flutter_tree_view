@@ -1,3 +1,7 @@
+## [0.5.2] 29-06-2022
+- Allow [TreeView.nodeHeight] to be nullable.
+  - Author: @mz2 (https://github.com/mz2)
+
 ## [0.5.1+1] 10-06-2021
 - Fixes logic that marks nodes to refresh
   
