@@ -87,7 +87,7 @@ class TreeView extends StatefulWidget {
   /// by [ScrollController] to determine the offset of a node and scroll to it).
   ///
   /// Defaults to `40.0`.
-  final double nodeHeight;
+  final double? nodeHeight;
 
   /// The [ScrollController] passed to [ListView.controller].
   final ScrollController? scrollController;
