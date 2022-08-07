@@ -108,6 +108,8 @@ class _LineOffset {
   ///  */
   /// ```
   late final double oneQuarterDiffFromRight = xEnd - ((xEnd - centerX) * 0.5);
+  late final double oneQuarterDiffFromLeft =
+      xStart - ((xStart - centerX) * 0.5);
 
   Path draw(TreeLine line) {
     switch (line) {
@@ -137,10 +139,12 @@ class _LineOffset {
         ..quadraticBezierTo(
           centerX,
           centerY,
-          oneQuarterDiffFromRight,
+          direction == TextDirection.ltr
+              ? oneQuarterDiffFromRight
+              : oneQuarterDiffFromLeft,
           centerY,
         )
-        ..lineTo(xEnd, centerY);
+        ..lineTo(direction == TextDirection.ltr ? xEnd : xStart, centerY);
     } else {
       path.lineTo(centerX, centerY);
     }
@@ -161,14 +165,15 @@ class _LineOffset {
         ..quadraticBezierTo(
           centerX,
           centerY,
-          oneQuarterDiffFromRight,
+          direction == TextDirection.ltr
+              ? oneQuarterDiffFromRight
+              : oneQuarterDiffFromLeft,
           centerY,
         );
     } else {
       path.moveTo(centerX, centerY);
     }
 
-    // for rtl xStart instead of xEnd
     path.lineTo(direction == TextDirection.ltr ? xEnd : xStart, centerY);
 
     return path;

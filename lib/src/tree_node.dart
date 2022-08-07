@@ -261,7 +261,7 @@ extension TreeNodeX on TreeNode {
         prefixLine,
         // Swap the last line of parent to connect or not to siblings.
         lastParentLineEquivalent(parentLines.last),
-        // Copy parent lines, except the last one.
+        // Copy parent lines, except the first one.
         ...parentLines.sublist(1, parentLines.length),
       ];
     }
