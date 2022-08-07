@@ -21,7 +21,10 @@ enum TreeLine {
 /// draw the lines that compose a single node in the [TreeView] widget.
 class LinesPainter extends CustomPainter {
   /// Creates a [LinesPainter].
-  LinesPainter({required this.theme, required this.linesToBeDrawn});
+  LinesPainter({
+    required this.theme,
+    required this.linesToBeDrawn,
+  });
 
   /// The theme to use to draw the lines.
   final TreeViewTheme theme;
@@ -47,6 +50,7 @@ class LinesPainter extends CustomPainter {
         index: index,
         lineCount: linesToBeDrawn.length,
         roundLineCorners: theme.roundLineCorners,
+        direction: theme.direction,
       );
 
       canvas.drawPath(offset.draw(linesToBeDrawn[index]), paint);
@@ -67,6 +71,7 @@ class _LineOffset {
     required this.index,
     required this.lineCount,
     required this.roundLineCorners,
+    required this.direction,
   });
   final double height;
   final double width;
@@ -74,6 +79,8 @@ class _LineOffset {
   final int lineCount;
 
   final bool roundLineCorners;
+
+  final TextDirection direction;
 
   late final double xStart = width * index;
 
@@ -138,7 +145,7 @@ class _LineOffset {
       path.lineTo(centerX, centerY);
     }
 
-    path.lineTo(xEnd, centerY);
+    path.lineTo(direction == TextDirection.ltr ? xEnd : xStart, centerY);
 
     return path;
   }
@@ -161,7 +168,8 @@ class _LineOffset {
       path.moveTo(centerX, centerY);
     }
 
-    path.lineTo(xEnd, centerY);
+    // for rtl xStart instead of xEnd
+    path.lineTo(direction == TextDirection.ltr ? xEnd : xStart, centerY);
 
     return path;
   }

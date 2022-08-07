@@ -1,5 +1,7 @@
 import 'dart:collection' show UnmodifiableSetView;
 
+import 'package:flutter/material.dart';
+
 import 'lines_painter.dart' show TreeLine;
 
 /// This class represents one node in the Tree.
@@ -239,20 +241,30 @@ extension TreeNodeX on TreeNode {
 
   /// A list of [TreeLine]s that defines how connected lines will be drawn
   /// when [TreeViewTheme.lineStyle] is set to [LineStyle.connected].
-  List<TreeLine> get connectedLines {
+  List<TreeLine> connectedLines(TextDirection direction) {
     if (isRoot || isMostTopLevel) return const [];
 
     if (depth == 1) return [prefixLine];
 
-    final parentLines = parent!.connectedLines;
+    final parentLines = parent!.connectedLines(direction);
 
-    return [
-      // Copy parent lines, except the last one.
-      ...parentLines.sublist(0, parentLines.length - 1),
-      // Swap the last line of parent to connect or not to siblings.
-      lastParentLineEquivalent(parentLines.last),
-      prefixLine,
-    ];
+    if (direction == TextDirection.ltr) {
+      return [
+        // Copy parent lines, except the last one.
+        ...parentLines.sublist(0, parentLines.length - 1),
+        // Swap the last line of parent to connect or not to siblings.
+        lastParentLineEquivalent(parentLines.last),
+        prefixLine,
+      ];
+    } else {
+      return [
+        prefixLine,
+        // Swap the last line of parent to connect or not to siblings.
+        lastParentLineEquivalent(parentLines.last),
+        // Copy parent lines, except the last one.
+        ...parentLines.sublist(1, parentLines.length),
+      ];
+    }
   }
 
   /// A list of [TreeLine] that defines how scoped lines will be drawn

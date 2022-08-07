@@ -149,18 +149,22 @@ class _TreeViewState extends State<TreeView> {
     return _TreeViewScope(
       controller: controller,
       theme: widget.theme,
-      child: ListView.custom(
-        controller: widget.scrollController,
-        padding: widget.padding,
-        shrinkWrap: widget.shrinkWrap,
-        itemExtent: widget.nodeHeight,
-        childrenDelegate: SliverChildBuilderDelegate(
-          _nodeBuilder,
-          childCount: controller.visibleNodes.length,
-          findChildIndexCallback: (Key key) {
-            final index = controller.indexOf((key as ValueKey<TreeNode>).value);
-            return index < 0 ? null : index;
-          },
+      child: Directionality(
+        textDirection: widget.theme.direction,
+        child: ListView.custom(
+          controller: widget.scrollController,
+          padding: widget.padding,
+          shrinkWrap: widget.shrinkWrap,
+          itemExtent: widget.nodeHeight,
+          childrenDelegate: SliverChildBuilderDelegate(
+            _nodeBuilder,
+            childCount: controller.visibleNodes.length,
+            findChildIndexCallback: (Key key) {
+              final index =
+                  controller.indexOf((key as ValueKey<TreeNode>).value);
+              return index < 0 ? null : index;
+            },
+          ),
         ),
       ),
     );
