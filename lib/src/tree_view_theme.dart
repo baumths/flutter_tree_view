@@ -42,6 +42,7 @@ class TreeViewTheme {
     this.lineThickness = 2.0,
     this.indent = 40.0,
     this.roundLineCorners = false,
+    this.direction = TextDirection.ltr,
   }) : assert(
           indent >= lineThickness,
           'The indent must not be less than lineThickness',
@@ -74,6 +75,8 @@ class TreeViewTheme {
   /// Defaults to `false`.
   final bool roundLineCorners;
 
+  final TextDirection direction;
+
   @override
   int get hashCode => hashValues(
         lineStyle,
@@ -91,7 +94,8 @@ class TreeViewTheme {
         lineStyle == other.lineStyle &&
         lineThickness == other.lineThickness &&
         indent == other.indent &&
-        roundLineCorners == other.roundLineCorners;
+        roundLineCorners == other.roundLineCorners &&
+        direction == other.direction;
   }
 
   /// Returns a copy of this object with new attributes.
@@ -101,6 +105,7 @@ class TreeViewTheme {
     double? lineThickness,
     double? indent,
     bool? roundLineCorners,
+    TextDirection? direction,
   }) {
     return TreeViewTheme(
       lineColor: lineColor ?? this.lineColor,
@@ -108,6 +113,7 @@ class TreeViewTheme {
       lineThickness: lineThickness ?? this.lineThickness,
       indent: indent ?? this.indent,
       roundLineCorners: roundLineCorners ?? this.roundLineCorners,
+      direction: direction ?? this.direction,
     );
   }
 }

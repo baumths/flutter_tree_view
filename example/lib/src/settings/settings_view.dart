@@ -14,6 +14,7 @@ part '_line_style_selector.dart';
 part '_line_thickness_slider.dart';
 part '_swap_expansion_button.dart';
 part '_toggle_rounded_corners_button.dart';
+part '_direction_selector.dart';
 
 const Duration kAnimationDuration = Duration(milliseconds: 300);
 
@@ -54,6 +55,8 @@ class SettingsView extends StatelessWidget {
           _LineThicknessSlider(),
           SizedBox(height: 10),
           _IndentationSlider(),
+          SizedBox(height: 10),
+          _DirectionSelector(),
           SizedBox(height: 10),
           _SettingsHeader(text: 'Other'),
           _SwapExpansionButton(),

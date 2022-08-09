@@ -32,7 +32,9 @@ class LinesWidget extends StatelessWidget {
       case LineStyle.connected:
         return CustomPaint(
           painter: LinesPainter(
-            linesToBeDrawn: treeNodeScope.node.connectedLines,
+            linesToBeDrawn: treeNodeScope.node.connectedLines(
+              treeNodeScope.theme.direction,
+            ),
             theme: treeNodeScope.theme,
           ),
           child: child,

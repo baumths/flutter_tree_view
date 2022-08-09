@@ -21,7 +21,10 @@ enum TreeLine {
 /// draw the lines that compose a single node in the [TreeView] widget.
 class LinesPainter extends CustomPainter {
   /// Creates a [LinesPainter].
-  LinesPainter({required this.theme, required this.linesToBeDrawn});
+  LinesPainter({
+    required this.theme,
+    required this.linesToBeDrawn,
+  });
 
   /// The theme to use to draw the lines.
   final TreeViewTheme theme;
@@ -47,6 +50,7 @@ class LinesPainter extends CustomPainter {
         index: index,
         lineCount: linesToBeDrawn.length,
         roundLineCorners: theme.roundLineCorners,
+        direction: theme.direction,
       );
 
       canvas.drawPath(offset.draw(linesToBeDrawn[index]), paint);
@@ -67,6 +71,7 @@ class _LineOffset {
     required this.index,
     required this.lineCount,
     required this.roundLineCorners,
+    required this.direction,
   });
   final double height;
   final double width;
@@ -74,6 +79,8 @@ class _LineOffset {
   final int lineCount;
 
   final bool roundLineCorners;
+
+  final TextDirection direction;
 
   late final double xStart = width * index;
 
@@ -101,6 +108,8 @@ class _LineOffset {
   ///  */
   /// ```
   late final double oneQuarterDiffFromRight = xEnd - ((xEnd - centerX) * 0.5);
+  late final double oneQuarterDiffFromLeft =
+      xStart - ((xStart - centerX) * 0.5);
 
   Path draw(TreeLine line) {
     switch (line) {
@@ -130,15 +139,17 @@ class _LineOffset {
         ..quadraticBezierTo(
           centerX,
           centerY,
-          oneQuarterDiffFromRight,
+          direction == TextDirection.ltr
+              ? oneQuarterDiffFromRight
+              : oneQuarterDiffFromLeft,
           centerY,
         )
-        ..lineTo(xEnd, centerY);
+        ..lineTo(direction == TextDirection.ltr ? xEnd : xStart, centerY);
     } else {
       path.lineTo(centerX, centerY);
     }
 
-    path.lineTo(xEnd, centerY);
+    path.lineTo(direction == TextDirection.ltr ? xEnd : xStart, centerY);
 
     return path;
   }
@@ -154,14 +165,16 @@ class _LineOffset {
         ..quadraticBezierTo(
           centerX,
           centerY,
-          oneQuarterDiffFromRight,
+          direction == TextDirection.ltr
+              ? oneQuarterDiffFromRight
+              : oneQuarterDiffFromLeft,
           centerY,
         );
     } else {
       path.moveTo(centerX, centerY);
     }
 
-    path.lineTo(xEnd, centerY);
+    path.lineTo(direction == TextDirection.ltr ? xEnd : xStart, centerY);
 
     return path;
   }
