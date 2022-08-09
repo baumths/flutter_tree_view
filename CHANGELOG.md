@@ -1,3 +1,7 @@
+## [0.5.3] 09-08-2022
+- Add Right-to-Left support to line painting
+  - Author: @naory159 (https://github.com/naory159)
+
 ## [0.5.2] 29-06-2022
 - Allow [TreeView.nodeHeight] to be nullable.
   - Author: @mz2 (https://github.com/mz2)
