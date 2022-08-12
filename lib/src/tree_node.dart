@@ -235,7 +235,7 @@ extension TreeNodeX on TreeNode {
   ///
   /// If parent has a sibling after it, there should be a line connecting it to
   /// its sibling, otherwise a blank line should be drawn.
-  TreeLine lastParentLineEquivalent(TreeLine line) {
+  TreeLine parentPrefixLineEquivalent(TreeLine line) {
     return line == TreeLine.intersection ? TreeLine.straight : TreeLine.blank;
   }
 
@@ -253,14 +253,14 @@ extension TreeNodeX on TreeNode {
         // Copy parent lines, except the last one.
         ...parentLines.sublist(0, parentLines.length - 1),
         // Swap the last line of parent to connect or not to siblings.
-        lastParentLineEquivalent(parentLines.last),
+        parentPrefixLineEquivalent(parentLines.last),
         prefixLine,
       ];
     } else {
       return [
         prefixLine,
         // Swap the first line of parent to connect or not to siblings.
-        lastParentLineEquivalent(parentLines.first),
+        parentPrefixLineEquivalent(parentLines.first),
         // Copy parent lines, except the first one.
         ...parentLines.sublist(1, parentLines.length),
       ];
