@@ -1,3 +1,7 @@
+## [0.5.3+1] 12-08-2022
+- Fix rtl line painting bug
+  - Author: @naory159 (https://github.com/naory159)
+
 ## [0.5.3] 09-08-2022
 - Add Right-to-Left support to line painting
   - Author: @naory159 (https://github.com/naory159)
