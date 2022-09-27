@@ -1,6 +1,9 @@
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
+import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
 
 import '../foundation.dart';
+import 'drag_and_drop.dart';
 import 'tree_indentation.dart';
 
 /// A simple widget to be used in a [Treeview].
@@ -300,8 +303,7 @@ class TreeItem<T extends Object> extends StatelessWidget {
   /// {@macro flutter.material.inkwell.statesController}
   final MaterialStatesController? statesController;
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _wrap(Widget content) {
     return InkWell(
       onTap: onTap,
       onTapUp: onTapUp,
@@ -331,7 +333,314 @@ class TreeItem<T extends Object> extends StatelessWidget {
       child: TreeIndentation<T>(
         treeEntry: treeEntry,
         guide: indentGuide,
-        child: child,
+        child: content,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => _wrap(child);
+}
+
+/// Signature for a function used by [ReorderableTreeItem] to decorate its child
+/// widget from the provided [TreeReorderingDetails].
+typedef TreeReorderDecorationBuilder<T extends Object> = Widget Function(
+  BuildContext context,
+  Widget child,
+  TreeReorderingDetails<T> details,
+);
+
+/// A [TreeItem] wrapped in [TreeDraggable] and [TreeDragTarget], providing
+/// reordering capabilities.
+class ReorderableTreeItem<T extends Object> extends TreeItem<T> {
+  /// Creates a [ReorderableTreeItem].
+  const ReorderableTreeItem({
+    super.key,
+    required super.child,
+    required super.treeEntry,
+    super.indentGuide,
+    super.onTap,
+    super.onTapUp,
+    super.onTapDown,
+    super.onTapCancel,
+    super.onDoubleTap,
+    super.onLongPress,
+    super.onHighlightChanged,
+    super.onHover,
+    super.mouseCursor,
+    super.focusColor,
+    super.hoverColor,
+    super.highlightColor,
+    super.overlayColor,
+    super.splashColor,
+    super.splashFactory,
+    super.radius,
+    super.borderRadius,
+    super.customBorder,
+    super.enableFeedback,
+    super.excludeFromSemantics,
+    super.focusNode,
+    super.canRequestFocus,
+    super.onFocusChange,
+    super.autofocus,
+    super.statesController,
+    this.collapseOnDragStart = true,
+    this.autoScrollSensitivity = 100.0,
+    this.toggleExpansionTimeout = const Duration(seconds: 1),
+    this.canStartToggleExpansionTimer,
+    required this.onReorder,
+    this.decorationBuilder,
+    this.decorationWrapsChildOnly = true,
+    required this.feedback,
+    this.axis,
+    this.childWhenDragging,
+    this.feedbackOffset = Offset.zero,
+    this.dragAnchorStrategy = pointerDragAnchorStrategy,
+    this.requireLongPress = false,
+    this.longPressHapticFeedbackOnStart = true,
+    this.longPressTimeout = kLongPressTimeout,
+    this.affinity,
+  });
+
+  /// Whether [treeEntry] should be collapsed when the drag gesture starts.
+  ///
+  /// Defaults to `true`.
+  final bool collapseOnDragStart;
+
+  /// Defines the size of the [Rect] created around the drag global position
+  /// when dragging a tree item.
+  ///
+  /// The [Rect] is used to detect when the user drags too close to the vertical
+  /// edges of the scrollable viewport to start auto scrolling if necessary.
+  ///
+  /// If [autoScrollSensitivity] is set to `100.0`, the detected area will be
+  /// `50.0` pixels in each direction centered on the drag global position.
+  ///
+  /// Defaults to `100.0`.
+  final double autoScrollSensitivity;
+
+  /// The default delay to wait before toggling the expansion of [TreeEntry]'s
+  /// node when it is being hovered by another node.
+  ///
+  /// To disable auto expansion toggle, provide a duration of [Duration.zero].
+  ///
+  /// Defaults to `const Duration(seconds: 1)`.
+  final Duration toggleExpansionTimeout;
+
+  /// A simple callback used to decide if the [TreeDragTarget]'s toggle expansion
+  /// timer should start when this node is being hovered by another dragging node.
+  ///
+  /// If this callback is `null`, the timer always starts.
+  final ValueGetter<bool>? canStartToggleExpansionTimer;
+
+  /// The callback that will handle the actual reordering of nodes.
+  ///
+  /// Called when a successful drop ocurred on this widget.
+  ///
+  /// Opinionated examples:
+  /// > The following functions could be abstracted and used as both [onReorder]
+  /// > and [decorationBuilder] to provide visual feedback of what would happen
+  /// > when dropping the dragged node onto this node. Check out
+  /// > "example/lib/src/reordering.dart" that uses the last function of below.
+  ///
+  /// ```dart
+  /// void onReorder<T extends Object>(TreeReorderingDetails<T> details) {
+  ///   // [details.draggedNode] dropped onto [details.targetNode], add the
+  ///   // dragged node to the children of the target node.
+  /// }
+  ///
+  /// void onReorder<T extends Object>(TreeReorderingDetails<T> details) {
+  ///   final double y = details.dropPosition.dy;
+  ///   final double heightFactor = details.targetBounds.height / 2;
+  ///
+  ///   if (y <= heightFactor) {
+  ///     // [details.draggedNode] dropped on the top half,
+  ///     // could reorder as previous sibling of [details.targetNode].
+  ///   } else {
+  ///     // [details.draggedNode] dropped on the bottom half,
+  ///     // could reorder as child or next sibling of [details.targetNode].
+  ///   }
+  /// }
+  ///
+  /// void onReorder<T extends Object>(TreeReorderingDetails<T> details) {
+  ///   final double y = details.dropPosition.dy;
+  ///   final double heightFactor = details.targetBounds.height / 3;
+  ///
+  ///   if (y <= heightFactor) {
+  ///     // [details.draggedNode] dropped on the top third,
+  ///     // could reorder as previous sibling to [details.targetNode].
+  ///   } else if (y <= heightFactor * 2) {
+  ///     // [details.draggedNode] dropped on the center third,
+  ///     // could reorder as (first/last) child of [details.targetNode].
+  ///   } else {
+  ///     // [details.draggedNode] dropped on the bottom third,
+  ///     // could reorder as next sibling or first child of [details.targetNode].
+  ///   }
+  /// }
+  /// ```
+  final TreeOnReorderCallback<T> onReorder;
+
+  /// Widget builder used to apply decorations when this node is hovered by
+  /// another node.
+  ///
+  /// This builder is used to add an optional decoration to [child] when this
+  /// tree item is being hovered by another dragging tree item. This can be used
+  /// to show a feedback to the user of what will happen to a node when it is
+  /// dropped and accepted by this node.
+  ///
+  /// Example:
+  /// ```dart
+  /// Widget decorationBuilder<T extends Object>(
+  ///   BuildContext context,
+  ///   Widget child,
+  ///   TreeReorderingDetails<T> details,
+  /// ) {
+  ///   const BorderSide borderSide = BorderSide();
+  ///   final double y = details.dropPosition.dy;
+  ///   final double heightFactor = details.targetBounds.height / 3;
+  ///
+  ///   late final Border border;
+  ///
+  ///   if (y <= heightFactor) {
+  ///     border = const Border(top: borderSide);
+  ///   } else if (y <= heightFactor * 2) {
+  ///     border = const Border.fromBorderSide(borderSide);
+  ///   } else {
+  ///     border = const Border(bottom: borderSide);
+  ///   }
+  ///
+  ///   return DecoratedBox(
+  ///     decoration: BoxDecoration(border: border),
+  ///     child: child,
+  ///   );
+  /// }
+  /// ```
+  final TreeReorderDecorationBuilder<T>? decorationBuilder;
+
+  /// If `true`, the [decorationBuilder] will only wrap [child]. If `false`,
+  /// wraps the entire underlying [InkWell] + [TreeItendetation].
+  ///
+  /// Defaults to `true`.
+  final bool decorationWrapsChildOnly;
+
+  /// The widget to show under the pointer when a drag is under way.
+  ///
+  /// See [child] and [childWhenDragging] for information about what is shown
+  /// at the location of the [Draggable] itself when a drag is under way.
+  final Widget feedback;
+
+  /// The [Axis] to restrict this draggable's movement, if specified.
+  ///
+  /// When axis is set to [Axis.horizontal], this widget can only be dragged
+  /// horizontally. Behavior is similar for [Axis.vertical].
+  ///
+  /// Defaults to allowing drag on both [Axis.horizontal] and [Axis.vertical].
+  ///
+  /// When null, allows drag on both [Axis.horizontal] and [Axis.vertical].
+  ///
+  /// For the direction of gestures this widget competes with to start a drag
+  /// event, see [Draggable.affinity].
+  final Axis? axis;
+
+  /// The widget to display instead of [child] when one or more drags are under
+  /// way.
+  ///
+  /// If this is null, then this widget will always display [child] (and so the
+  /// drag source representation will not change while a drag is under way).
+  ///
+  /// The [feedback] widget is shown under the pointer when a drag is under way.
+  final Widget? childWhenDragging;
+
+  /// The feedbackOffset can be used to set the hit test target point for the
+  /// purposes of finding a drag target. It is especially useful if the feedback
+  /// is transformed compared to the child.
+  final Offset feedbackOffset;
+
+  /// A strategy that is used by this draggable to get the anchor offset when it
+  /// is dragged.
+  ///
+  /// The anchor offset refers to the distance between the users' fingers and
+  /// the [feedback] widget when this draggable is dragged.
+  ///
+  /// This property's value is a function that implements [DragAnchorStrategy].
+  /// There are two built-in functions that can be used:
+  ///
+  ///  * [childDragAnchorStrategy], which displays the feedback anchored at the
+  ///    position of the original child.
+  ///
+  ///  * [pointerDragAnchorStrategy], which displays the feedback anchored at the
+  ///    position of the touch that started the drag.
+  ///
+  /// Defaults to [pointerDragAnchorStrategy].
+  final DragAnchorStrategy? dragAnchorStrategy;
+
+  /// If set to `true` will always use a long press gesture, not depending on
+  /// the current platform.
+  ///
+  /// Defaults to `false`.
+  final bool requireLongPress;
+
+  /// Whether haptic feedback should be triggered on drag start when
+  /// [requireLongPress] is set to `true` or [defaultTargetPlatform] resolves to
+  /// [DelayedMultiDragGestureRecognizer].
+  final bool longPressHapticFeedbackOnStart;
+
+  /// The duration that the user has to press down before a long press is
+  /// registered.
+  ///
+  /// Defaults to [kLongPressTimeout].
+  final Duration longPressTimeout;
+
+  /// Controls how this widget competes with other gestures to initiate a drag.
+  ///
+  /// If affinity is null, this widget initiates a drag as soon as it recognizes
+  /// a tap down gesture, regardless of any directionality. If affinity is
+  /// horizontal (or vertical), then this widget will compete with other
+  /// horizontal (or vertical, respectively) gestures.
+  ///
+  /// For example, if this widget is placed in a vertically scrolling region and
+  /// has horizontal affinity, pointer motion in the vertical direction will
+  /// result in a scroll and pointer motion in the horizontal direction will
+  /// result in a drag. Conversely, if the widget has a null or vertical
+  /// affinity, pointer motion in any direction will result in a drag rather
+  /// than in a scroll because the draggable widget, being the more specific
+  /// widget, will out-compete the [Scrollable] for vertical gestures.
+  ///
+  /// For the directions this widget can be dragged in after the drag event
+  /// starts, see [Draggable.axis].
+  final Axis? affinity;
+
+  @override
+  Widget build(BuildContext context) {
+    return TreeDraggable<T>(
+      treeEntry: treeEntry,
+      collapseOnDragStart: collapseOnDragStart,
+      autoScrollSensitivity: autoScrollSensitivity,
+      feedback: feedback,
+      axis: axis,
+      childWhenDragging: childWhenDragging,
+      feedbackOffset: feedbackOffset,
+      dragAnchorStrategy: dragAnchorStrategy,
+      requireLongPress: requireLongPress,
+      longPressHapticFeedbackOnStart: longPressHapticFeedbackOnStart,
+      longPressTimeout: longPressTimeout,
+      affinity: affinity,
+      child: TreeDragTarget<T>(
+        treeEntry: treeEntry,
+        onReorder: onReorder,
+        canStartToggleExpansionTimer: canStartToggleExpansionTimer,
+        toggleExpansionTimeout: toggleExpansionTimeout,
+        builder: (BuildContext context, TreeReorderingDetails<T>? details) {
+          if (details == null || decorationBuilder == null) {
+            return _wrap(child);
+          }
+
+          if (decorationWrapsChildOnly) {
+            return _wrap(decorationBuilder!(context, child, details));
+          }
+
+          return decorationBuilder!(context, _wrap(child), details);
+        },
       ),
     );
   }
