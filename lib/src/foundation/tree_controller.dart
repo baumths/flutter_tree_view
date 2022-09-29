@@ -7,9 +7,14 @@ import 'tree.dart';
 
 /// A simple controller responsible for managing the state of a [SliverTree].
 ///
-/// To disable animations is to update the state of your nodes directly and call
-/// [TreeController.rebuild].
-/// > When animating collapse operations, the changes to [Tree.setExpansionState]
+/// There are several ways to disable animations. The easiest way is to provide
+/// a [Duration.zero] to [TreeController.animationDuration] which will disable
+/// all animations; or individually for each expanding/collapsing method through
+/// their `duration` optional parameter which, when not provided, defaults to
+/// [TreeController.animationDuration].
+/// Animations can also be disabled by updating the expansion state of nodes
+/// directly and then calling [TreeController.rebuild].
+/// > When animating collapse commands, the changes to [Tree.setExpansionState]
 /// > are only applied after the animation completes because we have to wait for
 /// > the nodes to be animated before being removed from [flattenedTree],
 /// > otherwise the nodes would just vanish instantly.
@@ -139,11 +144,10 @@ class TreeController<T extends Object> with ChangeNotifier {
     }
   }
 
-  /// Returns the command (if any) that is bound to [node] in the current
-  /// flattened tree.
+  /// Returns the animatable command (if any) that is bound to [node] in the
+  /// current flattened tree.
   ///
-  /// Commands are used by [SliverTree] to animate the expanding/collapsing
-  /// branches.
+  /// Animatable commands are used to animate the expanding/collapsing branches.
   AnimatableTreeCommand<T>? findAnimatableCommand(T node) {
     return _commands[tree.getId(node)];
   }
