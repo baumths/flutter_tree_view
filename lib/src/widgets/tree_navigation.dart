@@ -219,22 +219,18 @@ class TreeNavigationState<T extends Object> extends State<TreeNavigation<T>> {
   /// Highlight behavior by direction:
   ///
   /// - [TraversalDirection.up]: Move highlight to the previous node.
-  ///
   /// - [TraversalDirection.down]: Move highlight to the next node.
   ///
-  /// - [TraversalDirection.left] mirrors [TraversalDirection.right]:
-  ///   - [TextDirection.ltr]: If [currentHighlight] is expanded, it would be
-  ///     collapsed, otherwise it tries to move the highlight to its direct parent.
+  /// > Depending on [Directionality.maybeOf] ([TextDirection.ltr] as default),
+  /// > the following directions will have their behaviors swapped:
   ///
-  ///   - [TextDirection.rtl]: If [currentHighlight] is collapsed, it would be
-  ///     expanded, otherwise it tries to move the highlight to the next node.
+  /// - [LogicalKeyboardKey.arrowLeft]:
+  ///   - [TextDirection.ltr]: Collapse or move highlight to parent.
+  ///   - [TextDirection.rtl]: Expand or move highlight to the next node.
   ///
-  /// - [TraversalDirection.right] mirrors [TraversalDirection.left]:
-  ///   - [TextDirection.rtl]: If [currentHighlight] is expanded, it would be
-  ///     collapsed, otherwise it tries to move the highlight to its direct parent.
-  ///
-  ///   - [TextDirection.ltr]: If [currentHighlight] is collapsed, it would be
-  ///     expanded, otherwise it tries to move the highlight to the next node.
+  /// - [LogicalKeyboardKey.arrowRight].
+  ///   - [TextDirection.ltr]: Expand or move highlight to the next node.
+  ///   - [TextDirection.rtl]: Collapse or move highlight to parent.
   ///
   /// In case the move ever fails to find a target, [currentHighlight] keeps the
   /// highlight.
@@ -359,7 +355,7 @@ class TreeNavigationState<T extends Object> extends State<TreeNavigation<T>> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => _effectiveFocusNode.requestFocus(),
+      onTap: widget.canRequestFocus ? _effectiveFocusNode.requestFocus : null,
       child: Actions(
         actions: _actions,
         child: Focus(
