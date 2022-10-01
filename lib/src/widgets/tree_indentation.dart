@@ -5,8 +5,6 @@ import '../foundation.dart' show TreeEntry;
 
 /// Widget responsible for indenting tree nodes and painting lines (if enabled).
 ///
-/// If [entry] is not provided, defaults to [TreeEntry.of].
-///
 /// See also:
 ///
 /// * [IndentGuide], an interface for working with any type of decoration. By
