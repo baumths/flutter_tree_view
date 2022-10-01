@@ -75,10 +75,13 @@ class TreeViewTheme {
   /// Defaults to `false`.
   final bool roundLineCorners;
 
+  /// The [TextDirection] used when painting lines.
+  ///
+  /// Defaults to [TextDirection.ltr].
   final TextDirection direction;
 
   @override
-  int get hashCode => hashValues(
+  int get hashCode => Object.hash(
         lineStyle,
         lineStyle,
         lineThickness,
