@@ -224,11 +224,11 @@ class TreeNavigationState<T extends Object> extends State<TreeNavigation<T>> {
   /// > Depending on [Directionality.maybeOf] ([TextDirection.ltr] as default),
   /// > the following directions will have their behaviors swapped:
   ///
-  /// - [LogicalKeyboardKey.arrowLeft]:
+  /// - [TraversalDirection.left]:
   ///   - [TextDirection.ltr]: Collapse or move highlight to parent.
   ///   - [TextDirection.rtl]: Expand or move highlight to the next node.
   ///
-  /// - [LogicalKeyboardKey.arrowRight].
+  /// - [TraversalDirection.right].
   ///   - [TextDirection.ltr]: Expand or move highlight to the next node.
   ///   - [TextDirection.rtl]: Collapse or move highlight to parent.
   ///
