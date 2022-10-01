@@ -57,7 +57,7 @@ class NodeWidgetLeadingIcon extends StatelessWidget {
   /// If you use a custom [expandIcon], make sure to give it a [Key] so that
   /// flutter animates the widget swap correctly. You can use the default key:
   /// [NodeWidgetLeadingIcon.kExpandIconKey].
-  final Icon? expandIcon;
+  final Widget? expandIcon;
 
   /// The icon displayed when [TreeNodeScope.node] is collapsed and
   /// is not a Leaf. Defaults to [NodeWidgetLeadingIcon.kCollapseIcon].
@@ -65,11 +65,11 @@ class NodeWidgetLeadingIcon extends StatelessWidget {
   /// If you use a custom [collapseIcon], make sure to give it a [Key] so that
   /// flutter animates the widget swap correctly. You can use the default key:
   /// [NodeWidgetLeadingIcon.kCollapseIconKey].
-  final Icon? collapseIcon;
+  final Widget? collapseIcon;
 
   /// The icon displayed when [TreeNodeScope.node] is a Leaf.
   /// Defaults to [NodeWidgetLeadingIcon.kLeafIcon].
-  final Icon leafIcon;
+  final Widget leafIcon;
 
   /// The padding around the button's icon. The entire padded icon will react
   /// to input gestures.
