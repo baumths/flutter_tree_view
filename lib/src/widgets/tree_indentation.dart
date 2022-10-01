@@ -6,6 +6,17 @@ import '../foundation.dart' show TreeEntry;
 /// Widget responsible for indenting tree nodes and painting lines (if enabled).
 ///
 /// If [entry] is not provided, defaults to [TreeEntry.of].
+///
+/// See also:
+///
+/// * [IndentGuide], an interface for working with any type of decoration. By
+///   default, an [IndentGuide] only indents nodes, without any decoration;
+/// * [AbstractLineGuide], an interface for working with line painting;
+///
+/// * [ScopingLinesGuide], which paints vertical lines for each level of the
+///   tree;
+/// * [ConnectingLinesGuide], which paints vertical lines with horizontal
+///   connections;
 class TreeIndentation<T extends Object> extends StatelessWidget {
   /// Creates a [TreeIndentation].
   ///
@@ -17,16 +28,28 @@ class TreeIndentation<T extends Object> extends StatelessWidget {
     IndentGuide? guide,
   }) : guide = guide ?? const ConnectingLinesGuide();
 
-  /// The tree entry that's used to paint guides for.
+  /// The tree entry that will be used to calculate the total indentation and
+  /// paint guides for (if enabled).
   final TreeEntry<T> treeEntry;
 
   /// The widget that is going to be displayed to the side of indentation.
-  ///
-  /// If not provided, [ConnectingLinesGuide] will be used with its default
-  /// constructor values.
   final Widget child;
 
   /// The configuration used to indent and paint lines (if enabled).
+  ///
+  /// If not provided, [ConnectingLinesGuide] will be used with its default
+  /// constructor values.
+  ///
+  /// See also:
+  ///
+  /// * [ScopingLinesGuide], which paints vertical lines for each level of the
+  ///   tree;
+  /// * [ConnectingLinesGuide], which paints vertical lines with horizontal
+  ///   connections;
+  ///
+  /// * [IndentGuide], an interface for working with any type of decoration. By
+  ///   default, an [IndentGuide] only indents nodes, without any decoration;
+  /// * [AbstractLineGuide], an interface for working with line painting;
   final IndentGuide guide;
 
   @override
@@ -46,8 +69,12 @@ class TreeIndentation<T extends Object> extends StatelessWidget {
 ///
 /// To add decorations to the indentation of nodes, see:
 ///
-/// * [ScopingLinesGuide], which paints straight lines for each level of the tree;
-/// * [ConnectingLinesGuide], which paints lines with horizontal connections;
+/// See also:
+///
+/// * [ScopingLinesGuide], which paints vertical lines for each level of the
+///   tree;
+/// * [ConnectingLinesGuide], which paints vertical lines with horizontal
+///   connections;
 ///
 /// * [AbstractLineGuide], an interface for working with line painting;
 class IndentGuide {
@@ -92,10 +119,13 @@ class IndentGuide {
 ///
 /// See also:
 ///
-/// * [ScopingLinesGuide], which paints straight lines for each level of the tree;
-/// * [ConnectingLinesGuide], which paints lines with horizontal connections;
+/// * [ScopingLinesGuide], which paints vertical lines for each level of the
+///   tree;
+/// * [ConnectingLinesGuide], which paints vertical lines with horizontal
+///   connections;
 ///
-/// * [IndentGuide], an interface for working with any type of decoration;
+/// * [IndentGuide], an interface for working with any type of decoration. By
+///   default, an [IndentGuide] only indents nodes, without any decoration;
 abstract class AbstractLineGuide extends IndentGuide {
   /// Constructor with requried parameters for building the indent line guides.
   const AbstractLineGuide({
@@ -153,9 +183,11 @@ abstract class AbstractLineGuide extends IndentGuide {
 ///
 /// See also:
 ///
-/// * [ConnectingLinesGuide], which paints lines with horizontal connections;
+/// * [ConnectingLinesGuide], which paints vertical lines with horizontal
+///   connections;
 ///
-/// * [IndentGuide], an interface for working with any type of decoration;
+/// * [IndentGuide], an interface for working with any type of decoration. By
+///   default, an [IndentGuide] only indents nodes, without any decoration;
 /// * [AbstractLineGuide], an interface for working with line painting;
 class ScopingLinesGuide extends AbstractLineGuide {
   /// Creates a [ScopingLinesGuide].
@@ -263,9 +295,11 @@ class _ScopingLinesPainter extends CustomPainter {
 ///
 /// See also:
 ///
-/// * [ScopingLinesGuide], which paints straight lines for each level of the tree;
+/// * [ScopingLinesGuide], which paints vertical lines for each level of the
+///   tree;
 ///
-/// * [IndentGuide], an interface for working with any type of decoration;
+/// * [IndentGuide], an interface for working with any type of decoration. By
+///   default, an [IndentGuide] only indents nodes, without any decoration;
 /// * [AbstractLineGuide], an interface for working with line painting;
 class ConnectingLinesGuide extends AbstractLineGuide {
   /// Creates a [ConnectingLinesGuide].

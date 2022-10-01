@@ -98,6 +98,17 @@ class TreeItem<T extends Object> extends StatelessWidget {
   ///
   /// If not provided, [ConnectingLinesGuide] will be used with its default
   /// constructor values.
+  ///
+  /// See also:
+  ///
+  /// * [ScopingLinesGuide], which paints vertical lines for each level of the
+  ///   tree;
+  /// * [ConnectingLinesGuide], which paints vertical lines with horizontal
+  ///   connections;
+  ///
+  /// * [IndentGuide], an interface for working with any type of decoration. By
+  ///   default, an [IndentGuide] only indents nodes, without any decoration;
+  /// * [AbstractLineGuide], an interface for working with line painting;
   final IndentGuide? indentGuide;
 
   /// Called when the user taps this part of the material.

@@ -90,7 +90,7 @@ class _NodeTree<T extends Object> extends Tree<TreeNode<T>> {
   Object getId(TreeNode<T> node) => node.id;
 
   @override
-  List<TreeNode<T>> getChildren(TreeNode<T>? node) => node?.children ?? roots;
+  List<TreeNode<T>> getChildren(TreeNode<T> node) => node.children;
 
   @override
   bool getExpansionState(TreeNode<T> node) => node.isExpanded;
