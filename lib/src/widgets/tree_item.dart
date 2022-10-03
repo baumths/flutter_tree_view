@@ -10,7 +10,8 @@ import 'tree_indentation.dart';
 ///
 /// The [indentGuide] can be used to configure line painting and define the
 /// indent used when calculating the indentation of this item. If not provided,
-/// uses the default values of a constant [ConnectingLinesGuide].
+/// defaults to [DefaultIndentGuide.of], which if not found, creates a constant
+/// [ConnectingLinesGuide].
 ///
 /// The [child] is usually composed of a [Row] with 2 widgets, the label of the
 /// node and a button to toggle its expansion state.
@@ -94,10 +95,10 @@ class TreeItem<T extends Object> extends StatelessWidget {
   /// indentation of tree items (and paint lines, if enabled).
   final TreeEntry<T> treeEntry;
 
-  /// The configuration used to indent and paint lines (if enabled).
+  /// The configuration used by [TreeIndentation] to indent this item and paint
+  /// lines (if enabled).
   ///
-  /// If not provided, [ConnectingLinesGuide] will be used with its default
-  /// constructor values.
+  /// If not provided, [DefaultIndentGuide.of] will be used.
   ///
   /// See also:
   ///
@@ -109,6 +110,9 @@ class TreeItem<T extends Object> extends StatelessWidget {
   /// * [IndentGuide], an interface for working with any type of decoration. By
   ///   default, an [IndentGuide] only indents nodes, without any decoration;
   /// * [AbstractLineGuide], an interface for working with line painting;
+  ///
+  /// * [DefaultIndentGuide], an [InheritedTheme] that provides an [IndentGuide]
+  ///   to its descendant widgets.
   final IndentGuide? indentGuide;
 
   /// Called when the user taps this part of the material.

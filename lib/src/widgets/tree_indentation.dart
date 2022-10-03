@@ -15,6 +15,9 @@ import '../foundation.dart' show TreeEntry;
 ///   tree;
 /// * [ConnectingLinesGuide], which paints vertical lines with horizontal
 ///   connections;
+///
+/// * [DefaultIndentGuide], an [InheritedTheme] that provides an [IndentGuide]
+///   to its descendant widgets.
 class TreeIndentation<T extends Object> extends StatelessWidget {
   /// Creates a [TreeIndentation].
   ///
@@ -23,8 +26,8 @@ class TreeIndentation<T extends Object> extends StatelessWidget {
     super.key,
     required this.child,
     required this.treeEntry,
-    IndentGuide? guide,
-  }) : guide = guide ?? const ConnectingLinesGuide();
+    this.guide,
+  });
 
   /// The tree entry that will be used to calculate the total indentation and
   /// paint guides for (if enabled).
@@ -35,8 +38,7 @@ class TreeIndentation<T extends Object> extends StatelessWidget {
 
   /// The configuration used to indent and paint lines (if enabled).
   ///
-  /// If not provided, [ConnectingLinesGuide] will be used with its default
-  /// constructor values.
+  /// If not provided, [DefaultIndentGuide.of] will be used.
   ///
   /// See also:
   ///
@@ -48,7 +50,7 @@ class TreeIndentation<T extends Object> extends StatelessWidget {
   /// * [IndentGuide], an interface for working with any type of decoration. By
   ///   default, an [IndentGuide] only indents nodes, without any decoration;
   /// * [AbstractLineGuide], an interface for working with line painting;
-  final IndentGuide guide;
+  final IndentGuide? guide;
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +58,67 @@ class TreeIndentation<T extends Object> extends StatelessWidget {
       return child;
     }
 
-    return guide.wrap<T>(context, child, treeEntry);
+    final IndentGuide effectiveGuide = guide ?? DefaultIndentGuide.of(context);
+    return effectiveGuide.wrap<T>(context, child, treeEntry);
+  }
+}
+
+/// An [InheritedTheme] that provides a default [IndentGuide] to its widget tree.
+///
+/// The [TreeIndentation] widget will use the value returned from
+/// [DefaultIndentGuide.of] if its internal [TreeIndentation.guide] is `null`.
+///
+/// If [TreeIndentation.guide] is `null` and there's no [DefaultIndentGuide] in
+/// its context, a default [ConnectingLinesGuide] will be returned.
+///
+/// See also:
+///
+/// * [IndentGuide], an interface for working with any type of decoration. By
+///   default, an [IndentGuide] only indents nodes, without any decoration;
+/// * [AbstractLineGuide], an interface for working with line painting;
+///
+/// * [ScopingLinesGuide], which paints vertical lines for each level of the
+///   tree;
+/// * [ConnectingLinesGuide], which paints vertical lines with horizontal
+///   connections;
+class DefaultIndentGuide extends InheritedTheme {
+  /// Creates a [DefaultIndentGuide].
+  const DefaultIndentGuide({
+    super.key,
+    required super.child,
+    required this.guide,
+  });
+
+  /// The default [IndentGuide] provided to the widget tree of [child].
+  final IndentGuide guide;
+
+  /// The [IndentGuide] from the closest instance of this class that encloses
+  /// the given context.
+  ///
+  /// If there is no [DefaultIndentGuide] ancestor in the widget tree at the
+  /// given context, then this will return a [ConnectingLinesGuide] with its
+  /// default constructor values.
+  ///
+  /// Typical usage is as follows:
+  ///
+  /// ```dart
+  /// IndentGuide guide = DefaultIndentGuide.of(context);
+  /// ```
+  static IndentGuide of(BuildContext context) {
+    final DefaultIndentGuide? instance =
+        context.dependOnInheritedWidgetOfExactType<DefaultIndentGuide>();
+
+    return instance?.guide ?? const ConnectingLinesGuide();
+  }
+
+  @override
+  bool updateShouldNotify(DefaultIndentGuide oldWidget) {
+    return oldWidget.guide != guide;
+  }
+
+  @override
+  Widget wrap(BuildContext context, Widget child) {
+    return DefaultIndentGuide(guide: guide, child: child);
   }
 }
 
@@ -109,6 +171,15 @@ class IndentGuide {
       padding: EdgeInsetsDirectional.only(start: entry.level * indent),
       child: child,
     );
+  }
+
+  @override
+  int get hashCode => indent.hashCode;
+
+  @override
+  operator ==(Object other) {
+    if (identical(other, this)) return true;
+    return other is IndentGuide && other.indent == indent;
   }
 }
 
