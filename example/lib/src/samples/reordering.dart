@@ -1,10 +1,27 @@
+import 'dart:async' show Timer;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
-import '../example_node.dart';
+import '../example_node.dart' show ExampleNode, ExampleTree;
+import '../pages.dart' show PageInfo;
 
-class ReorderableTreeView extends StatefulWidget {
+class ReorderableTreeView extends StatefulWidget with PageInfo {
   const ReorderableTreeView({super.key});
+
+  @override
+  String get title => 'Reorderable TreeView';
+
+  @override
+  String? get description {
+    return 'Tap and hold a node to start dragging. '
+        'In this example, when hovering a node, there are three available '
+        'vertical segments to release the drop (represented by decoration '
+        'borders):'
+        '\nAbove: reorder as previous sibling'
+        '\nCenter: reorder as last child'
+        '\nBelow: reorder as next sibling';
+  }
 
   @override
   State<ReorderableTreeView> createState() => _ReorderableTreeViewState();
@@ -86,6 +103,7 @@ class _ReorderableTreeViewState extends State<ReorderableTreeView> {
 
     // Rebuild the flattened tree to make sure the changes are shown.
     treeController.rebuild();
+    briefHighlight(details.draggedNode.id);
   }
 
   @override
@@ -93,22 +111,43 @@ class _ReorderableTreeViewState extends State<ReorderableTreeView> {
     return TreeView<ExampleNode>(
       controller: treeController,
       itemBuilder: (BuildContext context, TreeEntry<ExampleNode> entry) {
-        final Widget content = Content(
+        Widget content = Content(
           node: entry.node,
           onFolderPressed: () => treeController.toggleExpansion(entry.node),
         );
+
+        if (highlightedId == entry.id) {
+          content = HighlightShadow(child: content);
+        }
 
         return ReorderableTreeItem<ExampleNode>(
           treeEntry: entry,
           onReorder: _onReorder,
           decorationBuilder: _decorationBuilder,
-          feedback: Feedback(child: content),
+          feedback: HighlightShadow(child: content),
           dragAnchorStrategy: pointerDragAnchorStrategy,
           childWhenDragging: ChildWhenDragging(entry: entry, child: content),
           mouseCursor: SystemMouseCursors.grab,
           child: content,
         );
       },
+    );
+  }
+
+  // opinionated way of highlighting a node after been reordered
+  Timer? highlightTimer;
+  int? highlightedId;
+
+  void briefHighlight(int id) {
+    highlightTimer?.cancel();
+
+    setState(() {
+      highlightedId = id;
+    });
+
+    highlightTimer = Timer(
+      const Duration(seconds: 2),
+      () => setState(() => highlightedId = null),
     );
   }
 }
@@ -125,28 +164,31 @@ class Content extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        if (node.children.isEmpty)
-          const IconButton(
-            onPressed: null,
-            icon: Icon(Icons.article),
-          )
-        else
-          FolderButton(
-            isOpen: node.isExpanded,
-            onPressed: onFolderPressed,
+    return SizedBox(
+      height: 40,
+      child: Row(
+        children: [
+          if (node.children.isEmpty)
+            const IconButton(
+              onPressed: null,
+              icon: Icon(Icons.article),
+            )
+          else
+            FolderButton(
+              isOpen: node.isExpanded,
+              onPressed: onFolderPressed,
+            ),
+          Expanded(
+            child: Text(node.label),
           ),
-        Expanded(
-          child: Text(node.label),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-class Feedback extends StatelessWidget {
-  const Feedback({super.key, required this.child});
+class HighlightShadow extends StatelessWidget {
+  const HighlightShadow({super.key, required this.child});
 
   final Widget child;
 
@@ -161,8 +203,8 @@ class Feedback extends StatelessWidget {
           boxShadow: const [
             BoxShadow(
               color: Colors.black38,
-              blurRadius: 20,
-              blurStyle: BlurStyle.outer,
+              blurRadius: 10,
+              spreadRadius: 2,
             ),
           ],
         ),

@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
-// Take a look at `src/samples/` for more feature examples
-// import 'src/samples/navigation.dart';
-// import 'src/samples/reordering.dart';
+import 'src/samples/navigation.dart';
+import 'src/samples/reordering.dart';
+import 'src/pages.dart';
 
 // Check out the Live Demo:
-// - https://mbaumgartenbr.github.io/flutter_tree_view/
+// - https://mbaumgartenbr.github.io/flutter_tree_view
 
 void main() => runApp(const ExampleApp());
 
@@ -17,14 +17,17 @@ class ExampleApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       theme: ThemeData.from(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: const Scaffold(
-        body: SimpleTreeView(),
-        // body: NavigableTreeView(),
-        // body: ReorderableTreeView(),
+      home: const ExamplePages(
+        pages: [
+          SimpleTreeView(),
+          NavigableTreeView(),
+          ReorderableTreeView(),
+        ],
       ),
     );
   }
@@ -118,15 +121,20 @@ class ExampleTree extends Tree<TreeNode> {
   }
 }
 
-class SimpleTreeView extends StatefulWidget {
+class SimpleTreeView extends StatefulWidget with PageInfo {
   const SimpleTreeView({super.key});
+
+  @override
+  String get title => 'Simple TreeView';
+
+  @override
+  String? get description => null;
 
   @override
   State<SimpleTreeView> createState() => _SimpleTreeViewState();
 }
 
 class _SimpleTreeViewState extends State<SimpleTreeView> {
-  late final List<TreeNode> roots;
   late final TreeController<TreeNode> treeController;
 
   @override
@@ -135,7 +143,7 @@ class _SimpleTreeViewState extends State<SimpleTreeView> {
 
     // This "nested" approach could be represented differently depending on the
     // usecase or how your app retrieves data.
-    roots = [
+    final List<TreeNode> roots = [
       TreeNode(
         label: 'Root 1',
         children: [

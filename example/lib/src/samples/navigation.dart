@@ -1,16 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
-import '../example_node.dart';
+import '../example_node.dart' show ExampleNode, ExampleTree;
+import '../pages.dart' show PageInfo;
 
-class NavigableTreeView extends StatefulWidget {
+class NavigableTreeView extends StatefulWidget with PageInfo {
   const NavigableTreeView({super.key});
+
+  @override
+  String get title => 'Navigable TreeView';
+
+  @override
+  String? get description {
+    return 'Use the keyboard arrow keys to navigate around:'
+        '\n↑    highlight previous node'
+        '\n↓    highlight next node'
+        '\n→    expand or highlight next'
+        '\n←    collapse or highlight parent';
+  }
 
   @override
   State<NavigableTreeView> createState() => _NavigableTreeViewState();
 }
 
 class _NavigableTreeViewState extends State<NavigableTreeView> {
+  final GlobalKey<TreeNavigationState<ExampleNode>> navKey = GlobalKey();
+
   late final TreeController<ExampleNode> treeController;
 
   ExampleNode? highlightedNode;
@@ -22,6 +37,12 @@ class _NavigableTreeViewState extends State<NavigableTreeView> {
     treeController = TreeController<ExampleNode>(
       tree: ExampleTree.createSampleTree(),
     );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // highlight the first root as soon as the view renders so that the
+      // navigation focus is ready to receive keyboard input.
+      navKey.currentState?.highlight(treeController.tree.roots.first);
+    });
   }
 
   @override
@@ -35,6 +56,7 @@ class _NavigableTreeViewState extends State<NavigableTreeView> {
     // Wrap your [SliverTree] or [TreeView] in a [TreeNavigation] to enable
     // keyboard arrow keys navigation.
     return TreeNavigation<ExampleNode>(
+      key: navKey,
       controller: treeController,
       // Provide the current highlight, if any, will serve as an anchor for
       // directional highlight movements.
@@ -120,6 +142,15 @@ class _NavigableTreeItemState extends State<NavigableTreeItem> {
     }
   }
 
+  void onFocusChange(bool gotFocus) {
+    if (gotFocus) return;
+
+    // Avoid losing focus if highlighted
+    if (isHighlighted) {
+      focusNode.requestFocus();
+    }
+  }
+
   @override
   void dispose() {
     focusNode.dispose();
@@ -134,13 +165,20 @@ class _NavigableTreeItemState extends State<NavigableTreeItem> {
       treeEntry: widget.entry,
       focusNode: focusNode,
       focusColor: Colors.transparent,
+      onFocusChange: onFocusChange,
       onTap: () {
+        treeNavigation.highlight(node);
+
+        if (node.hasChildren) {
+          widget.onToggle();
+        }
+      },
+      onLongPress: () {
         if (isHighlighted) {
           treeNavigation.clearHighlight();
         } else {
           treeNavigation.highlight(node);
         }
-        widget.onToggle();
       },
       // add a background color and a border if `isHighlighted` is set to true
       child: HighlightDecoration(
