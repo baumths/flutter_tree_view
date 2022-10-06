@@ -30,12 +30,17 @@ class TreeController<T extends TreeNode<T>> with ChangeNotifier {
   /// a starting level of `1` or higher. The higher the starting level, more
   /// indent the flattening algorithm will apply to the total indentation of the
   /// nodes.
+  ///
+  /// [showRoot] controls whether to display [root] or [root.children] as the
+  /// root(s) of the tree. Set to `true` if [root] should be visible.
   TreeController({
     required T root,
     this.animationDuration = const Duration(milliseconds: 300),
     this.animationCurve = Curves.linear,
+    bool showRoot = false,
     int startingLevel = defaultTreeRootLevel,
   })  : _root = root,
+        _showRoot = showRoot,
         assert(startingLevel >= 0),
         _startingLevel = startingLevel;
 
@@ -53,6 +58,19 @@ class TreeController<T extends TreeNode<T>> with ChangeNotifier {
   set root(T newRoot) {
     if (newRoot == _root) return;
     _root = newRoot;
+    rebuild();
+  }
+
+  /// Whether [root] should be the only root of [flattenedTree] or if each node
+  /// of [root.children] should become a root.
+  ///
+  /// If set to `false` (default), every child of [root] will become a root and
+  /// [root] itself will be hidden.
+  bool get showRoot => _showRoot;
+  bool _showRoot;
+  set showRoot(bool value) {
+    if (_showRoot == value) return;
+    _showRoot = value;
     rebuild();
   }
 
@@ -106,7 +124,7 @@ class TreeController<T extends TreeNode<T>> with ChangeNotifier {
 
   void _updateTree() {
     _flatTree = buildFlatTree<T>(
-      roots: root.children,
+      roots: showRoot ? <T>[root] : root.children,
       startingLevel: startingLevel,
       descendCondition: _descendCondition,
     );

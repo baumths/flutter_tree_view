@@ -39,7 +39,7 @@ abstract class TreeNode<T extends TreeNode<T>> with DiagnosticableTreeMixin {
 
   /// The expansion state of this node.
   ///
-  /// If `true`, this node is expanded and its sutree should be visible on a
+  /// If `true`, this node is expanded and its subtree should be visible on a
   /// tree view.
   bool isExpanded;
 
