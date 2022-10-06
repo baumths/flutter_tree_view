@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 
-import '../foundation.dart' show TreeEntry;
+import '../foundation.dart' show TreeEntry, TreeNode;
 
 /// Widget responsible for indenting tree nodes and painting lines (if enabled).
 ///
@@ -18,7 +18,7 @@ import '../foundation.dart' show TreeEntry;
 ///
 /// * [DefaultIndentGuide], an [InheritedTheme] that provides an [IndentGuide]
 ///   to its descendant widgets.
-class TreeIndentation<T extends Object> extends StatelessWidget {
+class TreeIndentation<T extends TreeNode<T>> extends StatelessWidget {
   /// Creates a [TreeIndentation].
   ///
   /// If [guide] is not provided, defaults to a constant [ConnectingLinesGuide].
@@ -162,7 +162,7 @@ class IndentGuide {
   /// See also:
   ///
   ///   * [AbstractLineGuide], an interface for working with line painting;
-  Widget wrap<T extends Object>(
+  Widget wrap<T extends TreeNode<T>>(
     BuildContext context,
     Widget child,
     TreeEntry<T> entry,
@@ -268,7 +268,7 @@ class ScopingLinesGuide extends AbstractLineGuide {
   });
 
   @override
-  Widget wrap<T extends Object>(
+  Widget wrap<T extends TreeNode<T>>(
     BuildContext context,
     Widget child,
     TreeEntry<T> entry,
@@ -385,7 +385,7 @@ class ConnectingLinesGuide extends AbstractLineGuide {
   final bool roundCorners;
 
   @override
-  Widget wrap<T extends Object>(
+  Widget wrap<T extends TreeNode<T>>(
     BuildContext context,
     Widget child,
     TreeEntry<T> entry,

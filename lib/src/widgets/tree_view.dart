@@ -10,7 +10,7 @@ import 'sliver_tree.dart';
 ///
 /// * [SliverTree], which is created internally by [TreeView]. It can be used to
 ///   create more sophisticated scrolling experineces.
-class TreeView<T extends Object> extends StatelessWidget {
+class TreeView<T extends TreeNode<T>> extends StatelessWidget {
   /// Creates a [TreeView].
   const TreeView({
     super.key,

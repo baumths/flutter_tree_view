@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
-import '../example_node.dart' show ExampleNode, ExampleTree;
+import '../example_node.dart';
 import '../pages.dart' show PageInfo;
 
 class NavigableTreeView extends StatefulWidget with PageInfo {
@@ -35,13 +35,13 @@ class _NavigableTreeViewState extends State<NavigableTreeView> {
     super.initState();
 
     treeController = TreeController<ExampleNode>(
-      tree: ExampleTree.createSampleTree(),
+      root: ExampleNode.createSampleTree(),
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // highlight the first root as soon as the view renders so that the
       // navigation focus is ready to receive keyboard input.
-      navKey.currentState?.highlight(treeController.tree.roots.first);
+      navKey.currentState?.highlight(treeController.root.children.first);
     });
   }
 
@@ -180,7 +180,7 @@ class _NavigableTreeItemState extends State<NavigableTreeItem> {
           treeNavigation.highlight(node);
         }
       },
-      // add a background color and a border if `isHighlighted` is set to true
+      // adds a background color and a border if `isHighlighted` is set to true
       child: HighlightDecoration(
         isHighlighted: isHighlighted,
         child: SizedBox(

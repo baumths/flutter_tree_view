@@ -1,7 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_fancy_tree_view/tree_node.dart';
+import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
-typedef Node = TreeNode<String>;
+class Node extends TreeNode<Node> {
+  Node({
+    required this.label,
+    List<Node>? children,
+    super.isExpanded,
+  })  : id = Object(),
+        children = children ?? <Node>[];
+
+  final String label;
+
+  @override
+  final Object id;
+
+  @override
+  final List<Node> children;
+}
 
 class SimpleTree extends StatefulWidget {
   const SimpleTree({super.key});
@@ -18,38 +33,34 @@ class _SimpleTreeState extends State<SimpleTree> {
     super.initState();
 
     final Node root = Node(
-      data: 'Sections',
+      label: 'Sections',
       isExpanded: true,
       children: [
         Node(
-          data: 'Section A',
+          label: 'Section A',
           children: [
-            Node(data: 'Sub-Section'),
+            Node(label: 'Sub-Section'),
           ],
         ),
         Node(
-          data: 'Section B',
+          label: 'Section B',
           children: [
-            Node(data: 'Sub-Section 001'),
-            Node(data: 'Sub-Section 002'),
+            Node(label: 'Sub-Section 001'),
+            Node(label: 'Sub-Section 002'),
           ],
         ),
         Node(
-          data: 'Section C',
+          label: 'Section C',
           children: [
-            Node(data: 'Sub-Section I'),
-            Node(data: 'Sub-Section II'),
-            Node(data: 'Sub-Section III'),
+            Node(label: 'Sub-Section I'),
+            Node(label: 'Sub-Section II'),
+            Node(label: 'Sub-Section III'),
           ],
         ),
       ],
     );
 
-    treeController = TreeController<Node>(
-      tree: Node.createTree(
-        roots: <Node>[root],
-      ),
-    );
+    treeController = TreeController<Node>(root: root);
   }
 
   @override
@@ -68,7 +79,7 @@ class _SimpleTreeState extends State<SimpleTree> {
           onTap: () => treeController.toggleExpansion(entry.node),
           child: Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Text(entry.node.data ?? 'no data'),
+            child: Text(entry.node.label),
           ),
         );
       },

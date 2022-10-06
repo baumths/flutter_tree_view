@@ -7,7 +7,7 @@ import '../foundation.dart';
 
 /// Signature for a function that creates a widget for a given entry, e.g., in a
 /// tree.
-typedef TreeViewItemBuilder<T extends Object> = Widget Function(
+typedef TreeViewItemBuilder<T extends TreeNode<T>> = Widget Function(
   BuildContext context,
   TreeEntry<T> entry,
 );
@@ -36,7 +36,7 @@ Widget defaultTreeViewTransitionBuilder(
 }
 
 /// A widget that wraps a [SliverList] adding tree viewing capabilities.
-class SliverTree<T extends Object> extends StatefulWidget {
+class SliverTree<T extends TreeNode<T>> extends StatefulWidget {
   /// Creates a [SliverTree].
   const SliverTree({
     super.key,
@@ -94,7 +94,9 @@ class SliverTree<T extends Object> extends StatefulWidget {
   ///
   ///  * [of], which will throw in debug mode if no [SliverTree] ancestor exists
   ///    in the widget tree.
-  static SliverTreeState<T>? maybeOf<T extends Object>(BuildContext context) {
+  static SliverTreeState<T>? maybeOf<T extends TreeNode<T>>(
+    BuildContext context,
+  ) {
     return context.findAncestorStateOfType<SliverTreeState<T>>();
   }
 
@@ -114,7 +116,7 @@ class SliverTree<T extends Object> extends StatefulWidget {
   ///
   ///  * [maybeOf], which will return null if no [SliverTree] ancestor exists in
   ///    the widget tree.
-  static SliverTreeState<T> of<T extends Object>(BuildContext context) {
+  static SliverTreeState<T> of<T extends TreeNode<T>>(BuildContext context) {
     final SliverTreeState<T>? instance = maybeOf<T>(context);
     assert(() {
       if (instance == null) {
@@ -144,7 +146,7 @@ class SliverTree<T extends Object> extends StatefulWidget {
 }
 
 /// The object that holds the state of a [SliverTree].
-class SliverTreeState<T extends Object> extends State<SliverTree<T>> {
+class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   /// The controller responsible for managing the expansion state and animations
   /// of the tree provided by its [TreeController.tree].
   TreeController<T> get controller => widget.controller;
@@ -194,11 +196,11 @@ class SliverTreeState<T extends Object> extends State<SliverTree<T>> {
   ///
   /// This should not be used from outside of [TreeDraggable].
   void onNodeDragStarted(TreeEntry<T> entry) {
-    final Set<Object> path = {entry.id};
+    final Set<Object> path = {entry.node.id};
 
     TreeEntry<T>? current = entry.parent;
     while (current != null) {
-      path.add(current.id);
+      path.add(current.node.id);
       current = current.parent;
     }
 
@@ -266,7 +268,7 @@ class SliverTreeState<T extends Object> extends State<SliverTree<T>> {
 
   Widget _keyedItemBuilder(BuildContext context, TreeEntry<T> entry) {
     return KeyedSubtree(
-      key: _SaltedKey(entry.id),
+      key: _SaltedKey(entry.node.id),
       child: widget.itemBuilder(context, entry),
     );
   }
@@ -291,12 +293,9 @@ class SliverTreeState<T extends Object> extends State<SliverTree<T>> {
       onAnimationComplete: () {
         controller.onAnimatableCommandComplete(entry.node);
       },
-      tree: _SubTree<T>(
-        root: entry.node,
-        motherTree: controller.tree,
-        startingLevel: entry.level,
-        parentLineLevels: entry.ancestorLevelsWithVerticalLines,
-      ),
+      root: entry.node,
+      startingLevel: entry.level,
+      parentLineLevels: entry.ancestorLevelsWithVerticalLines,
     );
   }
 }
@@ -305,41 +304,12 @@ class _SaltedKey<T extends State<StatefulWidget>> extends GlobalObjectKey<T> {
   const _SaltedKey(super.value);
 }
 
-class _SubTree<T extends Object> extends Tree<T> {
-  _SubTree({
-    required T root,
-    required this.motherTree,
-    required this.parentLineLevels,
-    required this.startingLevel,
-  }) : pseudoRoots = <T>[root];
-
-  final Tree<T> motherTree;
-
-  final int startingLevel;
-  final Set<int> parentLineLevels;
-
-  final List<T> pseudoRoots;
-
-  @override
-  List<T> get roots => pseudoRoots;
-
-  @override
-  Object getId(T node) => motherTree.getId(node);
-
-  @override
-  List<T> getChildren(T node) => motherTree.getChildren(node);
-
-  @override
-  bool getExpansionState(T node) => motherTree.getExpansionState(node);
-
-  @override
-  void setExpansionState(T node, bool expanded) {/* NO-OP */}
-}
-
-class _AnimatingSubTree<T extends Object> extends StatefulWidget {
+class _AnimatingSubTree<T extends TreeNode<T>> extends StatefulWidget {
   const _AnimatingSubTree({
     super.key,
-    required this.tree,
+    required this.root,
+    required this.startingLevel,
+    required this.parentLineLevels,
     required this.itemBuilder,
     required this.transitionBuilder,
     required this.maxNodesToShowWhenAnimating,
@@ -349,7 +319,9 @@ class _AnimatingSubTree<T extends Object> extends StatefulWidget {
     required this.onAnimationComplete,
   });
 
-  final _SubTree<T> tree;
+  final T root;
+  final int startingLevel;
+  final Set<int> parentLineLevels;
   final TreeViewItemBuilder<T> itemBuilder;
   final TreeViewTransitionBuilder transitionBuilder;
   final int maxNodesToShowWhenAnimating;
@@ -362,12 +334,12 @@ class _AnimatingSubTree<T extends Object> extends StatefulWidget {
   State<_AnimatingSubTree<T>> createState() => _AnimatingSubTreeState<T>();
 }
 
-class _AnimatingSubTreeState<T extends Object>
+class _AnimatingSubTreeState<T extends TreeNode<T>>
     extends State<_AnimatingSubTree<T>> with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final CurvedAnimation _animation;
 
-  _SubTree<T> get tree => widget.tree;
+  T get root => widget.root;
 
   late List<TreeEntry<T>> _branch;
   late TreeEntry<T> _rootEntry;
@@ -376,8 +348,11 @@ class _AnimatingSubTreeState<T extends Object>
   @override
   void initState() {
     super.initState();
-    _branch = tree.flatten(startingLevel: tree.startingLevel);
-    // at least the subtree "pseudo root" must be present
+    _branch = buildFlatTree<T>(
+      roots: [root],
+      startingLevel: widget.startingLevel,
+    );
+    // at least the "pseudo root" must be present
     assert(_branch.isNotEmpty);
     _rootEntry = _branch.first;
 
@@ -386,7 +361,7 @@ class _AnimatingSubTreeState<T extends Object>
     //
     // Adding the extra line levels to the root will ensure all descendants have
     // it due to the recursive [TreeEntry.ancestorLevelsWithVerticalLines] calls.
-    _rootEntry.addVerticalLinesAtLevels(tree.parentLineLevels);
+    _rootEntry.addVerticalLinesAtLevels(widget.parentLineLevels);
 
     _itemCount = math.min(_branch.length, widget.maxNodesToShowWhenAnimating);
 

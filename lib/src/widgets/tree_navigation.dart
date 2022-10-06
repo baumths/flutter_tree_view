@@ -22,7 +22,7 @@ import '../foundation.dart';
 ///   focusNode.requestFocus();
 /// }
 /// ```
-class TreeNavigation<T extends Object> extends StatefulWidget {
+class TreeNavigation<T extends TreeNode<T>> extends StatefulWidget {
   /// Creates a [TreeNavigation].
   const TreeNavigation({
     super.key,
@@ -40,7 +40,7 @@ class TreeNavigation<T extends Object> extends StatefulWidget {
     this.canRequestFocus = true,
   });
 
-  /// The widget below this widget in the tree.
+  /// The widget below this widget in the widget tree.
   ///
   /// Typically a [TreeView] or a [CustomScrollView] with a [SliverTree] sliver.
   ///
@@ -113,7 +113,9 @@ class TreeNavigation<T extends Object> extends StatefulWidget {
   /// ```dart
   /// TreeNavigationState<T>? navigationState = TreeNavigation.of<T>(context);
   /// ```
-  static TreeNavigationState<T>? of<T extends Object>(BuildContext context) {
+  static TreeNavigationState<T>? of<T extends TreeNode<T>>(
+    BuildContext context,
+  ) {
     return context
         .dependOnInheritedWidgetOfExactType<_TreeNavigationScope<T>>()
         ?.state;
@@ -126,7 +128,8 @@ class TreeNavigation<T extends Object> extends StatefulWidget {
 /// The state of a [TreeNavigation].
 ///
 /// Can be used to dynamically update the currently highlighted tree node.
-class TreeNavigationState<T extends Object> extends State<TreeNavigation<T>> {
+class TreeNavigationState<T extends TreeNode<T>>
+    extends State<TreeNavigation<T>> {
   late Map<Type, Action<Intent>> _actions;
   TreeController<T> get _controller => widget.controller;
 
@@ -144,15 +147,15 @@ class TreeNavigationState<T extends Object> extends State<TreeNavigation<T>> {
   TreeEntry<T>? _findTreeEntry(T? node) {
     if (node == null) return null;
 
-    final Object id = _controller.tree.getId(node);
+    final Object id = node.id;
 
-    if (_cachedAnchor?.id == id) return _cachedAnchor;
+    if (_cachedAnchor?.node.id == id) return _cachedAnchor;
 
     if (_controller.flattenedTree.isEmpty) return null;
 
     TreeEntry<T>? current = _controller.flattenedTree.first;
 
-    while (!(current == null || current.id == id)) {
+    while (!(current == null || current.node.id == id)) {
       current = current.nextEntry;
     }
 
@@ -279,7 +282,7 @@ class TreeNavigationState<T extends Object> extends State<TreeNavigation<T>> {
   }
 
   TreeEntry<T>? _moveToParentOrCollapse(TreeEntry<T> anchor) {
-    if (!anchor.isExpanded) {
+    if (!anchor.node.isExpanded) {
       return anchor.parent;
     }
     _collapseCallback(anchor.node);
@@ -287,7 +290,7 @@ class TreeNavigationState<T extends Object> extends State<TreeNavigation<T>> {
   }
 
   TreeEntry<T>? _moveNextOrExpand(TreeEntry<T> anchor) {
-    if (anchor.isExpanded) {
+    if (anchor.node.isExpanded) {
       return anchor.nextEntry;
     }
     _expandCallback(anchor.node);
@@ -374,7 +377,7 @@ class TreeNavigationState<T extends Object> extends State<TreeNavigation<T>> {
   }
 }
 
-class _TreeNavigationScope<T extends Object> extends InheritedWidget {
+class _TreeNavigationScope<T extends TreeNode<T>> extends InheritedWidget {
   const _TreeNavigationScope({
     super.key,
     required this.state,

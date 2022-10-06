@@ -3,7 +3,7 @@ import 'dart:async' show Timer;
 import 'package:flutter/material.dart';
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
-import '../example_node.dart' show ExampleNode, ExampleTree;
+import '../example_node.dart';
 import '../pages.dart' show PageInfo;
 
 class ReorderableTreeView extends StatefulWidget with PageInfo {
@@ -28,15 +28,15 @@ class ReorderableTreeView extends StatefulWidget with PageInfo {
 }
 
 class _ReorderableTreeViewState extends State<ReorderableTreeView> {
-  late final ExampleTree tree;
   late final TreeController<ExampleNode> treeController;
 
   @override
   void initState() {
     super.initState();
 
-    tree = ExampleTree.createSampleTree();
-    treeController = TreeController<ExampleNode>(tree: tree);
+    treeController = TreeController<ExampleNode>(
+      root: ExampleNode.createSampleTree(),
+    );
   }
 
   @override
@@ -75,7 +75,7 @@ class _ReorderableTreeViewState extends State<ReorderableTreeView> {
     details.when<void>(
       above: () {
         // drop `details.draggedNode` as previous sibling of `details.targetNode`
-        newParent = details.targetNode.parent ?? tree.root;
+        newParent = details.targetNode.parent ?? treeController.root;
         newIndex = newParent.children.indexOf(details.targetNode);
       },
       inside: () {
@@ -85,7 +85,7 @@ class _ReorderableTreeViewState extends State<ReorderableTreeView> {
       },
       below: () {
         // drop `details.draggedNode` as next sibling of `details.targetNode`
-        newParent = details.targetNode.parent ?? tree.root;
+        newParent = details.targetNode.parent ?? treeController.root;
         newIndex = newParent.children.indexOf(details.targetNode) + 1;
       },
     );
@@ -116,7 +116,7 @@ class _ReorderableTreeViewState extends State<ReorderableTreeView> {
           onFolderPressed: () => treeController.toggleExpansion(entry.node),
         );
 
-        if (highlightedId == entry.id) {
+        if (highlightedId == entry.node.id) {
           content = HighlightShadow(child: content);
         }
 
@@ -249,7 +249,7 @@ class ChildWhenDragging extends StatelessWidget {
 /// is inside the segment handled by that callback.
 ///
 /// This way of handling reordering as well as the values below are very opinionated.
-extension<T extends Object> on TreeReorderingDetails<T> {
+extension<T extends TreeNode<T>> on TreeReorderingDetails<T> {
   R when<R>({
     required R Function() above,
     required R Function() inside,

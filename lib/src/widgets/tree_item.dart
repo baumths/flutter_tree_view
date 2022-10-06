@@ -52,7 +52,7 @@ import 'tree_indentation.dart';
 /// See also:
 ///   * [FolderButton], a button that when tapped toggles between open and
 ///     closed folder icons, useful for expanding/collapsing a [TreeItem];
-class TreeItem<T extends Object> extends StatelessWidget {
+class TreeItem<T extends TreeNode<T>> extends StatelessWidget {
   /// Creates a [TreeItem].
   const TreeItem({
     super.key,
@@ -359,7 +359,7 @@ class TreeItem<T extends Object> extends StatelessWidget {
 
 /// Signature for a function used by [ReorderableTreeItem] to decorate its child
 /// widget from the provided [TreeReorderingDetails].
-typedef TreeReorderDecorationBuilder<T extends Object> = Widget Function(
+typedef TreeReorderDecorationBuilder<T extends TreeNode<T>> = Widget Function(
   BuildContext context,
   Widget child,
   TreeReorderingDetails<T> details,
@@ -367,7 +367,7 @@ typedef TreeReorderDecorationBuilder<T extends Object> = Widget Function(
 
 /// A [TreeItem] wrapped in [TreeDraggable] and [TreeDragTarget], providing
 /// reordering capabilities.
-class ReorderableTreeItem<T extends Object> extends TreeItem<T> {
+class ReorderableTreeItem<T extends TreeNode<T>> extends TreeItem<T> {
   /// Creates a [ReorderableTreeItem].
   const ReorderableTreeItem({
     super.key,
@@ -459,12 +459,12 @@ class ReorderableTreeItem<T extends Object> extends TreeItem<T> {
   /// > "example/lib/src/reordering.dart" that uses the last function of below.
   ///
   /// ```dart
-  /// void onReorder<T extends Object>(TreeReorderingDetails<T> details) {
+  /// void onReorder<T extends TreeNode<T>>(TreeReorderingDetails<T> details) {
   ///   // [details.draggedNode] dropped onto [details.targetNode], add the
   ///   // dragged node to the children of the target node.
   /// }
   ///
-  /// void onReorder<T extends Object>(TreeReorderingDetails<T> details) {
+  /// void onReorder<T extends TreeNode<T>>(TreeReorderingDetails<T> details) {
   ///   final double y = details.dropPosition.dy;
   ///   final double heightFactor = details.targetBounds.height / 2;
   ///
@@ -477,7 +477,7 @@ class ReorderableTreeItem<T extends Object> extends TreeItem<T> {
   ///   }
   /// }
   ///
-  /// void onReorder<T extends Object>(TreeReorderingDetails<T> details) {
+  /// void onReorder<T extends TreeNode<T>>(TreeReorderingDetails<T> details) {
   ///   final double y = details.dropPosition.dy;
   ///   final double heightFactor = details.targetBounds.height / 3;
   ///
@@ -505,7 +505,7 @@ class ReorderableTreeItem<T extends Object> extends TreeItem<T> {
   ///
   /// Example:
   /// ```dart
-  /// Widget decorationBuilder<T extends Object>(
+  /// Widget decorationBuilder<T extends TreeNode<T>>(
   ///   BuildContext context,
   ///   Widget child,
   ///   TreeReorderingDetails<T> details,

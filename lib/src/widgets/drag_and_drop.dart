@@ -35,7 +35,7 @@ import 'sliver_tree.dart';
 /// [SliverTreeState.draggingNodePath] set.
 ///
 /// Depends on an ancestor [SliverTree] to work.
-class TreeDraggable<T extends Object> extends StatefulWidget {
+class TreeDraggable<T extends TreeNode<T>> extends StatefulWidget {
   /// Creates a [TreeDraggable].
   const TreeDraggable({
     super.key,
@@ -219,7 +219,7 @@ class TreeDraggable<T extends Object> extends StatefulWidget {
   State<TreeDraggable<T>> createState() => _TreeDraggableState<T>();
 }
 
-class _TreeDraggableState<T extends Object> extends State<TreeDraggable<T>>
+class _TreeDraggableState<T extends TreeNode<T>> extends State<TreeDraggable<T>>
     with AutomaticKeepAliveClientMixin {
   TreeEntry<T> get entry => widget.treeEntry;
 
@@ -275,7 +275,7 @@ class _TreeDraggableState<T extends Object> extends State<TreeDraggable<T>>
 
     _treeState.onNodeDragStarted(entry);
 
-    if (widget.collapseOnDragStart && entry.isExpanded) {
+    if (widget.collapseOnDragStart && entry.node.isExpanded) {
       _treeState.controller.collapse(entry.node);
       _wasCollapsed = true;
     }
@@ -338,7 +338,7 @@ class _TreeDraggableState<T extends Object> extends State<TreeDraggable<T>>
 /// Contains the exact position where the drop ocurred [dropPosition] as well as
 /// the bounding box [targetBounds] of the target widget providing versatility
 /// to what happens when reordering nodes on a tree.
-class TreeReorderingDetails<T extends Object> with Diagnosticable {
+class TreeReorderingDetails<T extends TreeNode<T>> with Diagnosticable {
   /// Creates a [TreeReorderingDetails].
   const TreeReorderingDetails({
     required this.draggedNode,
@@ -372,14 +372,14 @@ class TreeReorderingDetails<T extends Object> with Diagnosticable {
 
 /// Signature for a function used by [TreeDragTarget] to build a widget based
 /// on the provided [details].
-typedef TreeDraggableBuilder<T extends Object> = Widget Function(
+typedef TreeDraggableBuilder<T extends TreeNode<T>> = Widget Function(
   BuildContext context,
   TreeReorderingDetails<T>? details,
 );
 
 /// Signature for a function that takes a [TreeReorderingDetails] instance.
 /// Used by [TreeDragTarget] to complete a reordering action.
-typedef TreeOnReorderCallback<T extends Object> = void Function(
+typedef TreeOnReorderCallback<T extends TreeNode<T>> = void Function(
   TreeReorderingDetails<T> details,
 );
 
@@ -387,7 +387,7 @@ typedef TreeOnReorderCallback<T extends Object> = void Function(
 /// capabilities.
 ///
 /// Depends on an ancestor [SliverTree] to work.
-class TreeDragTarget<T extends Object> extends StatefulWidget {
+class TreeDragTarget<T extends TreeNode<T>> extends StatefulWidget {
   /// Creates a [TreeDragTarget].
   const TreeDragTarget({
     super.key,
@@ -474,7 +474,8 @@ class TreeDragTarget<T extends Object> extends StatefulWidget {
   State<TreeDragTarget<T>> createState() => _TreeDragTargetState<T>();
 }
 
-class _TreeDragTargetState<T extends Object> extends State<TreeDragTarget<T>> {
+class _TreeDragTargetState<T extends TreeNode<T>>
+    extends State<TreeDragTarget<T>> {
   TreeEntry<T> get entry => widget.treeEntry;
 
   SliverTreeState<T>? _treeState;
@@ -500,7 +501,7 @@ class _TreeDragTargetState<T extends Object> extends State<TreeDragTarget<T>> {
   late bool _isToggleExpansionEnabled;
 
   bool get _isInDraggedNodePath {
-    return _treeState?.draggingNodePath.contains(entry.id) ?? false;
+    return _treeState?.draggingNodePath.contains(entry.node.id) ?? false;
   }
 
   bool get _canToggle => _isToggleExpansionEnabled && !_isInDraggedNodePath;

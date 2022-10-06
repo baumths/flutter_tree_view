@@ -3,7 +3,7 @@ import 'dart:collection' show HashMap;
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
-import 'tree.dart';
+import 'tree_node.dart';
 
 /// A simple controller responsible for managing the state of a [SliverTree].
 ///
@@ -14,12 +14,12 @@ import 'tree.dart';
 /// [TreeController.animationDuration].
 /// Animations can also be disabled by updating the expansion state of nodes
 /// directly and then calling [TreeController.rebuild].
-/// > When animating collapse commands, the changes to [Tree.setExpansionState]
-/// > are only applied after the animation completes because we have to wait for
-/// > the nodes to be animated before being removed from [flattenedTree],
-/// > otherwise the nodes would just vanish instantly.
+/// > When animating collapse commands, the changes to [TreeNode.isExpanded] are
+/// > only applied after the animation completes because we have to wait for the
+/// > nodes to be animated before being removed from [flattenedTree], otherwise
+/// > the nodes would just vanish instantly.
 /// > When animating expand operations, the changes take effect immediately.
-class TreeController<T extends Object> with ChangeNotifier {
+class TreeController<T extends TreeNode<T>> with ChangeNotifier {
   /// Creates a [TreeController].
   ///
   /// To disable animations, provide a duration of [Duration.zero] to
@@ -28,13 +28,15 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// [startingLevel] the level to use for root nodes when flattening the tree.
   /// Must be greater or equal to `0`. To paint lines for the root nodes, use
   /// a starting level of `1` or higher. The higher the starting level, more
-  /// indent the tree will apply to the total indentation of its nodes.
+  /// indent the flattening algorithm will apply to the total indentation of the
+  /// nodes.
   TreeController({
-    required Tree<T> tree,
+    required T root,
     this.animationDuration = const Duration(milliseconds: 300),
     this.animationCurve = Curves.linear,
-    int startingLevel = Tree.defaultRootLevel,
-  })  : _tree = tree,
+    int startingLevel = defaultTreeRootLevel,
+  })  : _root = root,
+        assert(startingLevel >= 0),
         _startingLevel = startingLevel;
 
   @override
@@ -44,39 +46,35 @@ class TreeController<T extends Object> with ChangeNotifier {
     super.dispose();
   }
 
-  /// An interface to dynamically build the tree hierarchy.
-  ///
-  /// The [Tree] is used instead of a "Node" model to give more flexibility to
-  /// the API.
-  ///
-  /// Subclass [Tree] and implement the required methods to compose the tree and
-  /// its state.
-  Tree<T> get tree => _tree;
-  Tree<T> _tree;
-  set tree(Tree<T> tree) {
-    if (tree == _tree) return;
-    _tree = tree;
+  /// The [TreeNode] that is used as a starting point to build the flat
+  /// representation of a tree.
+  T get root => _root;
+  T _root;
+  set root(T newRoot) {
+    if (newRoot == _root) return;
+    _root = newRoot;
     rebuild();
   }
 
   /// Used when flattening the tree to determine the level of the root nodes.
   ///
-  /// **Negative values are ignored**, [Tree.defaultRootLevel] is used instead.
+  /// Must be a positive integer.
   ///
   /// Can be used to increase the indentation of nodes, if set to `1` root nodes
   /// will have 1 level of indentation and lines will be painted at root level
-  /// (if line painting is enabled), if set to `0` ([Tree.defaultRootLevel])
+  /// (if line painting is enabled), if set to `0` ([defaultTreeRootLevel])
   /// root nodes won`t have any indentation and no lines will be painted for
   /// them.
   ///
   /// The higher the starting level, more [IndentGuide.indent] is going to be
   /// added to the indentation of a node.
   ///
-  /// Defaults to [Tree.defaultRootLevel], usual values are `0` or `1`.
+  /// Defaults to [defaultTreeRootLevel], usual values are `0` or `1`.
   int get startingLevel => _startingLevel;
   int _startingLevel;
   set startingLevel(int level) {
     if (level == _startingLevel) return;
+    assert(_startingLevel >= 0);
     _startingLevel = level;
     rebuild();
   }
@@ -99,7 +97,7 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// Defaults to `Curves.linear`.
   Curve animationCurve;
 
-  /// The most recent tree flattened from [tree].
+  /// The most recent tree flattened from [root].
   List<TreeEntry<T>> get flattenedTree => _flatTree;
   List<TreeEntry<T>> _flatTree = [];
 
@@ -107,7 +105,8 @@ class TreeController<T extends Object> with ChangeNotifier {
   TreeEntry<T> entryAt(int index) => flattenedTree[index];
 
   void _updateTree() {
-    _flatTree = tree.flatten(
+    _flatTree = buildFlatTree<T>(
+      roots: root.children,
       startingLevel: startingLevel,
       descendCondition: _descendCondition,
     );
@@ -117,13 +116,16 @@ class TreeController<T extends Object> with ChangeNotifier {
 
   /// Simplify tree flattening by not calling [Map.constainsKey] if there are no
   /// commands to animate.
-  Mapper<TreeEntry<T>, bool> get _descendCondition => _commands.isEmpty
-      ? (TreeEntry<T> entry) => entry.isExpanded
+  Mapper<TreeEntry<T>, bool>? get _descendCondition => _commands.isEmpty
+      ? null
       : (TreeEntry<T> entry) {
-          // The descendants of a node that is animating should not be
-          // included in the flattened tree since those nodes are going to
-          // be rendered in a single tile.
-          return _commands.containsKey(entry.id) ? false : entry.isExpanded;
+          if (_commands.containsKey(entry.node.id)) {
+            // The descendants of a node that is animating should not be
+            // included in the flattened tree since those nodes are going to
+            // be rendered in a single tile.
+            return false;
+          }
+          return entry.node.includeChildrenWhenFlattening;
         };
 
   void _executeCommand({
@@ -132,15 +134,15 @@ class TreeController<T extends Object> with ChangeNotifier {
   }) {
     // Make sure to run the expanding commands before the next flattening even
     // if animations are disabled.
-    command.onStart(tree);
+    command.onStart();
 
     if (command.executeImmediately) {
       // If not animating, `onEnd` is called right away so nodes that need to be
       // collapsed do so before the next flattening.
-      command.onEnd(tree);
+      command.onEnd();
     } else {
-      // Add the command to animate the next time the tree is flattened.
-      _commands[tree.getId(node)] = command;
+      // Add the command to animate the next time the flattened tree is built.
+      _commands[node.id] = command;
     }
   }
 
@@ -148,19 +150,16 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// current flattened tree.
   ///
   /// Animatable commands are used to animate the expanding/collapsing branches.
-  AnimatableTreeCommand<T>? findAnimatableCommand(T node) {
-    return _commands[tree.getId(node)];
-  }
+  AnimatableTreeCommand<T>? findAnimatableCommand(T node) => _commands[node.id];
 
   /// Used by [SliverTree] to notify the controller that [node] is done
   /// animating so the related command can be completed.
   void onAnimatableCommandComplete(T node) {
-    final Object id = tree.getId(node);
-    final AnimatableTreeCommand<T>? command = _commands.remove(id);
+    final AnimatableTreeCommand<T>? command = _commands.remove(node.id);
 
     if (command == null) return;
 
-    command.onEnd(tree);
+    command.onEnd();
     rebuild();
   }
 
@@ -179,9 +178,8 @@ class TreeController<T extends Object> with ChangeNotifier {
   ///
   /// Example:
   /// ```dart
-  /// class Node {
-  ///   bool isExpanded = false;
-  ///   final List<Node> children = [];
+  /// class Node extends TreeNode<Node> {
+  ///   // ...
   /// }
   ///
   /// final TreeController<Node> treeController = SliverTree.of<Node>(context).controller;
@@ -232,12 +230,12 @@ class TreeController<T extends Object> with ChangeNotifier {
   ///
   /// When collapsing,
   /// {@template flutter_fancy_tree_view.tree_controller.collapse_animation}
-  /// The calls to [Tree.setExpansionState] are delayed to when the animation
-  /// finishes, since if the nodes are collapsed before animating, they wouldn't
-  /// be part of [flattenedTree], vanishing instead of animating out.
+  /// The updates to [TreeNode.isExpanded] are delayed to when the animation
+  /// finishes, since if the nodes are collapsed before animating, they would
+  /// not be part of [flattenedTree], vanishing instead of animating out.
   /// {@endtemplate}
   void toggleExpansion(T node, {Duration? duration, Curve? curve}) {
-    tree.getExpansionState(node)
+    node.isExpanded
         ? collapse(node, duration: duration, curve: curve)
         : expand(node, duration: duration, curve: curve);
   }
@@ -280,16 +278,14 @@ class TreeController<T extends Object> with ChangeNotifier {
   ///
   /// {@macro flutter_fancy_tree_view.tree_controller.expand_animation}
   void expandAll({Duration? duration, Curve? curve}) {
-    for (final T root in tree.roots) {
-      _executeCommand(
+    _executeCommand(
+      node: root,
+      command: AnimatableTreeCommand<T>.expandCascading(
         node: root,
-        command: AnimatableTreeCommand<T>.expandCascading(
-          node: root,
-          duration: duration ?? animationDuration,
-          curve: curve ?? animationCurve,
-        ),
-      );
-    }
+        duration: duration ?? animationDuration,
+        curve: curve ?? animationCurve,
+      ),
+    );
 
     rebuild();
   }
@@ -338,35 +334,34 @@ class TreeController<T extends Object> with ChangeNotifier {
   ///
   /// {@macro flutter_fancy_tree_view.tree_controller.collapse_animation}
   void collapseAll({Duration? duration, Curve? curve}) {
-    for (final T root in tree.roots) {
-      _executeCommand(
+    _executeCommand(
+      node: root,
+      command: AnimatableTreeCommand<T>.collapseCascading(
         node: root,
-        command: AnimatableTreeCommand<T>.collapseCascading(
-          node: root,
-          duration: duration ?? animationDuration,
-          curve: curve ?? animationCurve,
-        ),
-      );
-    }
+        duration: duration ?? animationDuration,
+        curve: curve ?? animationCurve,
+      ),
+    );
 
     rebuild();
   }
 }
 
 /// Convenient extension methods to reduce code repetition.
-extension _TreeExtension<T extends Object> on Tree<T> {
-  void expand(T node) => setExpansionState(node, true);
+extension _TreeExtension<T extends TreeNode<T>> on T {
+  bool get isLeaf => children.isEmpty;
 
-  void expandCascading(T node) => visitBranch(node, expand);
+  void expandCascading() {
+    isExpanded = true;
+    for (final T child in children) {
+      child.expandCascading();
+    }
+  }
 
-  void collapse(T node) => setExpansionState(node, false);
-
-  void collapseCascading(T node) => visitBranch(node, collapse);
-
-  void visitBranch(T node, Visitor<T> visit) {
-    visit(node);
-    for (final T child in getChildren(node)) {
-      visitBranch(child, visit);
+  void collapseCascading() {
+    isExpanded = false;
+    for (final T child in children) {
+      child.expandCascading();
     }
   }
 }
@@ -378,7 +373,7 @@ extension _TreeExtension<T extends Object> on Tree<T> {
 ///
 /// Collapsing commands are executed **after** animating so concealing nodes are
 /// present on the flattened tree until the animation is complete.
-abstract class AnimatableTreeCommand<T extends Object> {
+abstract class AnimatableTreeCommand<T extends TreeNode<T>> {
   /// Abstract constant constructor.
   const AnimatableTreeCommand({
     required this.duration,
@@ -432,7 +427,7 @@ abstract class AnimatableTreeCommand<T extends Object> {
   /// > On collapsing commands, this method does nothing.
   ///
   /// Calling this method directly could lead to inconsitent tree state.
-  void onStart(Tree<T> tree) {}
+  void onStart() {}
 
   /// Optional overridable method called when the expand/collapse animation
   /// completes and this command is being destroyed.
@@ -444,7 +439,7 @@ abstract class AnimatableTreeCommand<T extends Object> {
   /// > On expanding commands, this method does nothing.
   ///
   /// Calling this method directly could lead to inconsitent tree state.
-  void onEnd(Tree<T> tree) {}
+  void onEnd() {}
 
   /// Subclasses should override this method to start the animation on the given
   /// [AnimationController].
@@ -457,7 +452,7 @@ abstract class AnimatableTreeCommand<T extends Object> {
   TickerFuture animate(AnimationController controller);
 }
 
-class _Expand<T extends Object> extends AnimatableTreeCommand<T> {
+class _Expand<T extends TreeNode<T>> extends AnimatableTreeCommand<T> {
   const _Expand({
     required this.node,
     required super.duration,
@@ -467,7 +462,10 @@ class _Expand<T extends Object> extends AnimatableTreeCommand<T> {
   final T node;
 
   @override
-  void onStart(Tree<T> tree) => tree.expand(node);
+  bool get executeImmediately => node.isLeaf || duration == Duration.zero;
+
+  @override
+  void onStart() => node.isExpanded = true;
 
   @override
   TickerFuture animate(AnimationController controller) {
@@ -475,7 +473,7 @@ class _Expand<T extends Object> extends AnimatableTreeCommand<T> {
   }
 }
 
-class _ExpandCascading<T extends Object> extends _Expand<T> {
+class _ExpandCascading<T extends TreeNode<T>> extends _Expand<T> {
   const _ExpandCascading({
     required super.node,
     required super.duration,
@@ -483,10 +481,10 @@ class _ExpandCascading<T extends Object> extends _Expand<T> {
   });
 
   @override
-  void onStart(Tree<T> tree) => tree.expandCascading(node);
+  void onStart() => node.expandCascading();
 }
 
-class _Collapse<T extends Object> extends AnimatableTreeCommand<T> {
+class _Collapse<T extends TreeNode<T>> extends AnimatableTreeCommand<T> {
   const _Collapse({
     required this.node,
     required super.duration,
@@ -496,7 +494,10 @@ class _Collapse<T extends Object> extends AnimatableTreeCommand<T> {
   final T node;
 
   @override
-  void onEnd(Tree<T> tree) => tree.collapse(node);
+  bool get executeImmediately => node.isLeaf || duration == Duration.zero;
+
+  @override
+  void onEnd() => node.isExpanded = false;
 
   @override
   TickerFuture animate(AnimationController controller) {
@@ -504,7 +505,7 @@ class _Collapse<T extends Object> extends AnimatableTreeCommand<T> {
   }
 }
 
-class _CollapseCascading<T extends Object> extends _Collapse<T> {
+class _CollapseCascading<T extends TreeNode<T>> extends _Collapse<T> {
   const _CollapseCascading({
     required super.node,
     required super.duration,
@@ -512,5 +513,5 @@ class _CollapseCascading<T extends Object> extends _Collapse<T> {
   });
 
   @override
-  void onEnd(Tree<T> tree) => tree.collapseCascading(node);
+  void onEnd() => node.collapseCascading();
 }
