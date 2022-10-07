@@ -48,6 +48,16 @@ class DemoNode extends TreeNode<DemoNode> {
   }
 
   final List<DemoNode> _children;
+  set children(Iterable<DemoNode> nodes) {
+    if (hasChildren) {
+      for (final child in _children) {
+        child._parent = null;
+      }
+    }
+
+    _children.clear();
+    nodes.forEach(addChild);
+  }
 
   bool get isLeaf => _children.isEmpty;
 
@@ -71,7 +81,7 @@ class DemoNode extends TreeNode<DemoNode> {
   }
 
   void removeChild(DemoNode child) {
-    if (children.remove(child)) {
+    if (_children.remove(child)) {
       child._parent = null;
     }
   }
@@ -85,7 +95,7 @@ class DemoNode extends TreeNode<DemoNode> {
 
     if (newIndex == oldIndex) return;
 
-    children
+    _children
       ..removeAt(oldIndex)
       ..insert(newIndex, child);
   }
@@ -99,5 +109,91 @@ class DemoNode extends TreeNode<DemoNode> {
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties.add(DiagnosticsProperty<String>('label', label));
+  }
+
+  static void populateDefaultTree() {
+    if (root.hasChildren) return;
+
+    root.children = [
+      DemoNode(
+        label: 'A',
+        children: [
+          DemoNode(label: 'A 1'),
+          DemoNode(
+            label: 'A 2',
+            children: [
+              DemoNode(label: 'A 2 1'),
+            ],
+          ),
+        ],
+      ),
+      DemoNode(
+        label: 'B',
+        children: [
+          DemoNode(
+            label: 'B 1',
+            children: [
+              DemoNode(
+                label: 'B 1 1',
+                children: [
+                  DemoNode(label: 'B 1 1 1'),
+                  DemoNode(label: 'B 1 1 2'),
+                ],
+              ),
+            ],
+          ),
+          DemoNode(
+            label: 'B 2',
+            children: [
+              DemoNode(
+                label: 'B 2 1',
+                children: [
+                  DemoNode(label: 'B 2 1 1'),
+                ],
+              ),
+            ],
+          ),
+          DemoNode(label: 'B 3'),
+        ],
+      ),
+      DemoNode(
+        label: 'C',
+        children: [
+          DemoNode(
+            label: 'C 1',
+            children: [
+              DemoNode(label: 'C 1 1'),
+            ],
+          ),
+          DemoNode(label: 'C 2'),
+          DemoNode(label: 'C 3'),
+          DemoNode(label: 'C 4'),
+        ],
+      ),
+      DemoNode(
+        label: 'D',
+        children: [
+          DemoNode(
+            label: 'D 1',
+            children: [
+              DemoNode(label: 'D 1 1'),
+            ],
+          ),
+        ],
+      ),
+      DemoNode(
+        label: 'E',
+        children: [
+          DemoNode(label: 'E 1'),
+        ],
+      ),
+      DemoNode(
+        label: 'F',
+        children: [
+          DemoNode(label: 'F 1'),
+          DemoNode(label: 'F 2'),
+        ],
+      ),
+    ];
   }
 }
