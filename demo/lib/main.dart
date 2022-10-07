@@ -3,8 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'src/providers/responsive.dart';
 import 'src/providers/settings.dart';
-import 'src/views/main/tree_view.dart';
-import 'src/views/main_view.dart';
+import 'src/views/content.dart';
 import 'src/views/settings.dart';
 
 void main() => runApp(const ProviderScope(child: DemoApp()));
@@ -61,9 +60,9 @@ class DemoPage extends ConsumerWidget {
       small: () => Scaffold(
         appBar: AppBar(title: const Text('TreeView Demo')),
         drawer: const SettingsDrawer(),
-        body: const DemoTreeView(),
+        body: const Content(),
       ),
-      large: () => const Scaffold(body: MainView()),
+      large: () => const Scaffold(body: Content()),
     );
   }
 }

@@ -12,6 +12,7 @@ final treeControllerProvider = Provider.autoDispose<TreeController<DemoNode>>(
   (ref) {
     final controller = TreeController<DemoNode>(
       root: DemoNode.root,
+      showRoot: ref.read(showRootProvider),
     );
 
     ref.listen(showRootProvider, ((_, next) => controller.showRoot = next));
@@ -23,7 +24,7 @@ final treeControllerProvider = Provider.autoDispose<TreeController<DemoNode>>(
 
 class DemoNode extends TreeNode<DemoNode> {
   static int _autoIncrementedId = 0;
-  static final root = DemoNode(id: -1, label: '/');
+  static final root = DemoNode(id: -1, label: '/', isExpanded: true);
 
   DemoNode({
     int? id,

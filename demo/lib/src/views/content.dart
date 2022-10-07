@@ -2,22 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/responsive.dart';
-import 'main/tree_view.dart';
+import 'content/view.dart';
 import 'settings.dart';
 
-class MainView extends ConsumerWidget {
-  const MainView({super.key});
+class Content extends ConsumerWidget {
+  const Content({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final Screen screen = ref.watch(screenProvider);
 
     return screen.when(
-      small: () => const DemoTreeView(),
+      small: () => const ContentView(),
       large: () => Row(
         children: const [
           Settings(),
-          Expanded(child: DemoTreeView()),
+          Expanded(child: ContentView()),
         ],
       ),
     );
