@@ -10,6 +10,7 @@ import 'sections/line_origin.dart';
 import 'sections/indent_guide_type.dart';
 import 'sections/line_thickness.dart';
 import 'sections/rounded_connections.dart';
+import 'sections/show_root.dart';
 import 'sections/text_direction.dart';
 
 class Sections extends ConsumerWidget {
@@ -22,6 +23,7 @@ class Sections extends ConsumerWidget {
     return ListView(
       children: [
         const ColorSelector(),
+        const ShowRoot(),
         const Indent(),
         const Direction(),
         const IndentGuideType(),

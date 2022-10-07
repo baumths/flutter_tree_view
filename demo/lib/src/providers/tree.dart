@@ -1,8 +1,10 @@
 import 'dart:collection' show UnmodifiableListView;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'settings.dart';
 
 export 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
@@ -12,6 +14,7 @@ final treeControllerProvider = Provider.autoDispose<TreeController<DemoNode>>(
       root: DemoNode.root,
     );
 
+    ref.listen(showRootProvider, ((_, next) => controller.showRoot = next));
 
     ref.onDispose(controller.dispose);
     return controller;

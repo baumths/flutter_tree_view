@@ -4,6 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../shared/indent_type.dart';
 
+final StateProvider<bool> showRootProvider = StateProvider(
+  (ref) => false,
+);
+
 final StateProvider<double> indentProvider = StateProvider(
   (ref) => 40.0,
 );
