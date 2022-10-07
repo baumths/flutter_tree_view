@@ -1,106 +1,57 @@
+import 'dart:collection' show UnmodifiableListView;
+import 'package:flutter/foundation.dart';
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../json_data.dart';
 
-final treeProvider = Provider<DemoTree>((ref) => DemoTree());
+export 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
 final treeControllerProvider = Provider.autoDispose<TreeController<DemoNode>>(
   (ref) {
-    final tree = ref.read(treeProvider);
+    final controller = TreeController<DemoNode>(
+      root: DemoNode.root,
+    );
 
-    final controller = TreeController<DemoNode>(tree: tree);
 
     ref.onDispose(controller.dispose);
     return controller;
   },
 );
 
-final highlightedNodeProvider = StateProvider<DemoNode?>((ref) => null);
-
-class DemoTree extends Tree<DemoNode> {
-  DemoTree() : root = DemoNode.root {
-    _getChildren(null).forEach(root.addChild);
-  }
-
-  final DemoNode root;
-
-  Future<void> loadChildren(DemoNode parent) async {
-    if (parent.children.isNotEmpty || parent.childrenLoaded) return;
-
-    await Future<void>.delayed(const Duration(milliseconds: 500));
-
-    _getChildren(parent.id).forEach(parent.addChild);
-
-    parent._childrenLoaded = true;
-  }
-
-  Iterable<DemoNode> _getChildren(String? id) {
-    return flatJsonData
-        .where((data) => data['parentId'] == id)
-        .map(DemoNode.fromJson);
-  }
-
-  @override
-  List<DemoNode> get roots => root.children;
-
-  @override
-  String getId(DemoNode node) => node.id;
-
-  @override
-  List<DemoNode> getChildren(DemoNode node) => node.children;
-
-  @override
-  bool getExpansionState(DemoNode node) => node.isExpanded;
-
-  @override
-  void setExpansionState(DemoNode node, bool expanded) {
-    node.isExpanded = expanded;
-  }
-}
-
-class DemoNode {
+class DemoNode extends TreeNode<DemoNode> {
   static int _autoIncrementedId = 0;
-  static final root = DemoNode(id: '/', label: '/');
+  static final root = DemoNode(id: -1, label: '/');
 
   DemoNode({
-    String? id,
+    int? id,
     required this.label,
-    this.isExpanded = false,
+    super.isExpanded = false,
     List<DemoNode>? children,
-  })  : id = id ?? '${_autoIncrementedId++}',
+  })  : id = id ?? _autoIncrementedId++,
         _children = children ?? <DemoNode>[] {
     for (final child in _children) {
       child._parent = this;
     }
-
-    _childrenLoaded = _children.isNotEmpty;
   }
 
-  factory DemoNode.fromJson(Map<String, Object?> json) {
-    return DemoNode(
-      id: json['id'] as String?,
-      label: json['label'] as String? ?? 'no label',
-    );
-  }
-
-  final String id;
   final String label;
 
-  bool get childrenLoaded => _childrenLoaded;
-  bool _childrenLoaded = false;
+  @override
+  final int id;
 
-  bool get isLeaf => children.isEmpty && childrenLoaded;
+  @override
+  UnmodifiableListView<DemoNode> get children {
+    return UnmodifiableListView(_children);
+  }
 
-  List<DemoNode> get children => _children;
   final List<DemoNode> _children;
+
+  bool get isLeaf => _children.isEmpty;
 
   DemoNode? get parent => _parent;
   DemoNode? _parent;
 
-  bool isExpanded;
-
-  int get index => _parent?.children.indexOf(this) ?? 0;
+  int get index => _parent?._children.indexOf(this) ?? 0;
 
   void addChild(DemoNode node) {
     _reparent(node);
@@ -142,5 +93,8 @@ class DemoNode {
   }
 
   @override
-  String toString() => 'DemoNode(id: $id, label: $label)';
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty<String>('label', label));
+  }
 }

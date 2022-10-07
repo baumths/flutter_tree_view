@@ -1,7 +1,4 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/settings.dart';
@@ -38,21 +35,7 @@ class _DemoItemState extends ConsumerState<DemoItem> {
   // this widget's height.
   bool hoveringNodeIsAbove = false;
 
-  Future<void> toggle() async {
-    if (!node.childrenLoaded && !node.isExpanded) {
-      setState(() {
-        isLoading = true;
-      });
-
-      await ref.read(treeProvider).loadChildren(node);
-
-      setState(() {
-        isLoading = false;
-      });
-    }
-
-    ref.read(treeControllerProvider).toggleExpansion(node);
-  }
+  void toggle() => ref.read(treeControllerProvider).toggleExpansion(node);
 
   void highlight() {
     if (isHighlighted) {
@@ -85,13 +68,11 @@ class _DemoItemState extends ConsumerState<DemoItem> {
     final double heightFactor = details.targetBounds.height / 2;
     final bool isAbove = y <= heightFactor;
 
-    final tree = ref.read(treeProvider);
-
     late DemoNode target = details.targetNode;
     late int index = 0;
 
     if (isAbove) {
-      target = details.targetNode.parent ?? tree.root;
+      target = details.targetNode.parent ?? DemoNode.root;
       index = details.targetNode.index;
     } else {
       if (!details.targetNode.isExpanded) {
@@ -116,14 +97,11 @@ class _DemoItemState extends ConsumerState<DemoItem> {
     hoveringNodeIsAbove = isAbove;
 
     final virtualEntry = TreeEntry<DemoNode>(
-      id: 'virtual#${details.draggedNode.id}',
       node: details.draggedNode,
       index: -1,
       level: treeEntry.level + (isAbove ? 0 : 1),
-      isExpanded: false,
       parent: isAbove ? treeEntry.parent : treeEntry,
-      hasNextSibling:
-          isAbove ? true : node.isExpanded && node.children.isNotEmpty,
+      hasNextSibling: isAbove ? true : node.isExpanded && node.hasChildren,
     );
 
     final incoming = VirtualTreeItem(
@@ -151,7 +129,7 @@ class _DemoItemState extends ConsumerState<DemoItem> {
             onTap: toggle,
             isLoading: isLoading,
             isLeaf: node.isLeaf,
-            isOpen: treeEntry.isExpanded,
+            isOpen: node.isExpanded,
             color: isHighlighted
                 ? colorScheme.onPrimary
                 : colorScheme.onSurfaceVariant,
