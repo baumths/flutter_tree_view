@@ -5,6 +5,8 @@ import '../../providers/settings.dart';
 import '../../providers/tree.dart';
 import 'demo_item.dart';
 
+final _highlightProvider = StateProvider<DemoNode?>((ref) => null);
+
 class DemoTreeView extends ConsumerWidget {
   const DemoTreeView({super.key});
 
@@ -14,6 +16,10 @@ class DemoTreeView extends ConsumerWidget {
 
     return TreeNavigation<DemoNode>(
       controller: controller,
+      currentHighlight: ref.watch(_highlightProvider),
+      onHighlightChanged: (DemoNode? node) {
+        ref.read(_highlightProvider.state).state = node;
+      },
       child: DefaultIndentGuide(
         guide: ref.watch(indentGuideProvider),
         child: TreeView<DemoNode>(

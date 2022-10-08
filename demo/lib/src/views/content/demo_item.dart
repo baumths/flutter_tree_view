@@ -19,8 +19,6 @@ class DemoItem extends ConsumerStatefulWidget {
 }
 
 class _DemoItemState extends ConsumerState<DemoItem> {
-  late final indentGuide = ref.watch(indentGuideProvider);
-
   TreeEntry<DemoNode> get treeEntry => widget.treeEntry;
   DemoNode get node => treeEntry.node;
 
@@ -45,15 +43,41 @@ class _DemoItemState extends ConsumerState<DemoItem> {
     }
   }
 
+  VerticalEdgeDraggingAutoScroller? autoScroller;
+
+  void _updateAutoScroller() {
+    final ScrollableState scrollable = Scrollable.of(context)!;
+
+    if (autoScroller?.scrollable != scrollable) {
+      autoScroller?.stopAutoScroll();
+      autoScroller = VerticalEdgeDraggingAutoScroller(
+        scrollable: scrollable,
+        onScrollViewScrolled: () => autoScroller?.stopAutoScroll(),
+      );
+    }
+  }
+
+  void _maybeAutoScroll() {
+    if (autoScroller == null) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final renderBox = context.findRenderObject()! as RenderBox;
+      final rect = renderBox.localToGlobal(Offset.zero) & renderBox.size;
+      autoScroller!.startAutoScrollIfNecessary(rect.inflate(10));
+    });
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _updateAutoScroller();
 
     treeNavigation = TreeNavigation.of<DemoNode>(context);
     isHighlighted = treeNavigation?.currentHighlight == node;
 
     if (isHighlighted && !focusNode.hasFocus) {
       focusNode.requestFocus();
+      _maybeAutoScroll();
     }
   }
 
@@ -106,7 +130,6 @@ class _DemoItemState extends ConsumerState<DemoItem> {
 
     final incoming = VirtualTreeItem(
       treeEntry: virtualEntry,
-      guide: indentGuide,
     );
 
     return Column(
@@ -156,7 +179,6 @@ class _DemoItemState extends ConsumerState<DemoItem> {
       treeEntry: treeEntry,
       focusNode: focusNode,
       focusColor: Colors.transparent,
-      indentGuide: indentGuide,
       onTap: highlight,
       onReorder: onReorder,
       decorationWrapsChildOnly: false,
@@ -166,7 +188,6 @@ class _DemoItemState extends ConsumerState<DemoItem> {
         opacity: 0.6,
         child: TreeIndentation(
           treeEntry: treeEntry,
-          guide: indentGuide,
           child: content,
         ),
       ),
@@ -180,11 +201,9 @@ class VirtualTreeItem extends StatelessWidget {
   const VirtualTreeItem({
     super.key,
     required this.treeEntry,
-    required this.guide,
   });
 
   final TreeEntry<DemoNode> treeEntry;
-  final IndentGuide? guide;
 
   @override
   Widget build(BuildContext context) {
@@ -194,7 +213,6 @@ class VirtualTreeItem extends StatelessWidget {
 
     return TreeItem<DemoNode>(
       treeEntry: treeEntry,
-      indentGuide: guide,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 2),
         child: DecoratedBox(

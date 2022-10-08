@@ -4,45 +4,31 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../shared/indent_type.dart';
 
-final StateProvider<bool> showRootProvider = StateProvider(
-  (ref) => false,
-);
+final showRootProvider = StateProvider<bool>((ref) => false);
 
-final StateProvider<double> indentProvider = StateProvider(
-  (ref) => 40.0,
-);
+final indentProvider = StateProvider<double>((ref) => 40.0);
 
-final StateProvider<TextDirection> textDirectionProvider = StateProvider(
+final textDirectionProvider = StateProvider<TextDirection>(
   (ref) => TextDirection.ltr,
 );
 
-final StateProvider<bool> roundedCornersProvider = StateProvider(
-  (ref) => false,
+final roundedCornersProvider = StateProvider<bool>((ref) => false);
+
+final lineThicknessProvider = StateProvider<double>((ref) => 2.5);
+
+final lineOriginProvider = StateProvider<double>((ref) => 0.5);
+
+final colorProvider = StateProvider<Color>((ref) => Colors.blue);
+
+final colorSchemeProvider = StateProvider<ColorScheme>(
+  (ref) => ColorScheme.fromSeed(seedColor: ref.watch(colorProvider)),
 );
 
-final StateProvider<double> lineThicknessProvider = StateProvider(
-  (ref) => 2.5,
-);
-
-final StateProvider<double> lineOriginProvider = StateProvider(
-  (ref) => 0.5,
-);
-
-final StateProvider<Color> colorProvider = StateProvider(
-  (ref) => Colors.blue,
-);
-
-final StateProvider<ColorScheme> colorSchemeProvider = StateProvider(
-  (ref) => ColorScheme.fromSeed(
-    seedColor: ref.watch(colorProvider),
-  ),
-);
-
-final StateProvider<IndentType> indentTypeProvider = StateProvider(
+final indentTypeProvider = StateProvider<IndentType>(
   (ref) => IndentType.connectingLines,
 );
 
-final StateProvider<IndentGuide> indentGuideProvider = StateProvider(
+final indentGuideProvider = StateProvider<IndentGuide>(
   (ref) {
     final indent = ref.watch(indentProvider);
 

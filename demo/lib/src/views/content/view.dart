@@ -31,7 +31,7 @@ class EmptyView extends ConsumerWidget {
     WidgetRef ref, [
     DemoNode? parent,
   ]) async {
-    final newNode = await CreateNodeView.show<DemoNode?>(
+    final DemoNode? newNode = await CreateNodeView.show(
       context,
       ref.read(screenProvider),
     );

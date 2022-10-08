@@ -23,14 +23,15 @@ class Sections extends ConsumerWidget {
     return ListView(
       children: [
         const ColorSelector(),
-        const ShowRoot(),
-        const Indent(),
         const Direction(),
+        const ShowRoot(),
         const IndentGuideType(),
+        const Indent(),
         if (indentType != IndentType.empty) ...[
-          if (indentType != IndentType.scopingLines) const RoundedConnections(),
           const LineThickness(),
           const LineOrigin(),
+          if (indentType == IndentType.connectingLines)
+            const RoundedConnections(),
         ],
       ],
     );

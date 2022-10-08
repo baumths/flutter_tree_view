@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/responsive.dart' show Screen;
+import '../../providers/tree.dart';
 
-class CreateNodeView extends StatelessWidget {
+final _labelInputState = StateProvider.autoDispose<String>((ref) => '');
+
+class CreateNodeView extends ConsumerWidget {
   const CreateNodeView({super.key});
 
-  static Future<T?> show<T>(BuildContext context, Screen screen) {
-    return screen.when<Future<T?>>(
-      small: () => CreateNodeView.showBottomSheetForm<T>(context),
-      large: () => CreateNodeView.showDialogForm<T>(context),
+  static Future<DemoNode?> show(BuildContext context, Screen screen) {
+    return screen.when<Future<DemoNode?>>(
+      small: () => CreateNodeView.showBottomSheetForm(context),
+      large: () => CreateNodeView.showDialogForm(context),
     );
   }
 
-  static Future<T?> showBottomSheetForm<T>(BuildContext context) async {
-    return showModalBottomSheet<T>(
+  static Future<DemoNode?> showBottomSheetForm(BuildContext context) async {
+    return showModalBottomSheet<DemoNode>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => DecoratedBox(
@@ -29,8 +33,8 @@ class CreateNodeView extends StatelessWidget {
     );
   }
 
-  static Future<T?> showDialogForm<T>(BuildContext context) async {
-    return showDialog<T>(
+  static Future<DemoNode?> showDialogForm(BuildContext context) async {
+    return showDialog<DemoNode>(
       context: context,
       builder: (_) => const Dialog(
         child: SizedBox(
@@ -45,37 +49,47 @@ class CreateNodeView extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(_labelInputState);
+
+    void submit() {
+      String label = ref.read(_labelInputState);
+
+      if (label.trim().isEmpty) {
+        label = 'New Node';
+      }
+
+      Navigator.pop(
+        context,
+        DemoNode(label: label),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const LabelInput(),
+          TextField(
+            autofocus: true,
+            onSubmitted: (_) => submit(),
+            onChanged: (String value) {
+              ref.read(_labelInputState.state).state = value;
+            },
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              hintText: 'Label',
+            ),
+          ),
           Align(
             alignment: AlignmentDirectional.centerEnd,
             child: TextButton(
+              onPressed: submit,
               child: const Text('Create'),
-              onPressed: () {},
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class LabelInput extends StatelessWidget {
-  const LabelInput({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const TextField(
-      autofocus: true,
-      decoration: InputDecoration(
-        border: InputBorder.none,
-        hintText: 'Label',
       ),
     );
   }
