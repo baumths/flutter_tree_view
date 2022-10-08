@@ -51,6 +51,96 @@ import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
 ## Minimal Setup
 
+The minimal setup is divided in three steps:
+  > The below setup can be found, well commented, in [example/lib/main.dart].
+
+  1) Create your "Tree Node" model and fulfil the `TreeNode` contract;
+
+  ```dart
+  class MyNode extends TreeNode<MyNode> with ImplicitTreeNodeId {
+    MyNode({
+      required this.label,
+      List<MyNode>? children,
+      super.isExpanded,
+    }) : children = children ?? <MyNode>[];
+
+    final String label;
+
+    @override
+    final List<MyNode> children;
+  }
+
+  // [Step 2 ...]
+  ```
+
+  2) Create a `TreeController` and provide a root node to it;
+  ```dart
+  // [... Step 1]
+
+  class MyTreeView extends StatefulWidget {
+    const MyTreeView({super.key});
+
+    @override
+    State<MyTreeView> createState() => _MyTreeViewState();
+  }
+
+  class _MyTreeViewState extends State<MyTreeView> {
+    late final TreeController<MyNode> treeController;
+
+    @override
+    void initState() {
+      super.initState();
+
+      treeController = TreeController(
+        root: MyNode(
+          label: '/',
+          children: [
+            MyNode(
+              label: 'Node 1',
+              children: [
+                MyNode(label: 'Child 1'),
+              ],
+            ),
+            MyNode(label: 'Node 2'),
+          ],
+        ),
+      );
+    }
+
+    @override
+    void dispose() {
+      treeController.dispose();
+      super.dispose();
+    }
+
+    // [Step 3 ...]
+  }
+  ```
+  3) Create a `TreeView` widget and provide it with the `TreeController` that
+     was created on step 2 and an `itemBuilder` widget builder callback.
+  ```dart
+  class _MyTreeViewState extends State<MyTreeView> {
+    // [... Step 2]
+
+    @override
+    Widget build(BuildContext context) {
+      return TreeView<MyNode>(
+        controller: treeController,
+        itemBuilder: (BuildContext context, TreeEntry<MyNode> entry) {
+          return TreeItem<MyNode>(
+            treeEntry: entry,
+            onTap: () => treeController.toggleExpansion(entry.node),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(entry.node.label),
+            ),
+          );
+        },
+      );
+    }
+  }
+  ```
+
 ```diff
 @@ TODO @@
 ```
