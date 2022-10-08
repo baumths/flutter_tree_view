@@ -33,28 +33,18 @@ class ExampleApp extends StatelessWidget {
   }
 }
 
-/// Create a "Node" model implementing the [TreeNode] contract.
-class MyNode extends TreeNode<MyNode> {
+/// Create a "Tree Node" model implementing the [TreeNode] contract.
+///
+/// [ImplicitTreeNodeId] is used because it is not imortant to identify nodes in
+/// this example. This mixin creates an ordinary [Object] for the id of a node.
+class MyNode extends TreeNode<MyNode> with ImplicitTreeNodeId {
   MyNode({
     required this.label,
     this.children = const [],
 
     /// The expansion state of this node
     super.isExpanded,
-  }) : id = Object();
-
-  /// [id] is a getter and not a property so it's type can be easily changed.
-  ///
-  /// To make this example as simple as possible, a plain [Object] is used as
-  /// the identifier of this "Node" structure, but in real apps you could use
-  /// the unique identifier of your data, or an auto incremented integer.
-  ///
-  /// From [Object]'s documentation:
-  /// [Object] instances have no meaningful state, and are only useful
-  /// through their identity. An [Object] instance is equal to itself
-  /// only.
-  @override
-  final Object id;
+  });
 
   /// The direct children of this node. Can be any [Iterable].
   @override

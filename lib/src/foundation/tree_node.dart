@@ -4,7 +4,8 @@ import 'package:flutter/foundation.dart'
         Diagnosticable,
         DiagnosticableTreeMixin,
         DiagnosticsNode,
-        DiagnosticsProperty;
+        DiagnosticsProperty,
+        optionalTypeArgs;
 
 /// Signature of a function that takes a `T` value and returns a `R` value.
 typedef Mapper<T, R> = R Function(T value);
@@ -14,6 +15,21 @@ typedef Visitor<T> = void Function(T node);
 
 /// The default level used for root [TreeNode]s when flattening the tree.
 const int defaultTreeRootLevel = 0;
+
+/// A simple mixin on [TreeNode] that creates an ordinary [Object] as its id.
+///
+/// This mixin is useful in usecases where identifying tree nodes is not
+/// important for the application; but the package still needs a way to reliably
+/// cache some values for each tree node and a simple unique object is enough.
+/// > From [Object]'s documentation:
+/// > [Object] instances have no meaningful state, and are only useful
+/// > through their identity. An [Object] instance is equal to itself
+/// > only.
+@optionalTypeArgs
+mixin ImplicitTreeNodeId<T extends TreeNode<T>> on TreeNode<T> {
+  @override
+  final Object id = Object();
+}
 
 /// An interface for handling the nodes that compose a tree.
 ///
@@ -32,6 +48,10 @@ abstract class TreeNode<T extends TreeNode<T>> with DiagnosticableTreeMixin {
   ///
   /// Make sure the id provided for a node is always the same and unique among
   /// other ids, otherwise it could lead to inconsistent tree state.
+  ///
+  /// See also:
+  /// * [ImplicitTreeNodeId], which (in simple usecases) can be mixed in with
+  ///   this node to provide a unique object as the id of each new instance.
   Object get id;
 
   /// The direct children of this node.
