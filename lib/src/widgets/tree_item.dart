@@ -533,7 +533,7 @@ class ReorderableTreeItem<T extends TreeNode<T>> extends TreeItem<T> {
   final TreeReorderDecorationBuilder<T>? decorationBuilder;
 
   /// If `true`, the [decorationBuilder] will only wrap [child]. If `false`,
-  /// wraps the entire underlying [InkWell] + [TreeItendetation].
+  /// wraps the entire underlying [InkWell] + [TreeIndentation].
   ///
   /// Defaults to `true`.
   final bool decorationWrapsChildOnly;
