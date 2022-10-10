@@ -9,34 +9,40 @@ class ColorSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Section(
-      title: 'Color',
-      child: Consumer(builder: (_, ref, __) {
-        final color = ref.watch(colorProvider);
+    return Stack(
+      children: [
+        Section(
+          title: 'Color',
+          child: Consumer(
+            builder: (_, ref, child) {
+              final selectedColor = ref.watch(colorProvider);
 
-        return ExpansionTile(
-          title: ColorOption(color: color, canTap: false),
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-          childrenPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 8,
-          ),
-          expandedAlignment: Alignment.centerLeft,
-          children: [
-            Wrap(
+              return ExpansionTile(
+                title: ColorOption(color: selectedColor, canTap: false),
+                tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+                childrenPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                expandedAlignment: Alignment.centerLeft,
+                children: [child!],
+              );
+            },
+            child: Wrap(
               spacing: 6,
               runSpacing: 6,
               alignment: WrapAlignment.start,
-              children: Colors.primaries
-                  .cast<Color>()
-                  .followedBy(Colors.accents)
-                  .followedBy(const [Colors.white, Colors.black])
-                  .map(ColorOption.fromColor)
-                  .toList(),
+              children: ColorOption.all,
             ),
-          ],
-        );
-      }),
+          ),
+        ),
+        Positioned.directional(
+          end: 18,
+          top: 6,
+          textDirection: Directionality.of(context),
+          child: const DarkModeButton(),
+        ),
+      ],
     );
   }
 }
@@ -53,6 +59,13 @@ class ColorOption extends ConsumerWidget {
   final Color color;
   final bool canTap;
 
+  static final List<Widget> all = Colors.primaries
+      .cast<Color>()
+      .followedBy(Colors.accents)
+      .followedBy(const [Colors.white, Colors.black])
+      .map(ColorOption.fromColor)
+      .toList();
+
   static const borderRadius = BorderRadius.all(Radius.circular(4));
 
   @override
@@ -67,6 +80,34 @@ class ColorOption extends ConsumerWidget {
         onTap: canTap ? updateColor : null,
         child: const SizedBox.square(dimension: 20),
       ),
+    );
+  }
+}
+
+class DarkModeButton extends ConsumerWidget {
+  const DarkModeButton({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final brightness = ref.watch(brightnessProvider);
+
+    final Brightness oppositeBrightness;
+    final Widget icon;
+
+    if (brightness == Brightness.light) {
+      oppositeBrightness = Brightness.dark;
+      icon = const Icon(Icons.light_mode_outlined);
+    } else {
+      oppositeBrightness = Brightness.light;
+      icon = const Icon(Icons.dark_mode_outlined);
+    }
+
+    return IconButton(
+      icon: icon,
+      iconSize: 20,
+      onPressed: () {
+        ref.read(brightnessProvider.state).state = oppositeBrightness;
+      },
     );
   }
 }

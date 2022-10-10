@@ -7,13 +7,13 @@ class Settings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Material(
+    return Material(
       child: SizedBox(
         width: 304,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
+            color: Theme.of(context).canvasColor,
+            boxShadow: const [
               BoxShadow(
                 color: Colors.black26,
                 offset: Offset(10, 0),
@@ -28,7 +28,7 @@ class Settings extends StatelessWidget {
               ),
             ],
           ),
-          child: SettingsView(),
+          child: const SettingsView(),
         ),
       ),
     );
