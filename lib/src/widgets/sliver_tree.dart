@@ -4,6 +4,7 @@ import 'dart:math' as math show min;
 import 'package:flutter/material.dart';
 
 import '../foundation.dart';
+import 'tree_indentation.dart' show TreeIndentDetailsScope;
 
 /// Signature for a function that creates a widget for a given entry, e.g., in a
 /// tree.
@@ -267,9 +268,12 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   }
 
   Widget _keyedItemBuilder(BuildContext context, TreeEntry<T> entry) {
-    return KeyedSubtree(
+    return TreeIndentDetailsScope(
       key: _SaltedKey(entry.node.id),
-      child: widget.itemBuilder(context, entry),
+      details: entry,
+      child: Builder(
+        builder: (BuildContext context) => widget.itemBuilder(context, entry),
+      ),
     );
   }
 

@@ -209,13 +209,90 @@ void flatten<T extends TreeNode<T>>({
   );
 }
 
+/// A mixin intereface used to get indentation details about a particular node
+/// on a tree.
+///
+/// This mixin is used by [IndentGuide] and its subclasses to gather the needed
+/// information when indenting tree nodes (and painting lines, if enabled).
+mixin TreeIndentDetails {
+  /// The level of the node that owns this details on the tree.
+  ///
+  /// Example:
+  /// ```dart
+  /// /*
+  /// 0  1  2  3  4
+  ///    A
+  ///    ├─ B
+  ///    │  ├─ C
+  ///    │  │  └─ D
+  ///    │  └─ E
+  ///    F
+  ///    └─ G
+  /// */
+  /// ```
+  int get level;
+
+  /// Whether the node that owns this details has another node after it at the
+  /// same level.
+  ///
+  /// Used when painting lines to decide if a node should have a vertical line
+  /// that connects it to its next sibling. If a node is the last child of its
+  /// parent, a half vertical line "└─" is drawn instead of full one "├─".
+  ///
+  /// Example:
+  ///
+  /// Root
+  /// ├─ Child <- `hasNextSibling = true`
+  /// ├─ Child <- `hasNextSibling = true`
+  /// └─ Child <- `hasNextSibling = false`
+  bool get hasNextSibling;
+
+  /// Used to determine where to draw the vertical lines based on the path from
+  /// the root node to the node that owns this details.
+  ///
+  /// Should contain the levels of all ancestors that have sibling(s) after it
+  /// at the same level. Example:
+  ///
+  /// ```dart
+  /// /*
+  /// The "→" arrow shows the level that must be added to the set.
+  /// The "{}" shows the levels of that row that have a vertical line.
+  ///
+  /// 0  1  2  3  4  5  6 ...
+  ///    A  ⋅  ⋅  ⋅  ⋅  ⋅  {}
+  ///   →├─ B  ⋅  ⋅  ⋅  ⋅  {1}
+  ///   →│ →├─ C  ⋅  ⋅  ⋅  {1,2}
+  ///   →│ →│  └─ D  ⋅  ⋅  {1,2}
+  ///   →│ →│    →├─ E  ⋅  {1,2,4}
+  /// * →│ →│    →│  └─ F  {1,2,4}
+  ///   →│ →│     └─ G  ⋅  {1,2}
+  ///   →│  └─ H  ⋅  ⋅  ⋅  {1}
+  ///   →I  ⋅  ⋅  ⋅  ⋅  ⋅  {}
+  ///    └─ J  ⋅  ⋅  ⋅  ⋅  {}
+  ///
+  /// How to read (*):
+  /// The node "F" has vertical lines at levels {1,2,4}, a blank space at level
+  /// {3} and an "L" shaped line at level {5}.
+  /// */
+  /// ```
+  ///
+  /// The [ConnectingLinesGuide] will use this set to correctly paint lines and
+  /// its connections at each level.
+  Set<int> get ancestorLevelsWithVerticalLines;
+
+  /// Whether this details should skip indenting and painting.
+  ///
+  /// Nodes at level 0 or less have no decoration nor indent by default.
+  bool get skipIndentAndPaint => level <= 0;
+}
+
 /// Used to store useful information about [node] in a flattened tree.
 ///
 /// Instances of [TreeEntry]s are created internally while flattening a tree.
 ///
 /// The [TreeEntry] instances are short lived, each time the flat tree is
 /// rebuilt, a new [TreeEntry] is assigned to [node] with fresh data.
-class TreeEntry<T extends TreeNode<T>> with Diagnosticable {
+class TreeEntry<T extends TreeNode<T>> with TreeIndentDetails, Diagnosticable {
   /// Creates a [TreeEntry].
   TreeEntry({
     required this.node,
@@ -231,33 +308,10 @@ class TreeEntry<T extends TreeNode<T>> with Diagnosticable {
   /// The current index of [node] in the list returned by [TreeNode.flatten].
   final int index;
 
-  /// The level of [node] on the tree.
-  ///
-  /// Example:
-  /// ```dart
-  /// /*
-  ///   0
-  ///   |- 1
-  ///   |  '- 2
-  ///   |     '- 3
-  ///   0
-  ///   '- 1
-  /// */
-  /// ```
+  @override
   final int level;
 
-  /// Whether [node] has another node after it at the same level.
-  ///
-  /// Used when painting lines to decide if a node should have a vertical line
-  /// that connects it to its next sibling. If a node is the last child of its
-  /// parent, a half vertical line "└─" is drawn instead of full one "├─".
-  ///
-  /// Example:
-  ///
-  /// Root
-  /// ├─ Child <- `hasNextSibling = true`
-  /// ├─ Child <- `hasNextSibling = true`
-  /// └─ Child <- `hasNextSibling = false`
+  @override
   bool get hasNextSibling => _hasNextSibling;
   bool _hasNextSibling;
 
@@ -277,12 +331,7 @@ class TreeEntry<T extends TreeNode<T>> with Diagnosticable {
   TreeEntry<T>? get nextEntry => _nextEntry;
   TreeEntry<T>? _nextEntry;
 
-  /// Used to determine where to draw the vertical lines based on the path from
-  /// the root node to [node].
-  ///
-  /// Returns a set containing the levels of all ancestors in the path from the
-  /// node at level [defaultTreeRootLevel] to [node] that have one or more
-  /// siblings after it at the same level.
+  @override
   Set<int> get ancestorLevelsWithVerticalLines {
     return _ancestorLevelsWithVerticalLines ??= _findAncestorLevelsWithLines();
   }

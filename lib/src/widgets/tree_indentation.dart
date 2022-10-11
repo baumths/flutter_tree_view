@@ -1,37 +1,90 @@
 import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 
-import '../foundation.dart' show TreeEntry, TreeNode;
+import '../foundation.dart' show TreeIndentDetails;
+
+/// A simple [InheritedWidget] that provides a [TreeIndentDetails] to its widget
+/// subtree.
+///
+/// This widget is created internally by [SliverTree] for each node of the tree.
+/// Used by [TreeIndentation] to correctly calculate the indentation based on
+/// [TreeIndentDetails.level] (and paint lines, if enabled).
+class TreeIndentDetailsScope extends InheritedWidget {
+  /// Creates a [TreeIndentDetailsScope].
+  const TreeIndentDetailsScope({
+    super.key,
+    required this.details,
+    required super.child,
+  });
+
+  /// The [TreeIndentDetails] provided to the subtree of this widget.
+  final TreeIndentDetails details;
+
+  @override
+  bool updateShouldNotify(TreeIndentDetailsScope oldWidget) {
+    return oldWidget.details != details;
+  }
+
+  /// The [TreeIndentDetails] from the closest instance of this class that
+  /// encloses the given context.
+  ///
+  /// If there is no [TreeIndentDetails] ancestor in the widget tree at the
+  /// given context, then this will throw in debug mode.
+  ///
+  /// Typical usage is as follows:
+  ///
+  /// ```dart
+  /// TreeIndentDetails details = TreeIndentDetailsScope.of(context);
+  /// ```
+  static TreeIndentDetails of(BuildContext context) {
+    final TreeIndentDetails? details = context
+        .dependOnInheritedWidgetOfExactType<TreeIndentDetailsScope>()
+        ?.details;
+
+    assert(() {
+      if (details == null) {
+        throw FlutterError.fromParts(<DiagnosticsNode>[
+          ErrorSummary(
+            'TreeIndentDetailsScope.of() called with a context that does not '
+            'contain a TreeIndentDetailsScope.',
+          ),
+          ErrorDescription(
+            'No TreeIndentDetailsScope ancestor could be found starting from '
+            'the context that was passed to TreeIndentDetailsScope.of().',
+          ),
+          ErrorHint(
+            'This can happen when the context provided is from the same '
+            'StatefulWidget that built the TreeIndentDetailsScope.',
+          ),
+          context.describeElement('The context used was'),
+        ]);
+      }
+      return true;
+    }());
+
+    return details!;
+  }
+}
 
 /// Widget responsible for indenting tree nodes and painting lines (if enabled).
 ///
-/// See also:
+/// Requires an ancestor [TreeIndentDetailsScope] to work, which is provided
+/// by [SliverTree].
 ///
-/// * [IndentGuide], an interface for working with any type of decoration. By
-///   default, an [IndentGuide] only indents nodes, without any decoration;
-/// * [AbstractLineGuide], an interface for working with line painting;
-///
-/// * [ScopingLinesGuide], which paints vertical lines for each level of the
-///   tree;
-/// * [ConnectingLinesGuide], which paints vertical lines with horizontal
-///   connections;
-///
-/// * [DefaultIndentGuide], an [InheritedTheme] that provides an [IndentGuide]
-///   to its descendant widgets.
-class TreeIndentation<T extends TreeNode<T>> extends StatelessWidget {
+/// Check out the factory constructors of [IndentGuide] to discover the
+/// available indent guide decorations.
+class TreeIndentation extends StatelessWidget {
   /// Creates a [TreeIndentation].
   ///
   /// If [guide] is not provided, defaults to a constant [ConnectingLinesGuide].
+  ///
+  /// Requires an ancestor [TreeIndentDetailsScope] to work, which is provided
+  /// by [SliverTree].
   const TreeIndentation({
     super.key,
     required this.child,
-    required this.treeEntry,
     this.guide,
   });
-
-  /// The tree entry that will be used to calculate the total indentation and
-  /// paint guides for (if enabled).
-  final TreeEntry<T> treeEntry;
 
   /// The widget that is going to be displayed to the side of indentation.
   final Widget child;
@@ -40,26 +93,20 @@ class TreeIndentation<T extends TreeNode<T>> extends StatelessWidget {
   ///
   /// If not provided, [DefaultIndentGuide.of] will be used.
   ///
-  /// See also:
-  ///
-  /// * [ScopingLinesGuide], which paints vertical lines for each level of the
-  ///   tree;
-  /// * [ConnectingLinesGuide], which paints vertical lines with horizontal
-  ///   connections;
-  ///
-  /// * [IndentGuide], an interface for working with any type of decoration. By
-  ///   default, an [IndentGuide] only indents nodes, without any decoration;
-  /// * [AbstractLineGuide], an interface for working with line painting;
+  /// Check out the factory constructors of [IndentGuide] to discover the
+  /// available indent guide decorations.
   final IndentGuide? guide;
 
   @override
   Widget build(BuildContext context) {
-    if (treeEntry.level == 0) {
+    final TreeIndentDetails details = TreeIndentDetailsScope.of(context);
+
+    if (details.skipIndentAndPaint) {
       return child;
     }
 
     final IndentGuide effectiveGuide = guide ?? DefaultIndentGuide.of(context);
-    return effectiveGuide.wrap<T>(context, child, treeEntry);
+    return effectiveGuide.wrap(context, child, details);
   }
 }
 
@@ -71,16 +118,8 @@ class TreeIndentation<T extends TreeNode<T>> extends StatelessWidget {
 /// If [TreeIndentation.guide] is `null` and there's no [DefaultIndentGuide] in
 /// its context, a default [ConnectingLinesGuide] will be returned.
 ///
-/// See also:
-///
-/// * [IndentGuide], an interface for working with any type of decoration. By
-///   default, an [IndentGuide] only indents nodes, without any decoration;
-/// * [AbstractLineGuide], an interface for working with line painting;
-///
-/// * [ScopingLinesGuide], which paints vertical lines for each level of the
-///   tree;
-/// * [ConnectingLinesGuide], which paints vertical lines with horizontal
-///   connections;
+/// Check out the factory constructors of [IndentGuide] to discover the
+/// available indent guide decorations.
 class DefaultIndentGuide extends InheritedTheme {
   /// Creates a [DefaultIndentGuide].
   const DefaultIndentGuide({
@@ -90,6 +129,9 @@ class DefaultIndentGuide extends InheritedTheme {
   });
 
   /// The default [IndentGuide] provided to the widget tree of [child].
+  ///
+  /// Check out the factory constructors of [IndentGuide] to discover the
+  /// available indent guide decorations.
   final IndentGuide guide;
 
   /// The [IndentGuide] from the closest instance of this class that encloses
@@ -122,56 +164,56 @@ class DefaultIndentGuide extends InheritedTheme {
   }
 }
 
-/// The configurations of tree node indentation.
+/// An interface to configure tree node indentation and painting.
 ///
-/// By default, using [IndenGuide] only adds the space necessary to indent a
-/// node, with no decorations.
-///
-/// To add decorations to the indentation of nodes, see:
-///
-/// See also:
-///
-/// * [ScopingLinesGuide], which paints vertical lines for each level of the
-///   tree;
-/// * [ConnectingLinesGuide], which paints vertical lines with horizontal
-///   connections;
-///
-/// * [AbstractLineGuide], an interface for working with line painting;
-class IndentGuide {
+/// Check out the factory constructors of this class to discover the
+/// available indent guide decorations.
+abstract class IndentGuide {
   /// Allows subclasses to have constant constructors.
   const IndentGuide({
     this.indent = 40.0,
   }) : assert(indent >= 0.0);
+
+  /// Convenient constructor to create a [BlankIndentGuide].
+  const factory IndentGuide.blank({double indent}) = BlankIndentGuide;
+
+  /// Convenient constructor to create a [ConnectingLinesGuide].
+  const factory IndentGuide.connectingLines({
+    double indent,
+    Color color,
+    double thickness,
+    double origin,
+    bool roundCorners,
+  }) = ConnectingLinesGuide;
+
+  /// Convenient constructor to create a [ScopingLinesGuide].
+  const factory IndentGuide.scopingLines({
+    double indent,
+    Color color,
+    double thickness,
+    double origin,
+  }) = ScopingLinesGuide;
 
   /// The amount of indent to apply for each level of the tree.
   ///
   /// Example:
   ///
   /// ```dart
-  /// final TreeEntry<T> entry;
+  /// final TreeIndentDetails details;
   /// final IndentGuide guide;
-  /// final double indentation = entry.level * guide.indent;
+  /// final double indentation = details.level * guide.indent;
   /// ```
   final double indent;
 
   /// Method used to wrap [child] in the desired decoration/painting.
   ///
-  /// Subclasses must override this method if they want to customize whats
-  /// shown inside of [TreeIndentation].
+  /// Subclasses must override this method to customize whats shown inside of
+  /// [TreeIndentation].
   ///
   /// See also:
   ///
   ///   * [AbstractLineGuide], an interface for working with line painting;
-  Widget wrap<T extends TreeNode<T>>(
-    BuildContext context,
-    Widget child,
-    TreeEntry<T> entry,
-  ) {
-    return Padding(
-      padding: EdgeInsetsDirectional.only(start: entry.level * indent),
-      child: child,
-    );
-  }
+  Widget wrap(BuildContext context, Widget child, TreeIndentDetails details);
 
   @override
   int get hashCode => indent.hashCode;
@@ -183,19 +225,29 @@ class IndentGuide {
   }
 }
 
+/// An [IndentGuide] that only indents tree nodes, with no painting.
+///
+/// Check out the factory constructors of [IndentGuide] to discover the
+/// available indent guide decorations.
+class BlankIndentGuide extends IndentGuide {
+  /// Creates a [BlankIndentGuide].
+  const BlankIndentGuide({super.indent});
+
+  @override
+  Widget wrap(BuildContext context, Widget child, TreeIndentDetails details) {
+    return Padding(
+      padding: EdgeInsetsDirectional.only(start: details.level * indent),
+      child: child,
+    );
+  }
+}
+
 /// An interface for configuring how to paint line guides in the indentation of
 /// a tree node.
 ///
-/// See also:
-///
-/// * [ScopingLinesGuide], which paints vertical lines for each level of the
-///   tree;
-/// * [ConnectingLinesGuide], which paints vertical lines with horizontal
-///   connections;
-///
-/// * [IndentGuide], an interface for working with any type of decoration. By
-///   default, an [IndentGuide] only indents nodes, without any decoration;
-abstract class AbstractLineGuide extends IndentGuide {
+/// Check out the factory constructors of [IndentGuide] to discover the
+/// available indent guide decorations.
+abstract class AbstractLineGuide extends BlankIndentGuide {
   /// Constructor with requried parameters for building the indent line guides.
   const AbstractLineGuide({
     super.indent,
@@ -238,6 +290,10 @@ abstract class AbstractLineGuide extends IndentGuide {
   /// Used when painting to horizontally position a line on each [indent] level.
   final double originOffset;
 
+  /// Subclasses must override this method to provide the [CustomPainter] that
+  /// will handle painting.
+  CustomPainter createPainter(BuildContext context, TreeIndentDetails details);
+
   /// Creates the [Paint] object that will be used to paint lines.
   Paint createPaint() => Paint()
     ..color = color
@@ -246,18 +302,20 @@ abstract class AbstractLineGuide extends IndentGuide {
 
   /// Calculates the origin offset of the line drawn for the given [level].
   double offsetOfLevel(int level) => (level * indent) - originOffset;
+
+  @override
+  Widget wrap(BuildContext context, Widget child, TreeIndentDetails details) {
+    return CustomPaint(
+      painter: createPainter(context, details),
+      child: super.wrap(context, child, details),
+    );
+  }
 }
 
 /// Simple configuration for painting vertical lines at every level of the tree.
 ///
-/// See also:
-///
-/// * [ConnectingLinesGuide], which paints vertical lines with horizontal
-///   connections;
-///
-/// * [IndentGuide], an interface for working with any type of decoration. By
-///   default, an [IndentGuide] only indents nodes, without any decoration;
-/// * [AbstractLineGuide], an interface for working with line painting;
+/// Check out the factory constructors of [IndentGuide] to discover the
+/// available indent guide decorations.
 class ScopingLinesGuide extends AbstractLineGuide {
   /// Creates a [ScopingLinesGuide].
   const ScopingLinesGuide({
@@ -268,18 +326,11 @@ class ScopingLinesGuide extends AbstractLineGuide {
   });
 
   @override
-  Widget wrap<T extends TreeNode<T>>(
-    BuildContext context,
-    Widget child,
-    TreeEntry<T> entry,
-  ) {
-    return CustomPaint(
-      painter: _ScopingLinesPainter(
-        guide: this,
-        entryLevel: entry.level,
-        textDirection: Directionality.maybeOf(context),
-      ),
-      child: super.wrap<T>(context, child, entry),
+  CustomPainter createPainter(BuildContext context, TreeIndentDetails details) {
+    return _ScopingLinesPainter(
+      guide: this,
+      nodeLevel: details.level,
+      textDirection: Directionality.maybeOf(context),
     );
   }
 
@@ -322,12 +373,12 @@ class ScopingLinesGuide extends AbstractLineGuide {
 class _ScopingLinesPainter extends CustomPainter {
   _ScopingLinesPainter({
     required this.guide,
-    required this.entryLevel,
+    required this.nodeLevel,
     required this.textDirection,
   });
 
   final ScopingLinesGuide guide;
-  final int entryLevel;
+  final int nodeLevel;
   final TextDirection? textDirection;
 
   @override
@@ -342,7 +393,7 @@ class _ScopingLinesPainter extends CustomPainter {
 
     final Path path = Path();
 
-    for (int level = 1; level <= entryLevel; level++) {
+    for (int level = 1; level <= nodeLevel; level++) {
       final double x = calculateOffset(level);
       path
         ..moveTo(x, size.height)
@@ -355,21 +406,15 @@ class _ScopingLinesPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ScopingLinesPainter oldDelegate) =>
       oldDelegate.guide != guide ||
-      oldDelegate.entryLevel != entryLevel ||
+      oldDelegate.nodeLevel != nodeLevel ||
       oldDelegate.textDirection != textDirection;
 }
 
 /// Simple configuration for painting vertical lines that have a horizontal
-/// connection to its tree entry.
+/// connection to its tree node.
 ///
-/// See also:
-///
-/// * [ScopingLinesGuide], which paints vertical lines for each level of the
-///   tree;
-///
-/// * [IndentGuide], an interface for working with any type of decoration. By
-///   default, an [IndentGuide] only indents nodes, without any decoration;
-/// * [AbstractLineGuide], an interface for working with line painting;
+/// Check out the factory constructors of [IndentGuide] to discover the
+/// available indent guide decorations.
 class ConnectingLinesGuide extends AbstractLineGuide {
   /// Creates a [ConnectingLinesGuide].
   const ConnectingLinesGuide({
@@ -385,20 +430,13 @@ class ConnectingLinesGuide extends AbstractLineGuide {
   final bool roundCorners;
 
   @override
-  Widget wrap<T extends TreeNode<T>>(
-    BuildContext context,
-    Widget child,
-    TreeEntry<T> entry,
-  ) {
-    return CustomPaint(
-      painter: _ConnectingLinesPainter(
-        guide: this,
-        entryLevel: entry.level,
-        hasNextSibling: entry.hasNextSibling,
-        ancestorLevelsWithLines: entry.ancestorLevelsWithVerticalLines,
-        textDirection: Directionality.maybeOf(context),
-      ),
-      child: super.wrap<T>(context, child, entry),
+  CustomPainter createPainter(BuildContext context, TreeIndentDetails details) {
+    return _ConnectingLinesPainter(
+      guide: this,
+      nodeLevel: details.level,
+      hasNextSibling: details.hasNextSibling,
+      ancestorLevelsWithLines: details.ancestorLevelsWithVerticalLines,
+      textDirection: Directionality.maybeOf(context),
     );
   }
 
@@ -445,14 +483,14 @@ class ConnectingLinesGuide extends AbstractLineGuide {
 class _ConnectingLinesPainter extends CustomPainter {
   _ConnectingLinesPainter({
     required this.guide,
-    required this.entryLevel,
+    required this.nodeLevel,
     required this.hasNextSibling,
     required this.ancestorLevelsWithLines,
     this.textDirection,
-  }) : indentation = entryLevel * guide.indent;
+  }) : indentation = nodeLevel * guide.indent;
 
   final ConnectingLinesGuide guide;
-  final int entryLevel;
+  final int nodeLevel;
   final bool hasNextSibling;
   final Set<int> ancestorLevelsWithLines;
   final TextDirection? textDirection;
@@ -494,8 +532,8 @@ class _ConnectingLinesPainter extends CustomPainter {
     if (guide.roundCorners) {
       path.quadraticBezierTo(connectionStart, y, connectionEnd, y);
     } else {
-      // if the entry has a sibling after it, a full vertical line was drawn at
-      // [entryLevel] by [addVerticalLines] and we only need to move to the
+      // if the node has a sibling after it, a full vertical line was drawn at
+      // [nodeLevel] by [addVerticalLines] and we only need to move to the
       // start of the horizontal line, otherwise we must add half vertical line
       // to connect to the horizontal one.
       if (hasNextSibling) {
@@ -512,7 +550,7 @@ class _ConnectingLinesPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ConnectingLinesPainter oldDelegate) =>
-      oldDelegate.entryLevel != entryLevel ||
+      oldDelegate.nodeLevel != nodeLevel ||
       oldDelegate.hasNextSibling != hasNextSibling ||
       oldDelegate.textDirection != textDirection ||
       oldDelegate.guide != guide ||

@@ -149,13 +149,10 @@ class _SimpleTreeViewState extends State<SimpleTreeView> {
         // [TreeItem] has some basic functionality and is not required, any
         // widget can be used. If using a custom widget, take a look at
         // [TreeIndentation] to make sure your nodes are indented correclty.
-        return TreeItem<MyNode>(
-          // The [TreeEntry] is required by the inner [TreeIndentation] to
-          // correctly indent the node it holds (and paint lines, if enabled).
-          treeEntry: entry,
-          // Add a callback to "toggle" the expansion state of the node held by
-          // this entry, the [TreeItem] doesn't do it by itself, this way you
-          // could opt to use a leading/trailing button instead.
+        return TreeItem(
+          // Add a callback to "toggle" the expansion state of the node, the
+          // [TreeItem] doesn't do it by itself, this way you could opt to use
+          // a leading/trailing button instead.
           onTap: () {
             // Optional performance tip (not relevant for small trees)
             if (node.hasChildren) {

@@ -126,7 +126,7 @@ class _ReorderableTreeViewState extends State<ReorderableTreeView> {
           decorationBuilder: _decorationBuilder,
           feedback: HighlightShadow(child: content),
           dragAnchorStrategy: pointerDragAnchorStrategy,
-          childWhenDragging: ChildWhenDragging(entry: entry, child: content),
+          childWhenDragging: ChildWhenDragging(child: content),
           mouseCursor: SystemMouseCursors.grab,
           child: content,
         );
@@ -220,13 +220,8 @@ class HighlightShadow extends StatelessWidget {
 }
 
 class ChildWhenDragging extends StatelessWidget {
-  const ChildWhenDragging({
-    super.key,
-    required this.child,
-    required this.entry,
-  });
+  const ChildWhenDragging({super.key, required this.child});
 
-  final TreeEntry<ExampleNode> entry;
   final Widget child;
 
   @override
@@ -236,7 +231,6 @@ class ChildWhenDragging extends StatelessWidget {
       child: Opacity(
         opacity: 0.6,
         child: TreeItem(
-          treeEntry: entry,
           child: child,
         ),
       ),

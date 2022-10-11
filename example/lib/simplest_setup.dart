@@ -74,8 +74,7 @@ class _SimpleTreeState extends State<SimpleTree> {
     return TreeView<Node>(
       controller: treeController,
       itemBuilder: (BuildContext context, TreeEntry<Node> entry) {
-        return TreeItem<Node>(
-          treeEntry: entry,
+        return TreeItem(
           onTap: () => treeController.toggleExpansion(entry.node),
           child: Padding(
             padding: const EdgeInsets.all(8.0),

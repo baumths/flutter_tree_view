@@ -6,6 +6,14 @@ import '../foundation.dart';
 import 'drag_and_drop.dart';
 import 'tree_indentation.dart';
 
+/// Examples can assume:
+/// ```dart
+/// class MyNode extends TreeNode<MyNode> {}
+///
+/// final TreeController<MyNode> treeController;
+/// final MyNode node;
+/// ```
+
 /// A simple widget to be used in a [Treeview].
 ///
 /// The [indentGuide] can be used to configure line painting and define the
@@ -19,18 +27,15 @@ import 'tree_indentation.dart';
 /// Examples:
 ///
 /// ```dart
-/// final TreeController<T> treeController;
-/// final TreeEntry<T> entry;
-///
-/// TreeItem<T>(
+/// TreeItem(
 ///   child: Row(
 ///     children: [
 ///       const Expanded(
 ///         child: Text('My node Title'),
 ///       ),
 ///       ExpandIcon(
-///         isExpanded: entry.isExpanded,
-///         onPressed: (_) => treeController.toggleExpansion(entry.node),
+///         isExpanded: node.isExpanded,
+///         onPressed: (_) => treeController.toggleExpansion(node),
 ///       ),
 ///     ],
 ///   ),
@@ -40,11 +45,8 @@ import 'tree_indentation.dart';
 /// Or whithout a button, using `onTap`:
 ///
 /// ```dart
-/// final TreeController<T> treeController;
-/// final TreeEntry<T> entry;
-///
-/// TreeItem<T>(
-///   onTap: (_) => treeController.toggleExpansion(entry.node),
+/// TreeItem(
+///   onTap: () => treeController.toggleExpansion(node),
 ///   child: const Text('My node Title'),
 /// );
 /// ```
@@ -52,12 +54,11 @@ import 'tree_indentation.dart';
 /// See also:
 ///   * [FolderButton], a button that when tapped toggles between open and
 ///     closed folder icons, useful for expanding/collapsing a [TreeItem];
-class TreeItem<T extends TreeNode<T>> extends StatelessWidget {
+class TreeItem extends StatelessWidget {
   /// Creates a [TreeItem].
   const TreeItem({
     super.key,
     required this.child,
-    required this.treeEntry,
     this.indentGuide,
     this.onTap,
     this.onTapUp,
@@ -89,30 +90,13 @@ class TreeItem<T extends TreeNode<T>> extends StatelessWidget {
   /// The widget to display to the side of [TreeIndentation].
   final Widget child;
 
-  /// The tree entry of this tree item.
-  ///
-  /// The tree entry is used by [TreeIndentation] to correctly apply the
-  /// indentation of tree items (and paint lines, if enabled).
-  final TreeEntry<T> treeEntry;
-
   /// The configuration used by [TreeIndentation] to indent this item and paint
   /// lines (if enabled).
   ///
   /// If not provided, [DefaultIndentGuide.of] will be used.
   ///
-  /// See also:
-  ///
-  /// * [ScopingLinesGuide], which paints vertical lines for each level of the
-  ///   tree;
-  /// * [ConnectingLinesGuide], which paints vertical lines with horizontal
-  ///   connections;
-  ///
-  /// * [IndentGuide], an interface for working with any type of decoration. By
-  ///   default, an [IndentGuide] only indents nodes, without any decoration;
-  /// * [AbstractLineGuide], an interface for working with line painting;
-  ///
-  /// * [DefaultIndentGuide], an [InheritedTheme] that provides an [IndentGuide]
-  ///   to its descendant widgets.
+  /// Check out the factory constructors of [IndentGuide] to discover the
+  /// available indent guide decorations.
   final IndentGuide? indentGuide;
 
   /// Called when the user taps this part of the material.
@@ -345,8 +329,7 @@ class TreeItem<T extends TreeNode<T>> extends StatelessWidget {
       onFocusChange: onFocusChange,
       autofocus: autofocus,
       statesController: statesController,
-      child: TreeIndentation<T>(
-        treeEntry: treeEntry,
+      child: TreeIndentation(
         guide: indentGuide,
         child: content,
       ),
@@ -367,12 +350,12 @@ typedef TreeReorderDecorationBuilder<T extends TreeNode<T>> = Widget Function(
 
 /// A [TreeItem] wrapped in [TreeDraggable] and [TreeDragTarget], providing
 /// reordering capabilities.
-class ReorderableTreeItem<T extends TreeNode<T>> extends TreeItem<T> {
+class ReorderableTreeItem<T extends TreeNode<T>> extends TreeItem {
   /// Creates a [ReorderableTreeItem].
   const ReorderableTreeItem({
     super.key,
     required super.child,
-    required super.treeEntry,
+    required this.treeEntry,
     super.indentGuide,
     super.onTap,
     super.onTapUp,
@@ -416,6 +399,10 @@ class ReorderableTreeItem<T extends TreeNode<T>> extends TreeItem<T> {
     this.longPressTimeout = kLongPressTimeout,
     this.affinity,
   });
+
+  /// The [TreeEntry] that will both receive other dragging nodes on the
+  /// [TreeDragTarget] and also be dragged around by [TreeDraggable].
+  final TreeEntry<T> treeEntry;
 
   /// Whether [treeEntry] should be collapsed when the drag gesture starts.
   ///

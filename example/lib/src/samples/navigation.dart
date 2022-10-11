@@ -161,8 +161,7 @@ class _NavigableTreeItemState extends State<NavigableTreeItem> {
 
   @override
   Widget build(BuildContext context) {
-    return TreeItem<ExampleNode>(
-      treeEntry: widget.entry,
+    return TreeItem(
       focusNode: focusNode,
       focusColor: Colors.transparent,
       onFocusChange: onFocusChange,
