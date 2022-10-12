@@ -454,6 +454,17 @@ abstract class AnimatableTreeCommand<T extends TreeNode<T>> {
   /// Whether this command should be executed right away without animating.
   bool get executeImmediately => duration == Duration.zero;
 
+  /// If `true`, the animating subtree will try to scroll itself into view.
+  ///
+  /// Used by the animating subtree commands to reveal its descendants in the
+  /// viewport.
+  ///
+  /// By default, expanding commands set this to `true` and collapsing commands
+  /// leave it as `false`.
+  ///
+  /// Defaults to `false`.
+  bool get tryAutoScrolling => false;
+
   /// Optional overridable method called when this command is added to the set
   /// of commands that will take effect on the next time the tree is flattened.
   ///
@@ -500,6 +511,9 @@ class _Expand<T extends TreeNode<T>> extends AnimatableTreeCommand<T> {
 
   @override
   bool get executeImmediately => node.isLeaf || duration == Duration.zero;
+
+  @override
+  bool get tryAutoScrolling => true;
 
   @override
   void onStart() => node.isExpanded = true;

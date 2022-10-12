@@ -2,6 +2,7 @@ import 'dart:collection' show UnmodifiableSetView;
 import 'dart:math' as math show min;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../foundation.dart';
 import 'tree_indentation.dart' show TreeIndentDetailsScope;
@@ -201,6 +202,7 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
     if (entry == null) return;
 
     final Set<Object> path = {node.id};
+
     TreeEntry<T>? current = entry.parent;
     while (current != null) {
       path.add(current.node.id);
@@ -293,15 +295,12 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
       itemBuilder: _keyedItemBuilder,
       transitionBuilder: widget.transitionBuilder,
       maxNodesToShowWhenAnimating: widget.maxNodesToShowWhenAnimating,
-      animationDuration: command.duration,
-      animationCurve: command.curve,
-      startAnimating: command.animate,
+      root: entry.node,
+      rootDetails: entry,
+      command: command,
       onAnimationComplete: () {
         controller.onAnimatableCommandComplete(entry.node);
       },
-      root: entry.node,
-      startingLevel: entry.level,
-      parentLineLevels: entry.ancestorLevelsWithVerticalLines,
     );
   }
 }
@@ -314,27 +313,21 @@ class _AnimatingSubTree<T extends TreeNode<T>> extends StatefulWidget {
   const _AnimatingSubTree({
     super.key,
     required this.root,
-    required this.startingLevel,
-    required this.parentLineLevels,
+    required this.rootDetails,
+    required this.command,
     required this.itemBuilder,
     required this.transitionBuilder,
     required this.maxNodesToShowWhenAnimating,
-    required this.animationDuration,
-    required this.animationCurve,
-    required this.startAnimating,
     required this.onAnimationComplete,
   });
 
   final T root;
-  final int startingLevel;
-  final Set<int> parentLineLevels;
+  final TreeIndentDetails rootDetails;
+  final AnimatableTreeCommand<T> command;
+  final VoidCallback onAnimationComplete;
   final TreeViewItemBuilder<T> itemBuilder;
   final TreeViewTransitionBuilder transitionBuilder;
   final int maxNodesToShowWhenAnimating;
-  final Duration animationDuration;
-  final Curve animationCurve;
-  final TickerFuture Function(AnimationController controller) startAnimating;
-  final VoidCallback onAnimationComplete;
 
   @override
   State<_AnimatingSubTree<T>> createState() => _AnimatingSubTreeState<T>();
@@ -346,17 +339,29 @@ class _AnimatingSubTreeState<T extends TreeNode<T>>
   late final CurvedAnimation _animation;
 
   T get root => widget.root;
+  AnimatableTreeCommand<T> get command => widget.command;
 
   late List<TreeEntry<T>> _branch;
   late TreeEntry<T> _rootEntry;
   late int _itemCount;
+
+  void _maybeAutoScroll() {
+    final RenderObject? renderObject = context.findRenderObject();
+    RenderAbstractViewport.of(renderObject)?.showOnScreen(
+      descendant: renderObject,
+    );
+  }
+
+  void onAnimationComplete() {
+    widget.onAnimationComplete();
+  }
 
   @override
   void initState() {
     super.initState();
     _branch = buildFlatTree<T>(
       roots: [root],
-      startingLevel: widget.startingLevel,
+      startingLevel: widget.rootDetails.level,
     );
     // at least the "pseudo root" must be present
     assert(_branch.isNotEmpty);
@@ -367,29 +372,26 @@ class _AnimatingSubTreeState<T extends TreeNode<T>>
     //
     // Adding the extra line levels to the root will ensure all descendants have
     // it due to the recursive [TreeEntry.ancestorLevelsWithVerticalLines] calls.
-    _rootEntry.addVerticalLinesAtLevels(widget.parentLineLevels);
+    _rootEntry.addVerticalLinesAtLevels(
+      widget.rootDetails.ancestorLevelsWithVerticalLines,
+    );
 
     _itemCount = math.min(_branch.length, widget.maxNodesToShowWhenAnimating);
 
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.animationDuration,
-    );
-    _animation = CurvedAnimation(
-      parent: _controller,
-      curve: widget.animationCurve,
-    );
+    _controller = AnimationController(vsync: this, duration: command.duration);
+    _animation = CurvedAnimation(parent: _controller, curve: command.curve);
 
-    widget
-        .startAnimating(_controller)
-        .whenCompleteOrCancel(widget.onAnimationComplete);
+    if (command.tryAutoScrolling) {
+      _controller.addListener(_maybeAutoScroll);
+    }
+    command.animate(_controller).whenCompleteOrCancel(onAnimationComplete);
   }
 
   @override
   void didUpdateWidget(covariant _AnimatingSubTree<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _controller.duration = widget.animationDuration;
-    _animation.curve = widget.animationCurve;
+    _controller.duration = command.duration;
+    _animation.curve = command.curve;
   }
 
   @override
