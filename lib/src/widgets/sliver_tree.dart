@@ -281,7 +281,7 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
     final TreeEntry<T> entry = controller.entryAt(index);
 
     final AnimatableTreeCommand<T>? command =
-        controller.findAnimatableCommand(entry.node);
+        controller.getAnimatableCommand(entry.node);
 
     if (command == null) {
       return _keyedItemBuilder(context, entry);

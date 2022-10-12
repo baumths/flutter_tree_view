@@ -1,4 +1,4 @@
-import 'dart:collection' show HashMap;
+import 'dart:collection' show HashMap, UnmodifiableListView;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -46,7 +46,8 @@ class TreeController<T extends TreeNode<T>> with ChangeNotifier {
 
   @override
   void dispose() {
-    _flatTree = [];
+    _flatTree = UnmodifiableListView(const []);
+    _entryByIdCache.clear();
     _commands.clear();
     super.dispose();
   }
@@ -116,18 +117,36 @@ class TreeController<T extends TreeNode<T>> with ChangeNotifier {
   Curve animationCurve;
 
   /// The most recent tree flattened from [root].
-  List<TreeEntry<T>> get flattenedTree => _flatTree;
-  List<TreeEntry<T>> _flatTree = [];
+  UnmodifiableListView<TreeEntry<T>> get flattenedTree => _flatTree;
+  UnmodifiableListView<TreeEntry<T>> _flatTree = UnmodifiableListView(const []);
+
+  /// Returns the [TreeEntry] bound to [node] in the current flattened tree.
+  ///
+  /// If this returns `null`, [node] is currently hidden (an ancestor is
+  /// collapsed) or it doesn't belong in this tree.
+  ///
+  /// If holding on to [TreeEntry] instances, make sure to add a listener on
+  /// this controller to update the entry every time the tree is flattened. When
+  /// the tree is flattened, all [TreeEntry] instances are replaced.
+  TreeEntry<T>? getCurrentEntryOfNode(T node) => _entryByIdCache[node.id];
+  final HashMap<Object, TreeEntry<T>> _entryByIdCache = HashMap();
 
   /// Returns the [TreeEntry] at the given [index] of the current [flattenedTree].
   TreeEntry<T> entryAt(int index) => flattenedTree[index];
 
   void _updateTree() {
-    _flatTree = buildFlatTree<T>(
+    _entryByIdCache.clear();
+
+    final List<TreeEntry<T>> flatTree = buildFlatTree<T>(
       roots: showRoot ? <T>[root] : root.children,
       startingLevel: startingLevel,
       descendCondition: _descendCondition,
+      onTraverse: (TreeEntry<T> entry) {
+        _entryByIdCache[entry.node.id] = entry;
+      },
     );
+
+    _flatTree = UnmodifiableListView<TreeEntry<T>>(flatTree);
   }
 
   final HashMap<Object, AnimatableTreeCommand<T>> _commands = HashMap();
@@ -168,7 +187,7 @@ class TreeController<T extends TreeNode<T>> with ChangeNotifier {
   /// current flattened tree.
   ///
   /// Animatable commands are used to animate the expanding/collapsing branches.
-  AnimatableTreeCommand<T>? findAnimatableCommand(T node) => _commands[node.id];
+  AnimatableTreeCommand<T>? getAnimatableCommand(T node) => _commands[node.id];
 
   /// Used by [SliverTree] to notify the controller that [node] is done
   /// animating so the related command can be completed.
