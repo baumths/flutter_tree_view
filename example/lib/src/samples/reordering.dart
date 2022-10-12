@@ -121,7 +121,7 @@ class _ReorderableTreeViewState extends State<ReorderableTreeView> {
         }
 
         return ReorderableTreeItem<ExampleNode>(
-          treeEntry: entry,
+          node: entry.node,
           onReorder: _onReorder,
           decorationBuilder: _decorationBuilder,
           feedback: HighlightShadow(child: content),

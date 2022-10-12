@@ -355,7 +355,7 @@ class ReorderableTreeItem<T extends TreeNode<T>> extends TreeItem {
   const ReorderableTreeItem({
     super.key,
     required super.child,
-    required this.treeEntry,
+    required this.node,
     super.indentGuide,
     super.onTap,
     super.onTapUp,
@@ -400,11 +400,11 @@ class ReorderableTreeItem<T extends TreeNode<T>> extends TreeItem {
     this.affinity,
   });
 
-  /// The [TreeEntry] that will both receive other dragging nodes on the
+  /// The [TreeNode] that will both receive other dragging nodes on the
   /// [TreeDragTarget] and also be dragged around by [TreeDraggable].
-  final TreeEntry<T> treeEntry;
+  final T node;
 
-  /// Whether [treeEntry] should be collapsed when the drag gesture starts.
+  /// Whether [node] should be collapsed when the drag gesture starts.
   ///
   /// Defaults to `true`.
   final bool collapseOnDragStart;
@@ -421,8 +421,8 @@ class ReorderableTreeItem<T extends TreeNode<T>> extends TreeItem {
   /// Defaults to `100.0`.
   final double autoScrollSensitivity;
 
-  /// The default delay to wait before toggling the expansion of [TreeEntry]'s
-  /// node when it is being hovered by another node.
+  /// The default delay to wait before toggling the expansion of [node] when it
+  /// is being hovered by another node.
   ///
   /// To disable auto expansion toggle, provide a duration of [Duration.zero].
   ///
@@ -615,7 +615,7 @@ class ReorderableTreeItem<T extends TreeNode<T>> extends TreeItem {
   @override
   Widget build(BuildContext context) {
     return TreeDraggable<T>(
-      treeEntry: treeEntry,
+      node: node,
       collapseOnDragStart: collapseOnDragStart,
       autoScrollSensitivity: autoScrollSensitivity,
       feedback: feedback,
@@ -628,7 +628,7 @@ class ReorderableTreeItem<T extends TreeNode<T>> extends TreeItem {
       longPressTimeout: longPressTimeout,
       affinity: affinity,
       child: TreeDragTarget<T>(
-        treeEntry: treeEntry,
+        node: node,
         onReorder: onReorder,
         canStartToggleExpansionTimer: canStartToggleExpansionTimer,
         toggleExpansionTimeout: toggleExpansionTimeout,

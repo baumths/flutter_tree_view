@@ -21,7 +21,7 @@ import '../foundation.dart';
 import 'sliver_tree.dart';
 
 /// A widget that wraps [AdaptiveDraggable] providing auto scrolling capabilities.
-/// It is also responsible for automatically collapsing the [TreeEntry] it holds
+/// It is also responsible for automatically collapsing the [TreeNode] it holds
 /// when the drag starts and expanding it back when the drag ends (if it was
 /// collapsed). This can be toggled off in [collapseOnDragStart].
 ///
@@ -40,7 +40,7 @@ class TreeDraggable<T extends TreeNode<T>> extends StatefulWidget {
   const TreeDraggable({
     super.key,
     required this.child,
-    required this.treeEntry,
+    required this.node,
     this.collapseOnDragStart = true,
     this.autoScrollSensitivity = 100.0,
     this.axis,
@@ -70,11 +70,10 @@ class TreeDraggable<T extends TreeNode<T>> extends StatefulWidget {
   /// {@macro flutter.widgets.ProxyWidget.child}
   final Widget child;
 
-  /// The [TreeEntry] that holds the node that is going to be provided to
-  /// [Draggable.data].
-  final TreeEntry<T> treeEntry;
+  /// The [TreeNode] that is going to be provided to [Draggable.data].
+  final T node;
 
-  /// Whether the [TreeEntry] should be collapsed when the drag gesture starts.
+  /// Whether [node] should be collapsed when the drag gesture starts.
   final bool collapseOnDragStart;
 
   /// Defines the size of the [Rect] created around the drag global position
@@ -221,7 +220,7 @@ class TreeDraggable<T extends TreeNode<T>> extends StatefulWidget {
 
 class _TreeDraggableState<T extends TreeNode<T>> extends State<TreeDraggable<T>>
     with AutomaticKeepAliveClientMixin {
-  TreeEntry<T> get entry => widget.treeEntry;
+  T get node => widget.node;
 
   late SliverTreeState<T> _treeState;
 
@@ -265,7 +264,7 @@ class _TreeDraggableState<T extends TreeNode<T>> extends State<TreeDraggable<T>>
       ..onNodeDragEnded();
 
     if (_wasCollapsed) {
-      _treeState.controller.expand(entry.node);
+      _treeState.controller.expand(node);
       _wasCollapsed = false;
     }
   }
@@ -273,10 +272,10 @@ class _TreeDraggableState<T extends TreeNode<T>> extends State<TreeDraggable<T>>
   void onDragStarted() {
     _isDragging = true;
 
-    _treeState.onNodeDragStarted(entry);
+    _treeState.onNodeDragStarted(node);
 
-    if (widget.collapseOnDragStart && entry.node.isExpanded) {
-      _treeState.controller.collapse(entry.node);
+    if (widget.collapseOnDragStart && node.isExpanded) {
+      _treeState.controller.collapse(node);
       _wasCollapsed = true;
     }
 
@@ -309,7 +308,7 @@ class _TreeDraggableState<T extends TreeNode<T>> extends State<TreeDraggable<T>>
     super.build(context);
 
     return AdaptiveDraggable<T>(
-      data: entry.node,
+      data: node,
       maxSimultaneousDrags: 1,
       onDragStarted: onDragStarted,
       onDragUpdate: onDragUpdate,
@@ -391,7 +390,7 @@ class TreeDragTarget<T extends TreeNode<T>> extends StatefulWidget {
   /// Creates a [TreeDragTarget].
   const TreeDragTarget({
     super.key,
-    required this.treeEntry,
+    required this.node,
     required this.builder,
     required this.onReorder,
     this.toggleExpansionTimeout = const Duration(seconds: 1),
@@ -404,9 +403,8 @@ class TreeDragTarget<T extends TreeNode<T>> extends StatefulWidget {
     this.hitTestBehavior = HitTestBehavior.translucent,
   });
 
-  /// The [TreeEntry] that holds the node that is going to receive the drop of
-  /// a [TreeDraggable].
-  final TreeEntry<T> treeEntry;
+  /// The [TreeNode] that is going to receive the drop of a [TreeDraggable].
+  final T node;
 
   /// The callback that is going to be called when a dragging node was
   /// successfully dropped onto this drag target. It should then apply the
@@ -423,8 +421,8 @@ class TreeDragTarget<T extends TreeNode<T>> extends StatefulWidget {
   /// this drag target.
   final TreeDraggableBuilder<T> builder;
 
-  /// The default time to wait before toggling the expansion of [treeEntry]'s
-  /// node when it is being hovered by another node.
+  /// The default time to wait before toggling the expansion of [node] when it
+  /// is being hovered by another node.
   ///
   /// To disable auto expansion toggle, provide a duration of [Duration.zero].
   ///
@@ -476,7 +474,7 @@ class TreeDragTarget<T extends TreeNode<T>> extends StatefulWidget {
 
 class _TreeDragTargetState<T extends TreeNode<T>>
     extends State<TreeDragTarget<T>> {
-  TreeEntry<T> get entry => widget.treeEntry;
+  T get node => widget.node;
 
   SliverTreeState<T>? _treeState;
 
@@ -488,7 +486,7 @@ class _TreeDragTargetState<T extends TreeNode<T>>
     if (widget.canStartToggleExpansionTimer?.call() ?? true) {
       _toggleExpansionTimer = Timer(
         widget.toggleExpansionTimeout,
-        () => _treeState?.controller.toggleExpansion(entry.node),
+        () => _treeState?.controller.toggleExpansion(node),
       );
     }
   }
@@ -501,7 +499,7 @@ class _TreeDragTargetState<T extends TreeNode<T>>
   late bool _isToggleExpansionEnabled;
 
   bool get _isInDraggedNodePath {
-    return _treeState?.draggingNodePath.contains(entry.node.id) ?? false;
+    return _treeState?.draggingNodePath.contains(node.id) ?? false;
   }
 
   bool get _canToggle => _isToggleExpansionEnabled && !_isInDraggedNodePath;
@@ -512,12 +510,12 @@ class _TreeDragTargetState<T extends TreeNode<T>>
 
   TreeReorderingDetails<T>? _details;
 
-  TreeReorderingDetails<T> _getDropDetails(T node, Offset pointer) {
+  TreeReorderingDetails<T> _getDropDetails(T incomingNode, Offset pointer) {
     final RenderBox renderBox = context.findRenderObject()! as RenderBox;
 
     return TreeReorderingDetails<T>(
-      draggedNode: node,
-      targetNode: entry.node,
+      draggedNode: incomingNode,
+      targetNode: node,
       dropPosition: renderBox.globalToLocal(pointer),
       targetBounds: Offset.zero & renderBox.size,
     );
@@ -527,16 +525,16 @@ class _TreeDragTargetState<T extends TreeNode<T>>
     if (widget.onWillAccept != null) {
       return widget.onWillAccept!(data);
     }
-    return !(data == null || data == entry.node);
+    return !(data == null || data.id == node.id);
   }
 
   void onMove(DragTargetDetails<T> details) {
     // Do not allow dropping a node on itself.
-    if (details.data == entry.node) return;
+    if (details.data.id == node.id) return;
 
     // If the incoming data is not the same as the cached data, reject it.
     // This makes sure we only handle one draggable at a time.
-    if (_details != null && details.data != _details!.draggedNode) return;
+    if (_details != null && details.data.id != _details!.draggedNode.id) return;
 
     stopToggleExpansionTimer();
 
@@ -557,7 +555,7 @@ class _TreeDragTargetState<T extends TreeNode<T>>
   void onAccept(T incomingNode) {
     stopToggleExpansionTimer();
 
-    if (_details == null || _details!.draggedNode != incomingNode) return;
+    if (_details == null || _details!.draggedNode.id != incomingNode.id) return;
 
     widget.onReorder(_details!);
 
@@ -569,7 +567,7 @@ class _TreeDragTargetState<T extends TreeNode<T>>
   }
 
   void onLeave(T? data) {
-    if (_details == null || _details!.draggedNode != data) return;
+    if (_details == null || _details!.draggedNode.id != data?.id) return;
 
     stopToggleExpansionTimer();
 

@@ -196,9 +196,11 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   /// toggle expansion.
   ///
   /// This should not be used from outside of [TreeDraggable].
-  void onNodeDragStarted(TreeEntry<T> entry) {
-    final Set<Object> path = {entry.node.id};
+  void onNodeDragStarted(T node) {
+    final TreeEntry<T>? entry = controller.getCurrentEntryOfNode(node);
+    if (entry == null) return;
 
+    final Set<Object> path = {node.id};
     TreeEntry<T>? current = entry.parent;
     while (current != null) {
       path.add(current.node.id);
