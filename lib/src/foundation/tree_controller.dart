@@ -398,7 +398,7 @@ extension _TreeExtension<T extends TreeNode<T>> on T {
   void collapseCascading() {
     isExpanded = false;
     for (final T child in children) {
-      child.expandCascading();
+      child.collapseCascading();
     }
   }
 }
