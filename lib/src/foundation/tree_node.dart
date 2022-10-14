@@ -215,6 +215,11 @@ void flatten<T extends TreeNode<T>>({
 /// This mixin is used by [IndentGuide] and its subclasses to gather the needed
 /// information when indenting tree nodes (and painting lines, if enabled).
 mixin TreeIndentDetails {
+  /// The [TreeIndentDetails] attached to the parent node of this details.
+  ///
+  /// If `null`, this details is attached to a root node.
+  TreeIndentDetails? get parentDetails;
+
   /// The level of the node that owns this details on the tree.
   ///
   /// Example:
@@ -247,6 +252,11 @@ mixin TreeIndentDetails {
   /// └─ Child <- `hasNextSibling = false`
   bool get hasNextSibling;
 
+  /// Whether this details should skip indenting and painting.
+  ///
+  /// Nodes at level 0 or less have no decoration nor indent by default.
+  bool get skipIndentAndPaint => level <= 0;
+
   /// Used to determine where to draw the vertical lines based on the path from
   /// the root node to the node that owns this details.
   ///
@@ -278,12 +288,36 @@ mixin TreeIndentDetails {
   ///
   /// The [ConnectingLinesGuide] will use this set to correctly paint lines and
   /// its connections at each level.
-  Set<int> get ancestorLevelsWithVerticalLines;
+  Set<int> get ancestorLevelsWithVerticalLines {
+    return _ancestorLevelsWithVerticalLines ??= _findAncestorLevelsWithLines();
+  }
 
-  /// Whether this details should skip indenting and painting.
+  Set<int>? _ancestorLevelsWithVerticalLines;
+
+  Set<int> _findAncestorLevelsWithLines() {
+    if (level == defaultTreeRootLevel) return const <int>{};
+    return <int>{
+      ...?_unreachableExtraLevels,
+      ...?parentDetails?.ancestorLevelsWithVerticalLines,
+      if (hasNextSibling) level,
+    };
+  }
+
+  /// When animating the expansion state of a node, a subtree widget is shown
+  /// containing all descendents of the expanded node, to do that, a new flat
+  /// tree is built using the animating node as its "virtual root". When doing
+  /// so, all context up the tree is lost (i.e. the lines that connect to the
+  /// virtual root from its ancestors in the main tree).
+  Set<int>? _unreachableExtraLevels;
+
+  /// Add aditional levels that should draw vertical lines.
   ///
-  /// Nodes at level 0 or less have no decoration nor indent by default.
-  bool get skipIndentAndPaint => level <= 0;
+  /// Used when animating the expand/collapse state changes of nodes to add the
+  /// levels that cannot be reached by the virtual subtree.
+  void addVerticalLinesAtLevels(Set<int> levels) {
+    _unreachableExtraLevels = levels;
+    _ancestorLevelsWithVerticalLines = null;
+  }
 }
 
 /// Used to store useful information about [node] in a flattened tree.
@@ -318,6 +352,9 @@ class TreeEntry<T extends TreeNode<T>> with TreeIndentDetails, Diagnosticable {
   /// The direct parent of [node] on the tree.
   final TreeEntry<T>? parent;
 
+  @override
+  TreeIndentDetails? get parentDetails => parent;
+
   /// The entry before this in the flattened tree.
   ///
   /// The only entry that has `previousEntry == null` is the first entry of the
@@ -330,38 +367,6 @@ class TreeEntry<T extends TreeNode<T>> with TreeIndentDetails, Diagnosticable {
   /// If `null`, this entry is the last element of the flattened tree.
   TreeEntry<T>? get nextEntry => _nextEntry;
   TreeEntry<T>? _nextEntry;
-
-  @override
-  Set<int> get ancestorLevelsWithVerticalLines {
-    return _ancestorLevelsWithVerticalLines ??= _findAncestorLevelsWithLines();
-  }
-
-  Set<int>? _ancestorLevelsWithVerticalLines;
-
-  Set<int> _findAncestorLevelsWithLines() {
-    if (level == defaultTreeRootLevel) return const <int>{};
-    return <int>{
-      ...?_unreachableExtraLevels,
-      ...?parent?.ancestorLevelsWithVerticalLines,
-      if (hasNextSibling) level,
-    };
-  }
-
-  /// When animating the expansion state of a node, a subtree widget is shown
-  /// containing all descendents of the expanded node, to do that, a new flat
-  /// tree is built using the animating node as its "virtual root". When doing
-  /// so, all context up the tree is lost (i.e. the lines that connect to the
-  /// virtual root from its ancestors in the main tree).
-  Set<int>? _unreachableExtraLevels;
-
-  /// Add aditional levels that should draw vertical lines.
-  ///
-  /// Used when animating the expand/collapse state changes of nodes to add the
-  /// levels that cannot be reached by the virtual subtree.
-  void addVerticalLinesAtLevels(Set<int> levels) {
-    _unreachableExtraLevels = levels;
-    _ancestorLevelsWithVerticalLines = null;
-  }
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
