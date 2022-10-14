@@ -24,9 +24,9 @@ class DemoTreeView extends ConsumerWidget {
         guide: ref.watch(indentGuideProvider),
         child: TreeView<DemoNode>(
           controller: controller,
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(8).copyWith(bottom: 80),
           itemBuilder: (_, TreeEntry<DemoNode> entry) {
-            return DemoItem(treeEntry: entry);
+            return DemoItem(node: entry.node);
           },
         ),
       ),

@@ -1,39 +1,42 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../providers/settings.dart';
 import '../../providers/tree.dart';
 import 'folder_button.dart';
 
-final treeEntryProvider = Provider<TreeEntry<DemoNode>>(
-  (ref) => throw UnimplementedError(),
-);
+class DemoItem extends StatefulWidget {
+  const DemoItem({super.key, required this.node});
 
-class DemoItem extends ConsumerStatefulWidget {
-  const DemoItem({super.key, required this.treeEntry});
-
-  final TreeEntry<DemoNode> treeEntry;
+  final DemoNode node;
 
   @override
-  ConsumerState<DemoItem> createState() => _DemoItemState();
+  State<DemoItem> createState() => _DemoItemState();
 }
 
-class _DemoItemState extends ConsumerState<DemoItem> {
-  TreeEntry<DemoNode> get treeEntry => widget.treeEntry;
-  DemoNode get node => treeEntry.node;
+class _DemoItemState extends State<DemoItem> {
+  DemoNode get node => widget.node;
 
   late TreeNavigationState<DemoNode>? treeNavigation;
+  late TreeController<DemoNode> treeController;
 
   late final focusNode = FocusNode();
 
+  void toggle() => treeController.toggleExpansion(node);
+
+  void toggleCascading() {
+    node.isExpanded
+        ? treeController.collapseCascading(node)
+        : treeController.expandCascading(node);
+  }
+
   bool isHighlighted = false;
-  bool isLoading = false;
-
-  // Used when a reordering node is hovering this node in the top half of
-  // this widget's height.
-  bool hoveringNodeIsAbove = false;
-
-  void toggle() => ref.read(treeControllerProvider).toggleExpansion(node);
+  bool get showHighlight => _showHighlight;
+  bool _showHighlight = true;
+  set showHighlight(bool value) {
+    if (_showHighlight == value) return;
+    setState(() {
+      _showHighlight = value;
+    });
+  }
 
   void highlight() {
     if (isHighlighted) {
@@ -72,6 +75,7 @@ class _DemoItemState extends ConsumerState<DemoItem> {
     super.didChangeDependencies();
     _updateAutoScroller();
 
+    treeController = SliverTree.of<DemoNode>(context).controller;
     treeNavigation = TreeNavigation.of<DemoNode>(context);
     isHighlighted = treeNavigation?.currentHighlight == node;
 
@@ -88,60 +92,96 @@ class _DemoItemState extends ConsumerState<DemoItem> {
   }
 
   void onReorder(TreeReorderingDetails<DemoNode> details) {
-    final double y = details.dropPosition.dy;
-    final double heightFactor = details.targetBounds.height / 2;
-    final bool isAbove = y <= heightFactor;
+    late final DemoNode newParent;
+    late int newIndex;
 
-    late DemoNode target = details.targetNode;
-    late int index = 0;
+    details.when<void>(
+      above: () {
+        newParent = details.targetNode.parent ?? treeController.root;
+        newIndex = details.targetNode.index;
+      },
+      inside: () {
+        newParent = details.targetNode;
+        newIndex = newParent.children.length;
+      },
+      below: () {
+        newParent = details.targetNode.parent ?? treeController.root;
+        newIndex = details.targetNode.index + 1;
+      },
+    );
 
-    if (isAbove) {
-      target = details.targetNode.parent ?? DemoNode.root;
-      index = details.targetNode.index;
+    newParent.insertChild(newIndex, details.draggedNode);
+
+    if (!newParent.isExpanded) {
+      treeController.expand(newParent);
     } else {
-      if (!details.targetNode.isExpanded) {
-        index = details.targetNode.children.length;
-      }
+      treeController.rebuild();
     }
-
-    target.insertChild(index, details.draggedNode);
-    ref.read(treeControllerProvider).rebuild();
-    treeNavigation?.highlight(details.draggedNode);
-  }
-
-  Widget decorationBuilder(
-    BuildContext context,
-    Widget child,
-    TreeReorderingDetails<DemoNode> details,
-  ) {
-    final double y = details.dropPosition.dy;
-    final double heightFactor = details.targetBounds.height / 2;
-    final bool isAbove = y <= heightFactor;
-
-    hoveringNodeIsAbove = isAbove;
-
-    final virtualEntry = TreeEntry<DemoNode>(
-      node: details.draggedNode,
-      index: -1,
-      level: treeEntry.level + (isAbove ? 0 : 1),
-      parent: isAbove ? treeEntry.parent : treeEntry,
-      hasNextSibling: isAbove ? true : node.isExpanded && node.hasChildren,
-    );
-
-    final incoming = VirtualTreeItem(
-      treeEntry: virtualEntry,
-    );
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: isAbove ? [incoming, child] : [child, incoming],
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = ref.watch(colorSchemeProvider);
+    return TreeDraggable<DemoNode>(
+      node: node,
+      childWhenDragging: NodeWhenDragging(node: node),
+      feedback: const SizedBox(),
+      child: TreeDragTarget<DemoNode>(
+        node: node,
+        onReorder: onReorder,
+        canStartToggleExpansionTimer: () => true,
+        onMove: (_) {
+          if (isHighlighted) {
+            showHighlight = false;
+          }
+        },
+        onAccept: (_) => showHighlight = true,
+        onLeave: (_) => showHighlight = true,
+        builder: (
+          BuildContext context,
+          TreeReorderingDetails<DemoNode>? details,
+        ) {
+          Widget content = NodeContent(
+            node: node,
+            isHighlighted: showHighlight && isHighlighted,
+            onTap: toggle,
+          );
+
+          if (details != null) {
+            content = NodeDropFeedback(
+              details: details,
+              child: content,
+            );
+          }
+
+          return TreeItem(
+            focusNode: focusNode,
+            focusColor: Colors.transparent,
+            mouseCursor: SystemMouseCursors.grab,
+            onTap: highlight,
+            onLongPress: toggleCascading,
+            child: content,
+          );
+        },
+      ),
+    );
+  }
+}
+
+class NodeContent extends StatelessWidget {
+  const NodeContent({
+    super.key,
+    required this.node,
+    this.isHighlighted = false,
+    this.onTap,
+  });
+
+  final DemoNode node;
+  final bool isHighlighted;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
 
     Widget content = SizedBox(
       height: 40,
@@ -149,8 +189,7 @@ class _DemoItemState extends ConsumerState<DemoItem> {
         mainAxisSize: MainAxisSize.min,
         children: [
           DemoFolderButton(
-            onTap: toggle,
-            isLoading: isLoading,
+            onTap: onTap,
             isLeaf: node.isLeaf,
             isOpen: node.isExpanded,
             color: isHighlighted
@@ -163,7 +202,7 @@ class _DemoItemState extends ConsumerState<DemoItem> {
     );
 
     if (isHighlighted) {
-      content = DecoratedBox(
+      return DecoratedBox(
         decoration: BoxDecoration(
           color: colorScheme.primary,
           borderRadius: BorderRadius.circular(6),
@@ -174,75 +213,77 @@ class _DemoItemState extends ConsumerState<DemoItem> {
         ),
       );
     }
+    return content;
+  }
+}
 
-    return ReorderableTreeItem<DemoNode>(
-      treeEntry: treeEntry,
-      focusNode: focusNode,
-      focusColor: Colors.transparent,
-      onTap: highlight,
-      onReorder: onReorder,
-      decorationWrapsChildOnly: false,
-      canStartToggleExpansionTimer: () => !hoveringNodeIsAbove,
-      decorationBuilder: decorationBuilder,
-      childWhenDragging: Opacity(
-        opacity: 0.6,
-        child: TreeIndentation(
-          treeEntry: treeEntry,
-          child: content,
+class NodeWhenDragging extends StatelessWidget {
+  const NodeWhenDragging({super.key, required this.node});
+
+  final DemoNode node;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Opacity(
+        opacity: 0.5,
+        child: TreeItem(
+          child: NodeContent(node: node),
         ),
       ),
-      feedback: const SizedBox(),
-      child: content,
     );
   }
 }
 
-class VirtualTreeItem extends StatelessWidget {
-  const VirtualTreeItem({
+class NodeDropFeedback extends StatelessWidget {
+  const NodeDropFeedback({
     super.key,
-    required this.treeEntry,
+    required this.child,
+    required this.details,
   });
 
-  final TreeEntry<DemoNode> treeEntry;
+  final Widget child;
+  final TreeReorderingDetails<DemoNode> details;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final borderSide = BorderSide(
+      color: theme.colorScheme.onSurfaceVariant,
+      width: 2.5,
+    );
 
-    final foregroundColor = colorScheme.onSecondary;
+    final border = details.when<Border>(
+      above: () => Border(top: borderSide),
+      inside: () => Border.fromBorderSide(borderSide),
+      below: () => Border(bottom: borderSide),
+    );
 
-    return TreeItem<DemoNode>(
-      treeEntry: treeEntry,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: colorScheme.secondary,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: SizedBox(
-            height: 40,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Icon(Icons.drag_handle, color: foregroundColor),
-                ),
-                Flexible(
-                  child: Padding(
-                    padding: const EdgeInsetsDirectional.only(end: 16),
-                    child: Text(
-                      treeEntry.node.label,
-                      style: TextStyle(color: foregroundColor),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: DecoratedBox(
+        decoration: BoxDecoration(border: border),
+        child: child,
       ),
     );
+  }
+}
+
+extension<T extends TreeNode<T>> on TreeReorderingDetails<T> {
+  R when<R>({
+    required R Function() above,
+    required R Function() inside,
+    required R Function() below,
+  }) {
+    final double y = dropPosition.dy;
+    final double heightFactor = targetBounds.height / 3;
+
+    if (y <= heightFactor) {
+      return above();
+    } else if (y <= heightFactor * 2) {
+      return inside();
+    } else {
+      return below();
+    }
   }
 }

@@ -30,7 +30,7 @@ final indentGuideProvider = StateProvider<IndentGuide>(
 
     switch (ref.watch(indentTypeProvider)) {
       case IndentType.connectingLines:
-        return ConnectingLinesGuide(
+        return IndentGuide.connectingLines(
           roundCorners: ref.watch(roundedCornersProvider),
           indent: indent,
           thickness: lineThickness,
@@ -38,14 +38,14 @@ final indentGuideProvider = StateProvider<IndentGuide>(
           color: lineColor,
         );
       case IndentType.scopingLines:
-        return ScopingLinesGuide(
+        return IndentGuide.scopingLines(
           indent: indent,
           thickness: lineThickness,
           origin: lineOrigin,
           color: lineColor,
         );
       case IndentType.empty:
-        return IndentGuide(indent: indent);
+        return IndentGuide.blank(indent: indent);
     }
   },
 );

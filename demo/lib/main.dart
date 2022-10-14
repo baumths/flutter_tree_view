@@ -52,12 +52,23 @@ class DirectionalityWrapper extends ConsumerWidget {
 class DemoPage extends ConsumerWidget {
   const DemoPage({super.key});
 
+  static final GlobalKey<ScaffoldState> _smallScaffoldKey = GlobalKey();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final Screen screen = ref.watch(screenProvider);
 
+    ref.listen(screenWidthProvider, (previous, next) {
+      if (previous == null) return;
+
+      if (next < previous) {
+        _smallScaffoldKey.currentState?.closeDrawer();
+      }
+    });
+
     return screen.when(
       small: () => Scaffold(
+        key: _smallScaffoldKey,
         appBar: AppBar(title: const Text('TreeView Demo')),
         drawer: const SettingsDrawer(),
         body: const Content(),

@@ -38,7 +38,7 @@ class DemoFolderButton extends StatelessWidget {
     if (isLeaf) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: Icon(Icons.article, color: color),
+        child: Icon(Icons.article_outlined, color: color),
       );
     }
 

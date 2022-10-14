@@ -11,12 +11,18 @@ final showTreeProvider = StateProvider<bool>((ref) => false);
 class ContentView extends ConsumerWidget {
   const ContentView({super.key});
 
+  // This key makes sure the auto scroller inside [SliverTree] doesn't explode
+  // after the user resizes the screen.
+  static final GlobalKey _treeViewKey = GlobalKey();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final showTree = ref.watch(showTreeProvider);
 
     if (showTree) {
-      return const DemoTreeView();
+      return DemoTreeView(
+        key: _treeViewKey,
+      );
     }
 
     return const EmptyView();
