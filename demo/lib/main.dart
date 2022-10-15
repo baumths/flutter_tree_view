@@ -69,7 +69,10 @@ class DemoPage extends ConsumerWidget {
     return screen.when(
       small: () => Scaffold(
         key: _smallScaffoldKey,
-        appBar: AppBar(title: const Text('TreeView Demo')),
+        appBar: AppBar(
+          title: const Text('TreeView Demo'),
+          notificationPredicate: (_) => false,
+        ),
         drawer: const SettingsDrawer(),
         body: const Content(),
       ),

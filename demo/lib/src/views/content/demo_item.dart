@@ -29,14 +29,6 @@ class _DemoItemState extends State<DemoItem> {
   }
 
   bool isHighlighted = false;
-  bool get showHighlight => _showHighlight;
-  bool _showHighlight = true;
-  set showHighlight(bool value) {
-    if (_showHighlight == value) return;
-    setState(() {
-      _showHighlight = value;
-    });
-  }
 
   void highlight() {
     if (isHighlighted) {
@@ -46,34 +38,9 @@ class _DemoItemState extends State<DemoItem> {
     }
   }
 
-  VerticalEdgeDraggingAutoScroller? autoScroller;
-
-  void _updateAutoScroller() {
-    final ScrollableState scrollable = Scrollable.of(context)!;
-
-    if (autoScroller?.scrollable != scrollable) {
-      autoScroller?.stopAutoScroll();
-      autoScroller = VerticalEdgeDraggingAutoScroller(
-        scrollable: scrollable,
-        onScrollViewScrolled: () => autoScroller?.stopAutoScroll(),
-      );
-    }
-  }
-
-  void _maybeAutoScroll() {
-    if (autoScroller == null) return;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final renderBox = context.findRenderObject()! as RenderBox;
-      final rect = renderBox.localToGlobal(Offset.zero) & renderBox.size;
-      autoScroller!.startAutoScrollIfNecessary(rect.inflate(10));
-    });
-  }
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _updateAutoScroller();
 
     treeController = SliverTree.of<DemoNode>(context).controller;
     treeNavigation = TreeNavigation.of<DemoNode>(context);
@@ -81,7 +48,6 @@ class _DemoItemState extends State<DemoItem> {
 
     if (isHighlighted && !focusNode.hasFocus) {
       focusNode.requestFocus();
-      _maybeAutoScroll();
     }
   }
 
@@ -124,25 +90,18 @@ class _DemoItemState extends State<DemoItem> {
     return TreeDraggable<DemoNode>(
       node: node,
       childWhenDragging: NodeWhenDragging(node: node),
-      feedback: const SizedBox(),
+      feedback: NodeDragFeedback(node: node),
       child: TreeDragTarget<DemoNode>(
         node: node,
         onReorder: onReorder,
         canStartToggleExpansionTimer: () => true,
-        onMove: (_) {
-          if (isHighlighted) {
-            showHighlight = false;
-          }
-        },
-        onAccept: (_) => showHighlight = true,
-        onLeave: (_) => showHighlight = true,
         builder: (
           BuildContext context,
           TreeReorderingDetails<DemoNode>? details,
         ) {
           Widget content = NodeContent(
             node: node,
-            isHighlighted: showHighlight && isHighlighted,
+            isHighlighted: isHighlighted,
             onTap: toggle,
           );
 
@@ -217,6 +176,54 @@ class NodeContent extends StatelessWidget {
   }
 }
 
+class NodeDragFeedback extends StatelessWidget {
+  const NodeDragFeedback({super.key, required this.node});
+
+  final DemoNode node;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final foregroundColor = colorScheme.onSurface;
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: const BorderRadius.all(Radius.circular(6)),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: const BorderRadius.all(Radius.circular(6)),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 8,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Icon(Icons.drag_handle, color: foregroundColor),
+            ),
+            Flexible(
+              child: Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(0, 8, 16, 8),
+                child: Text(
+                  node.label,
+                  style: TextStyle(color: foregroundColor),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class NodeWhenDragging extends StatelessWidget {
   const NodeWhenDragging({super.key, required this.node});
 
@@ -224,11 +231,14 @@ class NodeWhenDragging extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Opacity(
-        opacity: 0.5,
-        child: TreeItem(
-          child: NodeContent(node: node),
+    return MouseRegion(
+      cursor: SystemMouseCursors.noDrop,
+      child: IgnorePointer(
+        child: Opacity(
+          opacity: 0.5,
+          child: TreeItem(
+            child: NodeContent(node: node),
+          ),
         ),
       ),
     );
@@ -259,12 +269,9 @@ class NodeDropFeedback extends StatelessWidget {
       below: () => Border(bottom: borderSide),
     );
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: DecoratedBox(
-        decoration: BoxDecoration(border: border),
-        child: child,
-      ),
+    return DecoratedBox(
+      decoration: BoxDecoration(border: border),
+      child: child,
     );
   }
 }
