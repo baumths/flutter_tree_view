@@ -42,6 +42,7 @@ class TreeDraggable<T extends TreeNode<T>> extends StatefulWidget {
     required this.child,
     required this.node,
     this.collapseOnDragStart = true,
+    this.expandOnDragEnd = false,
     this.autoScrollSensitivity = 100.0,
     this.axis,
     required this.feedback,
@@ -75,6 +76,9 @@ class TreeDraggable<T extends TreeNode<T>> extends StatefulWidget {
 
   /// Whether [node] should be collapsed when the drag gesture starts.
   final bool collapseOnDragStart;
+
+  /// Whether [node] should be expanded when the drag gesture ends.
+  final bool expandOnDragEnd;
 
   /// Defines the size of the [Rect] created around the drag global position
   /// when dragging a tree node.
@@ -252,10 +256,6 @@ class _TreeDraggableState<T extends TreeNode<T>> extends State<TreeDraggable<T>>
     );
   }
 
-  // Used to keep track if the node was collapsed when dragged to maybe expand
-  // it back when the drag ends.
-  bool _wasCollapsed = false;
-
   void _endDrag() {
     _isDragging = false;
 
@@ -263,9 +263,8 @@ class _TreeDraggableState<T extends TreeNode<T>> extends State<TreeDraggable<T>>
       ..stopAutoScroll()
       ..onNodeDragEnded();
 
-    if (_wasCollapsed) {
+    if (widget.expandOnDragEnd && !node.isExpanded) {
       _treeState.controller.expand(node);
-      _wasCollapsed = false;
     }
   }
 
@@ -276,7 +275,6 @@ class _TreeDraggableState<T extends TreeNode<T>> extends State<TreeDraggable<T>>
 
     if (widget.collapseOnDragStart && node.isExpanded) {
       _treeState.controller.collapse(node);
-      _wasCollapsed = true;
     }
 
     widget.onDragStarted?.call();
@@ -344,6 +342,8 @@ class TreeReorderingDetails<T extends TreeNode<T>> with Diagnosticable {
     required this.targetNode,
     required this.dropPosition,
     required this.targetBounds,
+    this.candidateData = const [],
+    this.rejectedData = const [],
   });
 
   /// The node that was dragged around and dropped on [targetNode].
@@ -357,6 +357,30 @@ class TreeReorderingDetails<T extends TreeNode<T>> with Diagnosticable {
 
   /// The widget bounding box of [targetNode] that received the [draggedNode].
   final Rect targetBounds;
+
+  /// Contains the list of drag data that is hovering over the [TreeDragTarget]
+  /// and that has passed [TreeDragTarget.onWillAccept].
+  final List<T?> candidateData;
+
+  /// Contains the list of drag data that is hovering over this [TreeDragTarget]
+  /// and that will not be accepted by the [TreeDragTarget].
+  final List<dynamic> rejectedData;
+
+  /// Used by [TreeDragTarget] to update the data that is hovering itself before
+  /// providing this details to [TreeDragTarget.builder].
+  TreeReorderingDetails<T> applyData(
+    List<T?> candidateData,
+    List<dynamic> rejectedData,
+  ) {
+    return TreeReorderingDetails<T>(
+      draggedNode: draggedNode,
+      targetNode: targetNode,
+      dropPosition: dropPosition,
+      targetBounds: targetBounds,
+      candidateData: candidateData,
+      rejectedData: rejectedData,
+    );
+  }
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
@@ -394,7 +418,7 @@ class TreeDragTarget<T extends TreeNode<T>> extends StatefulWidget {
     required this.builder,
     required this.onReorder,
     this.toggleExpansionTimeout = const Duration(seconds: 1),
-    this.canStartToggleExpansionTimer,
+    this.canStartToggleExpansionTimer = true,
     this.onWillAccept,
     this.onAccept,
     this.onAcceptWithDetails,
@@ -429,11 +453,11 @@ class TreeDragTarget<T extends TreeNode<T>> extends StatefulWidget {
   /// Defaults to `const Duration(seconds: 1)`.
   final Duration toggleExpansionTimeout;
 
-  /// A simple callback used to decide if the toggle expansion timer should
-  /// start when this node is being hovered by another dragging node.
+  /// A simple flag used to decide if the toggle expansion timer should start
+  /// when this node is being hovered by another dragging node.
   ///
-  /// If this callback is `null`, the timer always starts.
-  final ValueGetter<bool>? canStartToggleExpansionTimer;
+  /// Defaults to `true`.
+  final bool canStartToggleExpansionTimer;
 
   /// Called to determine whether this widget is interested in receiving a given
   /// piece of data being dragged over this drag target.
@@ -476,17 +500,17 @@ class _TreeDragTargetState<T extends TreeNode<T>>
     extends State<TreeDragTarget<T>> {
   T get node => widget.node;
 
-  SliverTreeState<T>? _treeState;
+  late SliverTreeState<T> _treeState;
 
   Timer? _toggleExpansionTimer;
 
   void startToggleExpansionTimer() {
     stopToggleExpansionTimer();
 
-    if (widget.canStartToggleExpansionTimer?.call() ?? true) {
+    if (_canToggle && widget.canStartToggleExpansionTimer) {
       _toggleExpansionTimer = Timer(
         widget.toggleExpansionTimeout,
-        () => _treeState?.controller.toggleExpansion(node),
+        () => _treeState.controller.toggleExpansion(node),
       );
     }
   }
@@ -499,9 +523,12 @@ class _TreeDragTargetState<T extends TreeNode<T>>
   late bool _isToggleExpansionEnabled;
 
   bool get _isInDraggedNodePath {
-    return _treeState?.draggingNodePath.contains(node.id) ?? false;
+    return _treeState.draggingNodePath.contains(node.id);
   }
 
+  // Only toggle the expansion of a node if it is not in the path to the target
+  // node, if an ancestor of the dragged node is collapsed, its dragging state
+  // is lost.
   bool get _canToggle => _isToggleExpansionEnabled && !_isInDraggedNodePath;
 
   void _updateIsToggleExpansionEnabled() {
@@ -542,13 +569,7 @@ class _TreeDragTargetState<T extends TreeNode<T>>
       _details = _getDropDetails(details.data, details.offset);
     });
 
-    if (_canToggle) {
-      // Only toggle the expansion of a node if it is not in the path to the
-      // hovered node, if an ancestor of the dragged node is collapsed, its
-      // dragging state is lost.
-      startToggleExpansionTimer();
-    }
-
+    startToggleExpansionTimer();
     widget.onMove?.call(details);
   }
 
@@ -588,6 +609,11 @@ class _TreeDragTargetState<T extends TreeNode<T>>
   void didUpdateWidget(covariant TreeDragTarget<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
     _updateIsToggleExpansionEnabled();
+
+    if (oldWidget.canStartToggleExpansionTimer !=
+        widget.canStartToggleExpansionTimer) {
+      stopToggleExpansionTimer();
+    }
   }
 
   @override
@@ -611,8 +637,15 @@ class _TreeDragTargetState<T extends TreeNode<T>>
       onLeave: onLeave,
       onMove: onMove,
       hitTestBehavior: widget.hitTestBehavior,
-      builder: (BuildContext context, List<T?> _, List<dynamic> __) {
-        return widget.builder(context, _details);
+      builder: (
+        BuildContext context,
+        List<T?> candidateData,
+        List<dynamic> rejectedData,
+      ) {
+        return widget.builder(
+          context,
+          _details?.applyData(candidateData, rejectedData),
+        );
       },
     );
   }

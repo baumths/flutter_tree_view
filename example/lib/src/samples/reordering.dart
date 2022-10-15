@@ -27,6 +27,39 @@ class ReorderableTreeView extends StatefulWidget with PageInfo {
   State<ReorderableTreeView> createState() => _ReorderableTreeViewState();
 }
 
+typedef DecorationBuilder = Widget Function(
+  BuildContext context,
+  Widget child,
+  TreeReorderingDetails<ExampleNode> details,
+);
+
+/// Simple extension that divides the [TreeReorderingDetails.targetBounds] into
+/// three segments and applies a callback when the [TreeReorderingDetails.dropPosition]
+/// is inside the segment handled by that callback.
+///
+/// This way of handling reordering as well as the values below are very opinionated.
+extension<T extends TreeNode<T>> on TreeReorderingDetails<T> {
+  R when<R>({
+    required R Function() above,
+    required R Function() inside,
+    required R Function() below,
+  }) {
+    final double y = dropPosition.dy;
+    final double heightFactor = targetBounds.height / 3;
+
+    if (y <= heightFactor) {
+      // top segment, could reorder as parent or previous sibling of target
+      return above();
+    } else if (y <= heightFactor * 2) {
+      // center segment, could reorder as first or last child of target
+      return inside();
+    } else {
+      // bottom segment, could reorder as first child or next sibling of target
+      return below();
+    }
+  }
+}
+
 class _ReorderableTreeViewState extends State<ReorderableTreeView> {
   late final TreeController<ExampleNode> treeController;
 
@@ -43,27 +76,6 @@ class _ReorderableTreeViewState extends State<ReorderableTreeView> {
   void dispose() {
     treeController.dispose();
     super.dispose();
-  }
-
-  Widget _decorationBuilder(
-    BuildContext context,
-    Widget child,
-    TreeReorderingDetails<ExampleNode> details,
-  ) {
-    const BorderSide borderSide = BorderSide(color: Colors.grey, width: 2.5);
-
-    // Opinionated values.
-    // `when` is defined as an extension at the end of this file.
-    final Border border = details.when<Border>(
-      above: () => const Border(top: borderSide),
-      inside: () => const Border.fromBorderSide(borderSide),
-      below: () => const Border(bottom: borderSide),
-    );
-
-    return DecoratedBox(
-      decoration: BoxDecoration(border: border),
-      child: child,
-    );
   }
 
   void _onReorder(TreeReorderingDetails<ExampleNode> details) {
@@ -94,43 +106,46 @@ class _ReorderableTreeViewState extends State<ReorderableTreeView> {
     // index clashes.
     newParent.insertChild(newIndex, details.draggedNode);
 
-    if (!newParent.isExpanded) {
+    if (newParent.isExpanded) {
+      // Rebuild the flattened tree to make sure the changes are shown.
+      treeController.rebuild();
+    } else {
       // expand the new parent to show the reordered node at the new location.
-      // Not calling [TreeController.expand] because this changed will be
-      // picked up by the following call to [TreeController.rebuild].
-      newParent.isExpanded = true;
+      treeController.expand(newParent);
     }
 
-    // Rebuild the flattened tree to make sure the changes are shown.
-    treeController.rebuild();
     briefHighlight(details.draggedNode.id);
   }
 
   @override
   Widget build(BuildContext context) {
-    return TreeView<ExampleNode>(
-      controller: treeController,
-      itemBuilder: (BuildContext context, TreeEntry<ExampleNode> entry) {
-        Widget content = Content(
-          node: entry.node,
-          onFolderPressed: () => treeController.toggleExpansion(entry.node),
-        );
+    late final highlightColor = Theme.of(context) //
+        .colorScheme
+        .primary
+        .withOpacity(.3);
 
-        if (highlightedId == entry.node.id) {
-          content = HighlightShadow(child: content);
-        }
+    return DefaultIndentGuide(
+      guide: const ScopingLinesGuide(indent: 20, origin: 1),
+      child: TreeView<ExampleNode>(
+        controller: treeController,
+        itemBuilder: (BuildContext context, TreeEntry<ExampleNode> entry) {
+          // The [ReorderableTreeNodeTile] widget can be found down below.
+          final Widget tile = ReorderableTreeNodeTile(
+            node: entry.node,
+            onReorder: _onReorder,
+            onFolderPressed: () => treeController.toggleExpansion(entry.node),
+          );
 
-        return ReorderableTreeItem<ExampleNode>(
-          node: entry.node,
-          onReorder: _onReorder,
-          decorationBuilder: _decorationBuilder,
-          feedback: HighlightShadow(child: content),
-          dragAnchorStrategy: pointerDragAnchorStrategy,
-          childWhenDragging: ChildWhenDragging(child: content),
-          mouseCursor: SystemMouseCursors.grab,
-          child: content,
-        );
-      },
+          if (highlightedId == entry.node.id) {
+            return Material(
+              color: highlightColor,
+              child: tile,
+            );
+          }
+
+          return tile;
+        },
+      ),
     );
   }
 
@@ -152,33 +167,163 @@ class _ReorderableTreeViewState extends State<ReorderableTreeView> {
   }
 }
 
-class Content extends StatelessWidget {
-  const Content({
+class ReorderableTreeNodeTile extends StatefulWidget {
+  const ReorderableTreeNodeTile({
     super.key,
     required this.node,
+    required this.onReorder,
+    this.onFolderPressed,
+  });
+
+  final ExampleNode node;
+  final TreeOnReorderCallback<ExampleNode> onReorder;
+  final VoidCallback? onFolderPressed;
+
+  @override
+  State<ReorderableTreeNodeTile> createState() =>
+      _ReorderableTreeNodeTileState();
+}
+
+class _ReorderableTreeNodeTileState extends State<ReorderableTreeNodeTile> {
+  late final _dragHandleKey = GlobalKey();
+
+  bool _isDragging = false;
+
+  void onDragStarted() {
+    setState(() {
+      _isDragging = true;
+    });
+  }
+
+  void onDragEnd(DraggableDetails details) {
+    _isDragging = false;
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Widget content = TreeNodeContent(
+      node: widget.node,
+      onFolderPressed: widget.onFolderPressed,
+      leading: TreeDraggable<ExampleNode>(
+        key: _dragHandleKey,
+        node: widget.node,
+        feedback: DragFeedback(node: widget.node),
+        onDragStarted: onDragStarted,
+        onDragEnd: onDragEnd,
+        child: const Icon(Icons.drag_handle),
+      ),
+    );
+
+    return TreeDragTarget<ExampleNode>(
+      node: widget.node,
+      onReorder: widget.onReorder,
+      builder: (
+        BuildContext context,
+        TreeReorderingDetails<ExampleNode>? details,
+      ) {
+        Widget child = content;
+
+        if (details != null) {
+          child = TreeNodeDropAreaFeedback(
+            details: details,
+            child: child,
+          );
+        }
+
+        child = TreeIndentation(
+          child: child,
+        );
+
+        if (_isDragging) {
+          return IgnorePointer(
+            child: Opacity(
+              opacity: .5,
+              child: child,
+            ),
+          );
+        }
+
+        return child;
+      },
+    );
+  }
+}
+
+class TreeNodeDropAreaFeedback extends StatelessWidget {
+  const TreeNodeDropAreaFeedback({
+    super.key,
+    required this.child,
+    required this.details,
+  });
+
+  final Widget child;
+  final TreeReorderingDetails<ExampleNode> details;
+
+  @override
+  Widget build(BuildContext context) {
+    const BorderSide borderSide = BorderSide(color: Colors.grey, width: 2.5);
+
+    // Opinionated values.
+    final BoxBorder border = details.when(
+      above: () => const Border(top: borderSide),
+      inside: () {
+        if (details.targetNode.parent?.parent == null) {
+          return const Border.fromBorderSide(borderSide);
+        }
+        return const BorderDirectional(
+          top: borderSide,
+          bottom: borderSide,
+          end: borderSide,
+        );
+      },
+      below: () => const Border(bottom: borderSide),
+    );
+
+    return DecoratedBox(
+      decoration: BoxDecoration(border: border),
+      child: child,
+    );
+  }
+}
+
+class TreeNodeContent extends StatelessWidget {
+  const TreeNodeContent({
+    super.key,
+    required this.node,
+    this.leading,
     this.onFolderPressed,
   });
 
   final ExampleNode node;
   final VoidCallback? onFolderPressed;
+  final Widget? leading;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 40,
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          if (node.children.isEmpty)
-            const IconButton(
-              onPressed: null,
-              icon: Icon(Icons.article),
-            )
-          else
-            FolderButton(
-              isOpen: node.isExpanded,
-              onPressed: onFolderPressed,
-            ),
-          Expanded(
+          const SizedBox(width: 8),
+          if (leading != null) leading!,
+          if (onFolderPressed != null)
+            if (node.hasChildren)
+              ExpandIcon(
+                padding: EdgeInsets.zero,
+                isExpanded: node.isExpanded,
+                onPressed: (_) => onFolderPressed!(),
+              )
+            else
+              const Padding(
+                padding: EdgeInsets.all(8),
+                child: Icon(Icons.article, size: 16),
+              ),
+          const SizedBox(width: 4),
+          Flexible(
             child: Text(node.label),
           ),
         ],
@@ -187,80 +332,35 @@ class Content extends StatelessWidget {
   }
 }
 
-class HighlightShadow extends StatelessWidget {
-  const HighlightShadow({super.key, required this.child});
+class DragFeedback extends StatelessWidget {
+  const DragFeedback({super.key, required this.node});
 
-  final Widget child;
+  final ExampleNode node;
 
   @override
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black38,
-              blurRadius: 10,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: IntrinsicWidth(
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black38,
+                blurRadius: 10,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
           child: Padding(
             padding: const EdgeInsetsDirectional.only(start: 8, end: 16),
-            child: child,
+            child: TreeNodeContent(node: node),
           ),
         ),
       ),
     );
-  }
-}
-
-class ChildWhenDragging extends StatelessWidget {
-  const ChildWhenDragging({super.key, required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      ignoring: true,
-      child: Opacity(
-        opacity: 0.6,
-        child: TreeItem(
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
-/// Simple extension that divides the [TreeReorderingDetails.targetBounds] into
-/// three segments and applies a callback when the [TreeReorderingDetails.dropPosition]
-/// is inside the segment handled by that callback.
-///
-/// This way of handling reordering as well as the values below are very opinionated.
-extension<T extends TreeNode<T>> on TreeReorderingDetails<T> {
-  R when<R>({
-    required R Function() above,
-    required R Function() inside,
-    required R Function() below,
-  }) {
-    final double y = dropPosition.dy;
-    final double heightFactor = targetBounds.height / 3;
-
-    if (y <= heightFactor) {
-      // top segment, could reorder as parent or previous sibling
-      return above();
-    } else if (y <= heightFactor * 2) {
-      // center segment, could reorder to first or last of new siblings
-      return inside();
-    } else {
-      // bottom segment, could reorder as first child or next sibling
-      return below();
-    }
   }
 }
