@@ -218,7 +218,7 @@ mixin TreeIndentDetails {
   /// The [TreeIndentDetails] attached to the parent node of this details.
   ///
   /// If `null`, this details is attached to a root node.
-  TreeIndentDetails? get parentDetails;
+  TreeIndentDetails? get parent;
 
   /// The level of the node that owns this details on the tree.
   ///
@@ -298,7 +298,7 @@ mixin TreeIndentDetails {
     if (level == defaultTreeRootLevel) return const <int>{};
     return <int>{
       ...?_unreachableExtraLevels,
-      ...?parentDetails?.ancestorLevelsWithVerticalLines,
+      ...?parent?.ancestorLevelsWithVerticalLines,
       if (hasNextSibling) level,
     };
   }
@@ -350,10 +350,8 @@ class TreeEntry<T extends TreeNode<T>> with TreeIndentDetails, Diagnosticable {
   bool _hasNextSibling;
 
   /// The direct parent of [node] on the tree.
-  final TreeEntry<T>? parent;
-
   @override
-  TreeIndentDetails? get parentDetails => parent;
+  final TreeEntry<T>? parent;
 
   /// The entry before this in the flattened tree.
   ///
