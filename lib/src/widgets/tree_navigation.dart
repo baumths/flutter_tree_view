@@ -15,8 +15,8 @@ import '../foundation.dart';
 /// final T node = ...;
 /// final FocusNode focusNode = ...;
 ///
-/// final T? currentHighlight = TreeNavigation.of<T>(context).currentHighlight;
-/// final bool isHighlighted = currentHighlight == node;
+/// final T? currentHighlight = TreeNavigation.of<T>(context)?.currentHighlight;
+/// final bool isHighlighted = currentHighlight?.id == node.id;
 ///
 /// if (isHighlighted && !focusNode.hasFocus) {
 ///   focusNode.requestFocus();
@@ -140,27 +140,8 @@ class TreeNavigationState<T extends TreeNode<T>>
     return widget.focusNode ?? (_focusNode ??= FocusNode());
   }
 
-  TreeEntry<T>? _cachedAnchor;
-
-  void _clearCachedAnchor() => _cachedAnchor = null;
-
   TreeEntry<T>? _findTreeEntry(T? node) {
-    if (node == null) return null;
-
-    final Object id = node.id;
-
-    if (_cachedAnchor?.node.id == id) return _cachedAnchor;
-
-    if (_controller.flattenedTree.isEmpty) return null;
-
-    TreeEntry<T>? current = _controller.flattenedTree.first;
-
-    while (!(current == null || current.node.id == id)) {
-      current = current.nextEntry;
-    }
-
-    _cachedAnchor = current;
-    return current;
+    return node == null ? null : _controller.getCurrentEntryOfNode(node);
   }
 
   bool _canHighlight(T? node) {
@@ -180,7 +161,7 @@ class TreeNavigationState<T extends TreeNode<T>>
 
   /// Updates [currentHighlight] to the given [node].
   void highlight(T? node) {
-    if (_currentHighlight == node || !_canHighlight(node)) return;
+    if (_currentHighlight?.id == node?.id || !_canHighlight(node)) return;
 
     setState(() {
       _currentHighlight = node;
@@ -313,24 +294,16 @@ class TreeNavigationState<T extends TreeNode<T>>
   @override
   void initState() {
     super.initState();
-    _controller.addListener(_clearCachedAnchor);
     _updateActions();
+    _currentHighlight = widget.currentHighlight;
   }
 
   @override
   void didUpdateWidget(covariant TreeNavigation<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (oldWidget.controller != _controller) {
-      _currentHighlight = null;
-      _cachedAnchor = null;
-      oldWidget.controller.removeListener(_clearCachedAnchor);
-      _controller.addListener(_clearCachedAnchor);
-    }
-
-    if (widget.currentHighlight != currentHighlight) {
+    if (widget.currentHighlight?.id != currentHighlight?.id) {
       _currentHighlight = widget.currentHighlight;
-      _cachedAnchor = null;
     }
 
     if (oldWidget.actions != widget.actions) {
@@ -348,9 +321,7 @@ class TreeNavigationState<T extends TreeNode<T>>
   void dispose() {
     _focusNode?.dispose();
     _focusNode = null;
-    _controller.removeListener(_clearCachedAnchor);
     _currentHighlight = null;
-    _cachedAnchor = null;
     _actions = const {};
     super.dispose();
   }

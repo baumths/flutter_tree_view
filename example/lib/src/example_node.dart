@@ -1,5 +1,6 @@
 import 'dart:collection' show UnmodifiableListView;
 
+import 'package:flutter/widgets.dart' show FocusNode;
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
 class ExampleNode extends TreeNode<ExampleNode> {
@@ -61,6 +62,24 @@ class ExampleNode extends TreeNode<ExampleNode> {
   void _reparent(ExampleNode child) {
     child._parent?.removeChild(child);
     child._parent = this;
+  }
+
+  bool get isHighlighted => focusNode.hasFocus;
+
+  final FocusNode focusNode = FocusNode(
+    descendantsAreFocusable: false,
+    descendantsAreTraversable: false,
+  );
+
+  void dispose() {
+    focusNode.dispose();
+  }
+
+  void visitDescendants(void Function(ExampleNode descendant) visit) {
+    visit(this);
+    for (final ExampleNode child in _children) {
+      child.visitDescendants(visit);
+    }
   }
 
   static ExampleNode createSampleTree() {
