@@ -148,6 +148,11 @@ class TreeNavigationState<T extends TreeNode<T>>
     return node == null || (widget.canHighlight?.call(node) ?? true);
   }
 
+  void _myabeHighlightFirstVisibleNode() {
+    if (_controller.flattenedTree.isEmpty) return;
+    highlight(_controller.flattenedTree.first.node);
+  }
+
   /// Updates [currentHighlight] to `null`.
   void clearHighlight() {
     if (_currentHighlight == null) return;
@@ -221,7 +226,10 @@ class TreeNavigationState<T extends TreeNode<T>>
   void directionalHighlight(TraversalDirection direction) {
     final TreeEntry<T>? anchor = _findTreeEntry(_currentHighlight);
 
-    if (anchor == null) return;
+    if (anchor == null) {
+      _myabeHighlightFirstVisibleNode();
+      return;
+    }
 
     TreeEntry<T>? target;
 
