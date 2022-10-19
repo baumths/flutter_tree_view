@@ -8,6 +8,10 @@ export 'theme.dart';
 
 final showRootProvider = StateProvider<bool>((ref) => false);
 
+final rootLevelProvider = StateProvider<int>((ref) => 0);
+
+final animatedExpansionsProvider = StateProvider<bool>((ref) => true);
+
 final indentProvider = StateProvider<double>((ref) => 40.0);
 
 final roundedCornersProvider = StateProvider<bool>((ref) => false);

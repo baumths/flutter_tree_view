@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'src/providers/responsive.dart';
 import 'src/providers/settings.dart';
+import 'src/providers/tree.dart';
 import 'src/views/content.dart';
 import 'src/views/settings.dart';
 
@@ -75,8 +76,52 @@ class DemoPage extends ConsumerWidget {
         ),
         drawer: const SettingsDrawer(),
         body: const Content(),
+        floatingActionButton: const ExpansionFabs(),
       ),
-      large: () => const Scaffold(body: Content()),
+      large: () => const Scaffold(
+        body: Content(),
+        floatingActionButton: ExpansionFabs.large(),
+      ),
+    );
+  }
+}
+
+class ExpansionFabs extends ConsumerWidget {
+  const ExpansionFabs({super.key}) : large = false;
+
+  const ExpansionFabs.large({super.key}) : large = true;
+
+  final bool large;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Transform.scale(
+      scale: .9,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FloatingActionButton.extended(
+            isExtended: large,
+            elevation: 1,
+            extendedPadding: const EdgeInsets.all(16),
+            label: const Text('Expand All'),
+            tooltip: large ? null : 'Expand All',
+            icon: const Icon(Icons.fullscreen),
+            onPressed: () => ref.read(treeControllerProvider).expandAll(),
+          ),
+          const SizedBox(height: 8),
+          FloatingActionButton.extended(
+            isExtended: large,
+            elevation: 1,
+            extendedPadding: const EdgeInsets.all(16),
+            label: const Text('Collapse All'),
+            tooltip: large ? null : 'Collapse All',
+            icon: const Icon(Icons.fullscreen_exit),
+            onPressed: () => ref.read(treeControllerProvider).collapseAll(),
+          ),
+        ],
+      ),
     );
   }
 }

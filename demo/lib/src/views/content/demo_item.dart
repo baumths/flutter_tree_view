@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderAbstractViewport;
 
 import '../../providers/tree.dart';
 import 'folder_button.dart';
@@ -30,11 +31,32 @@ class _DemoItemState extends State<DemoItem> {
 
   bool isHighlighted = false;
 
-  void highlight() {
+  void toggleHighlight() {
     if (isHighlighted) {
-      toggle();
+      treeNavigation?.clearHighlight();
     } else {
       treeNavigation?.highlight(node);
+    }
+  }
+
+  void _maybeAutoScroll() {
+    final renderObject = context.findRenderObject();
+    if (renderObject == null) return;
+
+    RenderAbstractViewport.of(renderObject)?.showOnScreen(
+      descendant: renderObject,
+      rect: renderObject.paintBounds.inflate(8),
+    );
+  }
+
+  void onFocusChange(bool hasFocus) {
+    if (hasFocus) {
+      _maybeAutoScroll();
+      return;
+    }
+
+    if (isHighlighted) {
+      treeNavigation?.clearHighlight();
     }
   }
 
@@ -44,7 +66,7 @@ class _DemoItemState extends State<DemoItem> {
 
     treeController = SliverTree.of<DemoNode>(context).controller;
     treeNavigation = TreeNavigation.of<DemoNode>(context);
-    isHighlighted = treeNavigation?.currentHighlight == node;
+    isHighlighted = treeNavigation?.currentHighlight?.id == node.id;
 
     if (isHighlighted && !focusNode.hasFocus) {
       focusNode.requestFocus();
@@ -94,7 +116,6 @@ class _DemoItemState extends State<DemoItem> {
       child: TreeDragTarget<DemoNode>(
         node: node,
         onReorder: onReorder,
-        canStartToggleExpansionTimer: () => true,
         builder: (
           BuildContext context,
           TreeReorderingDetails<DemoNode>? details,
@@ -115,8 +136,10 @@ class _DemoItemState extends State<DemoItem> {
           return TreeItem(
             focusNode: focusNode,
             focusColor: Colors.transparent,
+            onFocusChange: onFocusChange,
+            borderRadius: BorderRadius.circular(6),
             mouseCursor: SystemMouseCursors.grab,
-            onTap: highlight,
+            onTap: toggleHighlight,
             onLongPress: toggleCascading,
             child: content,
           );

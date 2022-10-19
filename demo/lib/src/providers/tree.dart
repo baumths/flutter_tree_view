@@ -15,7 +15,21 @@ final treeControllerProvider = Provider.autoDispose<TreeController<DemoNode>>(
       showRoot: ref.read(showRootProvider),
     );
 
-    ref.listen(showRootProvider, ((_, next) => controller.showRoot = next));
+    ref.listen(showRootProvider, (_, bool next) => controller.showRoot = next);
+
+    ref.listen(
+      rootLevelProvider,
+      (_, int next) => controller.startingLevel = next,
+    );
+
+    ref.listen(
+      animatedExpansionsProvider,
+      (_, bool shouldAnimate) {
+        controller.animationDuration = shouldAnimate //
+            ? const Duration(milliseconds: 300)
+            : Duration.zero;
+      },
+    );
 
     ref.onDispose(controller.dispose);
     return controller;

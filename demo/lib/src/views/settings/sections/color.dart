@@ -59,10 +59,8 @@ class ColorOption extends ConsumerWidget {
   final Color color;
   final bool canTap;
 
-  static final List<Widget> all = Colors.primaries
-      .cast<Color>()
-      .followedBy(Colors.accents)
-      .followedBy(const [Colors.white, Colors.black])
+  static final List<Widget> all = const <Color>[Colors.white, Colors.black]
+      .followedBy(Colors.primaries)
       .map(ColorOption.fromColor)
       .toList();
 

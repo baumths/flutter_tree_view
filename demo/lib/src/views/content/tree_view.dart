@@ -16,6 +16,7 @@ class DemoTreeView extends ConsumerWidget {
 
     return TreeNavigation<DemoNode>(
       controller: controller,
+      autofocus: true,
       currentHighlight: ref.watch(_highlightProvider),
       onHighlightChanged: (DemoNode? node) {
         ref.read(_highlightProvider.state).state = node;
