@@ -312,17 +312,19 @@ class TreeController<T extends TreeNode<T>> with ChangeNotifier {
   }
 
   /// Updates the expansion state of all nodes to `true` and rebuilds the tree.
-  ///
-  /// {@macro flutter_fancy_tree_view.tree_controller.expand_animation}
-  void expandAll({Duration? duration, Curve? curve}) {
-    _executeCommand(
-      node: root,
-      command: AnimatableTreeCommand<T>.expandCascading(
+  void expandAll() {
+    final Iterable<T> roots = showRoot ? <T>[root] : root.children;
+
+    for (final T root in roots) {
+      _executeCommand(
         node: root,
-        duration: duration ?? animationDuration,
-        curve: curve ?? animationCurve,
-      ),
-    );
+        command: AnimatableTreeCommand<T>.expandCascading(
+          node: root,
+          duration: Duration.zero,
+          curve: Curves.linear,
+        ),
+      );
+    }
 
     rebuild();
   }
@@ -366,19 +368,19 @@ class TreeController<T extends TreeNode<T>> with ChangeNotifier {
   }
 
   /// Updates the expansion state of all nodes to `false` and rebuilds the tree.
-  ///
-  /// {@macro flutter_fancy_tree_view.tree_controller.expand_animation}
-  ///
-  /// {@macro flutter_fancy_tree_view.tree_controller.collapse_animation}
-  void collapseAll({Duration? duration, Curve? curve}) {
-    _executeCommand(
-      node: root,
-      command: AnimatableTreeCommand<T>.collapseCascading(
+  void collapseAll() {
+    final Iterable<T> roots = showRoot ? <T>[root] : root.children;
+
+    for (final T root in roots) {
+      _executeCommand(
         node: root,
-        duration: duration ?? animationDuration,
-        curve: curve ?? animationCurve,
-      ),
-    );
+        command: AnimatableTreeCommand<T>.collapseCascading(
+          node: root,
+          duration: Duration.zero,
+          curve: Curves.linear,
+        ),
+      );
+    }
 
     rebuild();
   }
