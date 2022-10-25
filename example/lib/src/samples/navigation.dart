@@ -33,12 +33,13 @@ class _NavigableTreeViewState extends State<NavigableTreeView> {
   void initState() {
     super.initState();
 
+    final ExampleNode root = ExampleNode.createSampleTree();
     treeController = TreeController<ExampleNode>(
-      root: ExampleNode.createSampleTree(),
+      roots: root.children,
     );
 
     // highlight the first visible node
-    currentHighlight = treeController.root.children.first;
+    currentHighlight = treeController.roots.first;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // request focus as soon as the view renders so that the
@@ -49,9 +50,10 @@ class _NavigableTreeViewState extends State<NavigableTreeView> {
 
   @override
   void dispose() {
-    treeController
-      ..root.visitDescendants((ExampleNode descendant) => descendant.dispose())
-      ..dispose();
+    for (final ExampleNode root in treeController.roots) {
+      root.visitDescendants((ExampleNode descendant) => descendant.dispose());
+    }
+    treeController.dispose();
     super.dispose();
   }
 

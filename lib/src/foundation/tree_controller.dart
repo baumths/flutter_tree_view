@@ -25,24 +25,18 @@ class TreeController<T extends TreeNode<T>> with ChangeNotifier {
   /// To disable animations, provide a duration of [Duration.zero] to
   /// [animationDuration].
   ///
-  /// [startingLevel] the level to use for root nodes when flattening the tree.
+  /// [rootLevel] the level to use for root nodes when flattening the tree.
   /// Must be greater or equal to `0`. To paint lines for the root nodes, use
-  /// a starting level of `1` or higher. The higher the starting level, more
-  /// indent the flattening algorithm will apply to the total indentation of the
-  /// nodes.
-  ///
-  /// [showRoot] controls whether to display [root] or [root.children] as the
-  /// root(s) of the tree. Set to `true` if [root] should be visible.
+  /// a root level of `1` or higher. The higher the root level, more indent the
+  /// flattening algorithm will apply to the total indentation of the nodes.
   TreeController({
-    required T root,
+    required Iterable<T> roots,
     this.animationDuration = const Duration(milliseconds: 300),
     this.animationCurve = Curves.linear,
-    bool showRoot = false,
-    int startingLevel = defaultTreeRootLevel,
-  })  : _root = root,
-        _showRoot = showRoot,
-        assert(startingLevel >= 0),
-        _startingLevel = startingLevel;
+    int rootLevel = defaultTreeRootLevel,
+  })  : _roots = roots,
+        assert(rootLevel >= 0),
+        _rootLevel = rootLevel;
 
   @override
   void dispose() {
@@ -52,26 +46,13 @@ class TreeController<T extends TreeNode<T>> with ChangeNotifier {
     super.dispose();
   }
 
-  /// The [TreeNode] that is used as a starting point to build the flat
+  /// The [TreeNode]s that are used as a starting point to build the flat
   /// representation of a tree.
-  T get root => _root;
-  T _root;
-  set root(T newRoot) {
-    if (newRoot == _root) return;
-    _root = newRoot;
-    rebuild();
-  }
-
-  /// Whether [root] should be the only root of [flattenedTree] or if each node
-  /// of [root.children] should become a root.
-  ///
-  /// If set to `false` (default), every child of [root] will become a root and
-  /// [root] itself will be hidden.
-  bool get showRoot => _showRoot;
-  bool _showRoot;
-  set showRoot(bool value) {
-    if (_showRoot == value) return;
-    _showRoot = value;
+  Iterable<T> get roots => _roots;
+  Iterable<T> _roots;
+  set roots(Iterable<T> newRoots) {
+    if (newRoots == _roots) return;
+    _roots = newRoots;
     rebuild();
   }
 
@@ -85,16 +66,16 @@ class TreeController<T extends TreeNode<T>> with ChangeNotifier {
   /// root nodes won`t have any indentation and no lines will be painted for
   /// them.
   ///
-  /// The higher the starting level, more [IndentGuide.indent] is going to be
-  /// added to the indentation of a node.
+  /// The higher the root level, more [IndentGuide.indent] is going to be added
+  /// to the indentation of a node.
   ///
   /// Defaults to [defaultTreeRootLevel], usual values are `0` or `1`.
-  int get startingLevel => _startingLevel;
-  int _startingLevel;
-  set startingLevel(int level) {
-    if (level == _startingLevel) return;
-    assert(_startingLevel >= 0);
-    _startingLevel = level;
+  int get rootLevel => _rootLevel;
+  int _rootLevel;
+  set rootLevel(int level) {
+    if (level == _rootLevel) return;
+    assert(_rootLevel >= 0);
+    _rootLevel = level;
     rebuild();
   }
 
@@ -116,7 +97,7 @@ class TreeController<T extends TreeNode<T>> with ChangeNotifier {
   /// Defaults to `Curves.linear`.
   Curve animationCurve;
 
-  /// The most recent tree flattened from [root].
+  /// The most recent tree flattened from [roots].
   UnmodifiableListView<TreeEntry<T>> get flattenedTree => _flatTree;
   UnmodifiableListView<TreeEntry<T>> _flatTree = UnmodifiableListView(const []);
 
@@ -138,8 +119,8 @@ class TreeController<T extends TreeNode<T>> with ChangeNotifier {
     _entryByIdCache.clear();
 
     final List<TreeEntry<T>> flatTree = buildFlatTree<T>(
-      roots: showRoot ? <T>[root] : root.children,
-      startingLevel: startingLevel,
+      roots: roots,
+      startingLevel: rootLevel,
       descendCondition: _descendCondition,
       onTraverse: (TreeEntry<T> entry) {
         _entryByIdCache[entry.node.id] = entry;
@@ -313,19 +294,9 @@ class TreeController<T extends TreeNode<T>> with ChangeNotifier {
 
   /// Updates the expansion state of all nodes to `true` and rebuilds the tree.
   void expandAll() {
-    final Iterable<T> roots = showRoot ? <T>[root] : root.children;
-
     for (final T root in roots) {
-      _executeCommand(
-        node: root,
-        command: AnimatableTreeCommand<T>.expandCascading(
-          node: root,
-          duration: Duration.zero,
-          curve: Curves.linear,
-        ),
-      );
+      root.expandCascading();
     }
-
     rebuild();
   }
 
@@ -369,19 +340,9 @@ class TreeController<T extends TreeNode<T>> with ChangeNotifier {
 
   /// Updates the expansion state of all nodes to `false` and rebuilds the tree.
   void collapseAll() {
-    final Iterable<T> roots = showRoot ? <T>[root] : root.children;
-
     for (final T root in roots) {
-      _executeCommand(
-        node: root,
-        command: AnimatableTreeCommand<T>.collapseCascading(
-          node: root,
-          duration: Duration.zero,
-          curve: Curves.linear,
-        ),
-      );
+      root.collapseCascading();
     }
-
     rebuild();
   }
 }

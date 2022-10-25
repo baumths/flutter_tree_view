@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
+import 'src/samples/lazy_loading.dart';
 import 'src/samples/navigation.dart';
 import 'src/samples/reordering.dart';
 import 'src/pages.dart';
@@ -25,6 +26,7 @@ class ExampleApp extends StatelessWidget {
       home: const ExamplePages(
         pages: [
           SimpleTreeView(),
+          LazyTreeView(),
           NavigableTreeView(),
           ReorderableTreeView(),
         ],
@@ -119,7 +121,7 @@ class _SimpleTreeViewState extends State<SimpleTreeView> {
     );
 
     // Create a [TreeController] and provide it your root node.
-    treeController = TreeController<MyNode>(root: root);
+    treeController = TreeController<MyNode>(roots: root.children);
   }
 
   @override
@@ -166,7 +168,7 @@ class _SimpleTreeViewState extends State<SimpleTreeView> {
               });
             }
           },
-          indentGuide: const ConnectingLinesGuide(indent: 40),
+          indentGuide: const BlankIndentGuide(),
           // The widget to show to the side of [TreeIndentation]'s indent and
           // lines. [TreeIndentation] respects the text direction of
           // `Directionality.maybeOf(context)` and defaults to left-to-right.

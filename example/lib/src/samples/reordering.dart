@@ -61,14 +61,16 @@ extension<T extends TreeNode<T>> on TreeReorderingDetails<T> {
 }
 
 class _ReorderableTreeViewState extends State<ReorderableTreeView> {
+  late final ExampleNode virtualRoot;
   late final TreeController<ExampleNode> treeController;
 
   @override
   void initState() {
     super.initState();
 
+    virtualRoot = ExampleNode.createSampleTree();
     treeController = TreeController<ExampleNode>(
-      root: ExampleNode.createSampleTree(),
+      roots: virtualRoot.children,
     );
   }
 
@@ -87,7 +89,7 @@ class _ReorderableTreeViewState extends State<ReorderableTreeView> {
     details.when<void>(
       above: () {
         // drop `details.draggedNode` as previous sibling of `details.targetNode`
-        newParent = details.targetNode.parent ?? treeController.root;
+        newParent = details.targetNode.parent ?? virtualRoot;
         newIndex = newParent.children.indexOf(details.targetNode);
       },
       inside: () {
@@ -97,7 +99,7 @@ class _ReorderableTreeViewState extends State<ReorderableTreeView> {
       },
       below: () {
         // drop `details.draggedNode` as next sibling of `details.targetNode`
-        newParent = details.targetNode.parent ?? treeController.root;
+        newParent = details.targetNode.parent ?? virtualRoot;
         newIndex = newParent.children.indexOf(details.targetNode) + 1;
       },
     );
