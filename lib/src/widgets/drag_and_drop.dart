@@ -264,7 +264,8 @@ class _TreeDraggableState<T extends TreeNode<T>> extends State<TreeDraggable<T>>
       ..onNodeDragEnded();
 
     if (widget.expandOnDragEnd && !node.isExpanded) {
-      _treeState.controller.expand(node);
+      node.isExpanded = true;
+      _treeState.rebuild(animate: false);
     }
   }
 
@@ -274,7 +275,8 @@ class _TreeDraggableState<T extends TreeNode<T>> extends State<TreeDraggable<T>>
     _treeState.onNodeDragStarted(node);
 
     if (widget.collapseOnDragStart && node.isExpanded) {
-      _treeState.controller.collapse(node);
+      node.isExpanded = false;
+      _treeState.rebuild(animate: false);
     }
 
     widget.onDragStarted?.call();
@@ -510,7 +512,7 @@ class _TreeDragTargetState<T extends TreeNode<T>>
     if (_canToggle && widget.canStartToggleExpansionTimer) {
       _toggleExpansionTimer = Timer(
         widget.toggleExpansionTimeout,
-        () => _treeState.controller.toggleExpansion(node),
+        () => _treeState.toggleExpansion(node),
       );
     }
   }

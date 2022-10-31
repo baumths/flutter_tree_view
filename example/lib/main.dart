@@ -70,7 +70,7 @@ class SimpleTreeView extends StatefulWidget with PageInfo {
 }
 
 class _SimpleTreeViewState extends State<SimpleTreeView> {
-  late final TreeController<MyNode> treeController;
+  late final MyNode root;
 
   @override
   void initState() {
@@ -78,7 +78,7 @@ class _SimpleTreeViewState extends State<SimpleTreeView> {
 
     // This "nested" approach could be represented differently depending on the
     // usecase or how your app retrieves data.
-    final MyNode root = MyNode(
+    root = MyNode(
       label: '/',
       isExpanded: true,
       children: [
@@ -119,22 +119,12 @@ class _SimpleTreeViewState extends State<SimpleTreeView> {
         MyNode(label: 'Root 3'),
       ],
     );
-
-    // Create a [TreeController] and provide it your root node.
-    treeController = TreeController<MyNode>(roots: root.children);
-  }
-
-  @override
-  void dispose() {
-    // Make sure to dispose the [TreeController] when it is not needed anymore.
-    treeController.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return TreeView<MyNode>(
-      controller: treeController,
+      roots: root.children,
       itemBuilder: (BuildContext context, TreeEntry<MyNode> entry) {
         // [TreeNode]s are wrapped in [TreeEntry]s when the [TreeController] is
         // flattening the tree. [TreeEntry]s hold important info about the node
@@ -156,16 +146,14 @@ class _SimpleTreeViewState extends State<SimpleTreeView> {
           // [TreeItem] doesn't do it by itself, this way you could opt to use
           // a leading/trailing button instead.
           onTap: () {
-            // Optional performance tip (not relevant for small trees)
+            node.isExpanded = !node.isExpanded;
+
+            // If the toggled node has no children, the tree structure won't
+            // change after a rebuild, so a simple setState is enough.
             if (node.hasChildren) {
-              treeController.toggleExpansion(node);
+              SliverTree.of<MyNode>(context).rebuild();
             } else {
-              // Avoid reflattening the tree if its structure would not change
-              // by only updating the state of the node when it has no children,
-              // instead of using [TreeController] methods.
-              setState(() {
-                node.isExpanded = !node.isExpanded;
-              });
+              setState(() {});
             }
           },
           indentGuide: const BlankIndentGuide(),

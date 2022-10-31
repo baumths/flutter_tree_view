@@ -91,122 +91,87 @@ abstract class TreeNode<T extends TreeNode<T>> with DiagnosticableTreeMixin {
   }
 }
 
-/// Convenient method for building a list composed by the flat representation
-/// of the tree provided by the subtrees of [roots].
-///
-/// Traverses each root subtree creating [TreeEntry] instances for each visible
-/// node as of [descendCondition], which, if not provided, defaults to
-/// `(TreeEntry<T> entry) => entry.node.includeChildrenWhenFlattening`.
-///
-/// [startingLevel] the level to use for root nodes, must be a positive integer
-/// and defaults to [defaultTreeRootLevel].
-List<TreeEntry<T>> buildFlatTree<T extends TreeNode<T>>({
-  required Iterable<T> roots,
-  int startingLevel = defaultTreeRootLevel,
-  Mapper<TreeEntry<T>, bool>? descendCondition,
-  Visitor<TreeEntry<T>>? onTraverse,
-}) {
-  descendCondition ??= (TreeEntry<T> entry) {
-    return entry.node.includeChildrenWhenFlattening;
-  };
-
-  final List<TreeEntry<T>> flatTree = <TreeEntry<T>>[];
-
-  flatten<T>(
-    roots: roots,
-    descendCondition: descendCondition,
-    startingLevel: startingLevel,
-    onTraverse: (TreeEntry<T> entry) {
-      flatTree.add(entry);
-      onTraverse?.call(entry);
-    },
-  );
-
-  return flatTree;
-}
-
-/// Traverses the subtree of each root node in depth first order creating
-/// [TreeEntry] instances for each descendant node.
-///
-/// To build a list of the flat representation of a tree:
-///
-/// ```dart
-/// final List<T> rootNodes = ...;
-/// final List<TreeEntry<T>> flatTree = <TreeEntry<T>>[];
-///
-/// gatherTreeEntries<T>(
-///   roots: rootNodes,
-///   onTraverse: flatTree.add,
-/// );
-/// ```
-///
-/// Checkout [buildFlatTree] which covers the above boilerplate.
-///
-/// [TreeEntry]s hold important information about its wrapped node, such as the
-/// index, level, parent, etc.
-///
-/// [descendCondition] is used to determine if the descendants of the entry
-/// passed to it should be included in the final flat tree or not. To build
-/// a flat tree, use `(TreeEntry<T> entry) => entry.node.includeChildrenWhenFlattening`
-/// to make sure only "visible" nodes get included in the flattened tree.
-///
-/// [onTraverse] is an optional function that is called after a
-/// [TreeEntry] is created but before descending to its children.
-///
-/// [startingLevel] the level to use for root nodes, must be a positive integer
-/// and defaults to [defaultTreeRootLevel].
-void flatten<T extends TreeNode<T>>({
-  required Iterable<T> roots,
-  required Mapper<TreeEntry<T>, bool> descendCondition,
-  int startingLevel = defaultTreeRootLevel,
-  Visitor<TreeEntry<T>>? onTraverse,
-}) {
-  assert(startingLevel >= 0);
-  int globalIndex = 0;
-
-  TreeEntry<T>? previousEntry;
-
-  void mapNodesToEntries({
-    required TreeEntry<T>? parent,
-    required Iterable<T> nodes,
-    required int level,
+/// A simple extension on [Iterable] that provides a method for flattening a
+/// tree, starting from the elements on `this` as the roots of the tree.
+extension TreeFlatteningExtension<T extends TreeNode<T>> on Iterable<T> {
+  /// Traverses the subtrees of the elements of this iterable in depth first
+  /// order creating and accumulating [TreeEntry] instances for each visited
+  /// node to then return it as a plain dart [List].
+  ///
+  /// [descendCondition] is used to determine if the descendants of the entry
+  /// passed to it should be included in the final flat tree or not. Defaults
+  /// to `(TreeEntry<T> entry) => entry.node.includeChildrenWhenFlattening`
+  /// when not provided, which makes sure only "visible" nodes get included in
+  /// the flattened tree.
+  ///
+  /// [onTraverse] is an optional function that is called after a [TreeEntry]
+  /// is created but before descending into its subtree.
+  ///
+  /// [startingLevel] the level to use for root nodes, must be a positive
+  /// integer and defaults to [defaultTreeRootLevel].
+  List<TreeEntry<T>> flatten({
+    Mapper<TreeEntry<T>, bool>? descendCondition,
+    Visitor<TreeEntry<T>>? onTraverse,
+    int startingLevel = defaultTreeRootLevel,
   }) {
-    TreeEntry<T>? lastEntry;
+    assert(
+      startingLevel >= 0,
+      'startingLevel of TreeFlatteningExtension.flatten() must be >= 0.',
+    );
 
-    for (final T node in nodes) {
-      final TreeEntry<T> entry = TreeEntry<T>(
-        node: node,
-        index: globalIndex++,
-        level: level,
-        parent: parent,
-      );
+    final Mapper<TreeEntry<T>, bool> shouldDescend = descendCondition ??
+        (TreeEntry<T> entry) => entry.node.includeChildrenWhenFlattening;
 
-      lastEntry = entry;
+    final List<TreeEntry<T>> flatTree = <TreeEntry<T>>[];
+    int globalIndex = 0;
 
-      previousEntry?._nextEntry = entry;
-      entry._previousEntry = previousEntry;
+    TreeEntry<T>? previousEntry;
 
-      previousEntry = entry;
+    void mapNodesToEntries({
+      required TreeEntry<T>? parent,
+      required Iterable<T> nodes,
+      required int level,
+    }) {
+      TreeEntry<T>? lastEntry;
 
-      onTraverse?.call(entry);
-
-      if (descendCondition(entry)) {
-        mapNodesToEntries(
-          parent: entry,
-          nodes: node.children,
-          level: level + 1,
+      for (final T node in nodes) {
+        final TreeEntry<T> entry = TreeEntry<T>(
+          node: node,
+          index: globalIndex++,
+          level: level,
+          parent: parent,
         );
+
+        lastEntry = entry;
+
+        previousEntry?._nextEntry = entry;
+        entry._previousEntry = previousEntry;
+
+        previousEntry = entry;
+
+        onTraverse?.call(entry);
+        flatTree.add(entry);
+
+        if (shouldDescend(entry)) {
+          mapNodesToEntries(
+            parent: entry,
+            nodes: node.children,
+            level: level + 1,
+          );
+        }
       }
+
+      lastEntry?._hasNextSibling = false;
     }
 
-    lastEntry?._hasNextSibling = false;
-  }
+    mapNodesToEntries(
+      parent: null,
+      nodes: this,
+      level: startingLevel,
+    );
 
-  mapNodesToEntries(
-    parent: null,
-    nodes: roots,
-    level: startingLevel,
-  );
+    return flatTree;
+  }
 }
 
 /// A mixin intereface used to get indentation details about a particular node
@@ -325,7 +290,7 @@ mixin TreeIndentDetails {
 /// Instances of [TreeEntry]s are created internally while flattening a tree.
 ///
 /// The [TreeEntry] instances are short lived, each time the flat tree is
-/// rebuilt, a new [TreeEntry] is assigned to [node] with fresh data.
+/// rebuilt, a new [TreeEntry] is assigned to [node].
 class TreeEntry<T extends TreeNode<T>> with TreeIndentDetails, Diagnosticable {
   /// Creates a [TreeEntry].
   TreeEntry({
@@ -334,13 +299,28 @@ class TreeEntry<T extends TreeNode<T>> with TreeIndentDetails, Diagnosticable {
     required this.level,
     required this.parent,
     bool hasNextSibling = true,
-  }) : _hasNextSibling = hasNextSibling;
+  })  : _hasNextSibling = hasNextSibling,
+        isExpanded = node.isExpanded;
 
   /// The [TreeNode] that originated this entry.
   final T node;
 
-  /// The current index of [node] in the list returned by [TreeNode.flatten].
+  /// The index of [node] in the list returned by [buildFlatTree].
   final int index;
+
+  /// The expansion state of [node] at the time when this entry was created.
+  ///
+  /// Prefer using [node.isExpanded] as the source of truth since it may have
+  /// changed after this entry was created.
+  final bool isExpanded;
+
+  /// A simple boolean set by [SliverTree] to indicate that this entry should
+  /// play an expand/collapse animation during the next rebuild.
+  ///
+  /// This is automatically set and reset by [SliverTreeState] when flattening
+  /// the tree if [SliverTreeState.rebuild] is called with `animate = true`
+  /// (the default).
+  bool shouldAnimate = false;
 
   @override
   final int level;

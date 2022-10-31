@@ -10,13 +10,15 @@ import 'sliver_tree.dart';
 ///
 /// * [SliverTree], which is created internally by [TreeView]. It can be used to
 ///   create more sophisticated scrolling experineces.
-class TreeView<T extends TreeNode<T>> extends StatelessWidget {
+class TreeView<T extends TreeNode<T>> extends StatefulWidget {
   /// Creates a [TreeView].
   const TreeView({
     super.key,
+    required this.roots,
     required this.itemBuilder,
-    required this.controller,
     this.transitionBuilder = defaultTreeViewTransitionBuilder,
+    this.animationDuration = const Duration(milliseconds: 300),
+    this.animationCurve = Curves.linear,
     this.maxNodesToShowWhenAnimating = 50,
     this.padding,
     this.scrollController,
@@ -32,9 +34,11 @@ class TreeView<T extends TreeNode<T>> extends StatelessWidget {
     this.clipBehavior = Clip.hardEdge,
   }) : assert(maxNodesToShowWhenAnimating > 0);
 
-  /// The controller responsible for managing the expansion state and animations
-  /// of the tree provided by its [TreeController.tree].
-  final TreeController<T> controller;
+  /// The root [TreeNode]s of the tree.
+  ///
+  /// These nodes are used as a starting point to build the flat representation
+  /// of the tree.
+  final Iterable<T> roots;
 
   /// Callback used to map your data into widgets.
   ///
@@ -49,10 +53,19 @@ class TreeView<T extends TreeNode<T>> extends StatelessWidget {
   /// * [defaultTreeViewTransitionBuilder] that uses a [SizeTransition].
   final TreeViewTransitionBuilder transitionBuilder;
 
+  /// The default duration to use when animating the expand/collapse operations.
+  ///
+  /// Defaults to `Duration(milliseconds: 300)`.
+  final Duration animationDuration;
+
+  /// The default curve to use when animating the expand/collapse operations.
+  ///
+  /// Defaults to `Curves.linear`.
+  final Curve animationCurve;
+
   /// The amount of nodes that are going to be shown on an animating subtree.
   ///
-  /// Must be a value greater than `0`, since the "pseudo root" of the animating
-  /// subtree should always be visible.
+  /// Must be greater than `0`.
   ///
   /// When animating the expand/collapse state changes, all descendant nodes
   /// whose visibility will change are rendered along with the toggled node,
@@ -126,30 +139,124 @@ class TreeView<T extends TreeNode<T>> extends StatelessWidget {
   /// Defaults to [Clip.hardEdge].
   final Clip clipBehavior;
 
+  /// The [TreeView] from the closest instance of this class that encloses the
+  /// given context.
+  ///
+  /// If there is no [TreeView] ancestor in the widget tree at the given
+  /// context, then this will return null.
+  ///
+  /// Typical usage is as follows:
+  ///
+  /// SliverTreeState<T>? treeState = SliverTree.maybeOf<T>(context);
+  ///
+  /// See also:
+  ///
+  ///  * [of], which will throw in debug mode if no [TreeView] ancestor exists
+  ///    in the widget tree.
+  static TreeViewState<T>? maybeOf<T extends TreeNode<T>>(
+    BuildContext context,
+  ) {
+    return context.findAncestorStateOfType<TreeViewState<T>>();
+  }
+
+  /// The [TreeView] from the closest instance of this class that encloses the
+  /// given context.
+  ///
+  /// If there is no [TreeView] ancestor in the widget tree at the given
+  /// context, then this will throw in debug mode.
+  ///
+  /// Typical usage is as follows:
+  ///
+  /// ```dart
+  /// SliverTreeState<T> treeState = SliverTree.of<T>(context);
+  /// ```
+  ///
+  /// See also:
+  ///
+  ///  * [maybeOf], which will return null if no [TreeView] ancestor exists in
+  ///    the widget tree.
+  static TreeViewState<T> of<T extends TreeNode<T>>(BuildContext context) {
+    final TreeViewState<T>? instance = maybeOf<T>(context);
+    assert(() {
+      if (instance == null) {
+        throw FlutterError.fromParts(<DiagnosticsNode>[
+          ErrorSummary(
+            'TreeView.of() called with a context that does not contain a '
+            'TreeView.',
+          ),
+          ErrorDescription(
+            'No TreeView ancestor could be found starting from the context '
+            'that was passed to TreeView.of().',
+          ),
+          ErrorHint(
+            'This can happen when the context provided is from the same '
+            'StatefulWidget that built the TreeView.',
+          ),
+          context.describeElement('The context used was'),
+        ]);
+      }
+      return true;
+    }());
+    return instance!;
+  }
+
+  @override
+  State<TreeView<T>> createState() => TreeViewState<T>();
+}
+
+/// The state of a [TreeView].
+///
+/// Can be used to rebuild the flattened tree of the descendant [SliverTree].
+///
+/// See also:
+/// * [TreeViewState.rebuild], which delegates its call to
+///   [SliverTreeState.rebuild].
+/// * [TreeViewState.toggleExpansion], which delegates its call to
+///   [SliverTreeState.toggleExpansion].
+class TreeViewState<T extends TreeNode<T>> extends State<TreeView<T>> {
+  final GlobalKey<SliverTreeState<T>> _sliverTreeKey = GlobalKey();
+
+  /// This method delegates its call to [SliverTreeState.rebuild].
+  ///
+  /// {@macro flutter_fancy_tree_view.SliverTreeState.rebuild}
+  void rebuild({bool animate = true}) {
+    _sliverTreeKey.currentState!.rebuild(animate: animate);
+  }
+
+  /// This method delegates its call to [SliverTreeState.toggleExpansion].
+  ///
+  /// {@macro flutter_fancy_tree_view.SliverTreeState.toggleExpansion}
+  void toggleExpansion(T node, {bool animate = true}) {
+    _sliverTreeKey.currentState!.toggleExpansion(node, animate: animate);
+  }
+
   @override
   Widget build(BuildContext context) {
     return CustomScrollView(
       scrollDirection: Axis.vertical,
       reverse: false,
-      controller: scrollController,
-      primary: primary,
-      physics: physics,
-      scrollBehavior: scrollBehavior,
-      shrinkWrap: shrinkWrap,
-      cacheExtent: cacheExtent,
-      semanticChildCount: semanticChildCount,
-      dragStartBehavior: dragStartBehavior,
-      keyboardDismissBehavior: keyboardDismissBehavior,
-      restorationId: restorationId,
-      clipBehavior: clipBehavior,
+      controller: widget.scrollController,
+      primary: widget.primary,
+      physics: widget.physics,
+      scrollBehavior: widget.scrollBehavior,
+      shrinkWrap: widget.shrinkWrap,
+      cacheExtent: widget.cacheExtent,
+      semanticChildCount: widget.semanticChildCount,
+      dragStartBehavior: widget.dragStartBehavior,
+      keyboardDismissBehavior: widget.keyboardDismissBehavior,
+      restorationId: widget.restorationId,
+      clipBehavior: widget.clipBehavior,
       slivers: [
         SliverPadding(
-          padding: padding ?? EdgeInsets.zero,
+          padding: widget.padding ?? EdgeInsets.zero,
           sliver: SliverTree<T>(
-            controller: controller,
-            itemBuilder: itemBuilder,
-            transitionBuilder: transitionBuilder,
-            maxNodesToShowWhenAnimating: maxNodesToShowWhenAnimating,
+            key: _sliverTreeKey,
+            roots: widget.roots,
+            itemBuilder: widget.itemBuilder,
+            transitionBuilder: widget.transitionBuilder,
+            animationDuration: widget.animationDuration,
+            animationCurve: widget.animationCurve,
+            maxNodesToShowWhenAnimating: widget.maxNodesToShowWhenAnimating,
           ),
         ),
       ],

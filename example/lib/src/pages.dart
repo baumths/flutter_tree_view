@@ -24,11 +24,7 @@ class _ExamplePagesState extends State<ExamplePages> {
   void animate(int page) {
     setState(() {
       currentPage = page;
-      pageController.animateToPage(
-        currentPage,
-        duration: kThemeAnimationDuration,
-        curve: Curves.fastOutSlowIn,
-      );
+      pageController.jumpToPage(currentPage);
     });
   }
 
@@ -100,6 +96,7 @@ class _ExamplePagesState extends State<ExamplePages> {
             child: PageView.builder(
               itemCount: itemCount,
               controller: pageController,
+              physics: const NeverScrollableScrollPhysics(),
               itemBuilder: (_, int index) => Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: widget.pages[index],

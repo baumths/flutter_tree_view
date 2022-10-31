@@ -62,22 +62,12 @@ extension<T extends TreeNode<T>> on TreeReorderingDetails<T> {
 
 class _ReorderableTreeViewState extends State<ReorderableTreeView> {
   late final ExampleNode virtualRoot;
-  late final TreeController<ExampleNode> treeController;
+  late final GlobalKey<TreeViewState<ExampleNode>> treeViewKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
-
     virtualRoot = ExampleNode.createSampleTree();
-    treeController = TreeController<ExampleNode>(
-      roots: virtualRoot.children,
-    );
-  }
-
-  @override
-  void dispose() {
-    treeController.dispose();
-    super.dispose();
   }
 
   void _onReorder(TreeReorderingDetails<ExampleNode> details) {
@@ -108,13 +98,11 @@ class _ReorderableTreeViewState extends State<ReorderableTreeView> {
     // index clashes.
     newParent.insertChild(newIndex, details.draggedNode);
 
-    if (newParent.isExpanded) {
-      // Rebuild the flattened tree to make sure the changes are shown.
-      treeController.rebuild();
-    } else {
-      // expand the new parent to show the reordered node at the new location.
-      treeController.expand(newParent);
-    }
+    // Make sure the new parent is expanded so the reordered node is shown.
+    newParent.isExpanded = true;
+
+    // Rebuild the flattened tree to make sure the changes are shown.
+    treeViewKey.currentState!.rebuild(animate: newParent.children.isNotEmpty);
 
     briefHighlight(details.draggedNode.id);
   }
@@ -129,13 +117,16 @@ class _ReorderableTreeViewState extends State<ReorderableTreeView> {
     return DefaultIndentGuide(
       guide: const ScopingLinesGuide(indent: 20, origin: 1),
       child: TreeView<ExampleNode>(
-        controller: treeController,
+        key: treeViewKey,
+        roots: virtualRoot.children,
         itemBuilder: (BuildContext context, TreeEntry<ExampleNode> entry) {
           // The [ReorderableTreeNodeTile] widget can be found down below.
           final Widget tile = ReorderableTreeNodeTile(
             node: entry.node,
             onReorder: _onReorder,
-            onFolderPressed: () => treeController.toggleExpansion(entry.node),
+            onFolderPressed: () {
+              treeViewKey.currentState!.toggleExpansion(entry.node);
+            },
           );
 
           if (highlightedId == entry.node.id) {
