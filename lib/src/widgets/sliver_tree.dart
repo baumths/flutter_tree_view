@@ -188,8 +188,10 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   TreeEntry<T>? _entryOf(T node) => _entryByIdCache[node.id];
   final HashMap<Object, TreeEntry<T>> _entryByIdCache = HashMap();
 
+  final Set<Object> _animatingNodes = <Object>{};
+
   void _onAnimationComplete(T node) {
-    _entryByIdCache[node.id]?.shouldAnimate = false;
+    _animatingNodes.remove(node.id);
     rebuild(animate: false);
   }
 
@@ -197,22 +199,31 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
     final Map<Object, TreeEntry<T>> oldEntries = Map.of(_entryByIdCache);
     _entryByIdCache.clear();
 
+    final Visitor<TreeEntry<T>> onTraverse;
+
+    if (animate) {
+      onTraverse = (TreeEntry<T> entry) {
+        _entryByIdCache[entry.node.id] = entry;
+        final TreeEntry<T>? oldEntry = oldEntries[entry.node.id];
+
+        if (oldEntry != null && oldEntry.isExpanded != entry.isExpanded) {
+          _animatingNodes.add(entry.node.id);
+        }
+      };
+    } else {
+      onTraverse = (TreeEntry<T> entry) {
+        _entryByIdCache[entry.node.id] = entry;
+      };
+    }
+
     final List<TreeEntry<T>> flatTree = roots.flatten(
       startingLevel: 0,
-      onTraverse: animate
-          ? (TreeEntry<T> entry) {
-              _entryByIdCache[entry.node.id] = entry;
-              final TreeEntry<T>? oldEntry = oldEntries[entry.node.id];
-
-              entry.shouldAnimate = !(oldEntry == null ||
-                  oldEntry.isExpanded == entry.isExpanded);
-            }
-          : (TreeEntry<T> entry) => _entryByIdCache[entry.node.id] = entry,
+      onTraverse: onTraverse,
       descendCondition: (TreeEntry<T> entry) {
-        if (entry.shouldAnimate) {
-          // The descendants of a node that is should animate are not included
-          // in the flattened tree since those nodes are going to be rendered
-          // in a single tile.
+        if (_animatingNodes.contains(entry.node.id)) {
+          // The descendants of a node that is animating are not included in the
+          // flattened tree since those nodes are going to be rendered in a
+          // single tile.
           return false;
         }
         return entry.node.includeChildrenWhenFlattening;
@@ -427,6 +438,7 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
       curve: widget.animationCurve,
       duration: widget.animationDuration,
       shouldAutoScroll: widget.tryAutoScrollingWhenAnimating,
+      shouldAnimate: _animatingNodes.contains(entry.node.id),
     );
   }
 }
@@ -446,6 +458,7 @@ class _TreeEntry<T extends TreeNode<T>> extends StatefulWidget {
     required this.curve,
     required this.duration,
     required this.shouldAutoScroll,
+    required this.shouldAnimate,
   });
 
   final TreeEntry<T> entry;
@@ -457,6 +470,7 @@ class _TreeEntry<T extends TreeNode<T>> extends StatefulWidget {
   final Curve curve;
   final Duration duration;
   final bool shouldAutoScroll;
+  final bool shouldAnimate;
 
   @override
   State<_TreeEntry<T>> createState() => _TreeEntryState<T>();
@@ -552,7 +566,7 @@ class _TreeEntryState<T extends TreeNode<T>> extends State<_TreeEntry<T>>
     if (isExpanded != node.isExpanded) {
       isExpanded = node.isExpanded;
 
-      if (entry.shouldAnimate) {
+      if (widget.shouldAnimate) {
         isExpanded ? expand() : collapse();
       }
     }
@@ -568,7 +582,7 @@ class _TreeEntryState<T extends TreeNode<T>> extends State<_TreeEntry<T>>
   Widget build(BuildContext context) {
     final Widget tile = widget.itemBuilder(context, entry);
 
-    if (animationController.isAnimating) {
+    if (widget.shouldAnimate || animationController.isAnimating) {
       final Widget subtree = _Subtree(
         virtualRoot: entry,
         maxNodesToShow: widget.maxNodesToShow,

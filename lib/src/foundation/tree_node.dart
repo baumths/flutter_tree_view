@@ -314,14 +314,6 @@ class TreeEntry<T extends TreeNode<T>> with TreeIndentDetails, Diagnosticable {
   /// changed after this entry was created.
   final bool isExpanded;
 
-  /// A simple boolean set by [SliverTree] to indicate that this entry should
-  /// play an expand/collapse animation during the next rebuild.
-  ///
-  /// This is automatically set and reset by [SliverTreeState] when flattening
-  /// the tree if [SliverTreeState.rebuild] is called with `animate = true`
-  /// (the default).
-  bool shouldAnimate = false;
-
   @override
   final int level;
 
