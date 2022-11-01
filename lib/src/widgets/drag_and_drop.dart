@@ -434,8 +434,8 @@ class TreeDragTarget<T extends TreeNode<T>> extends StatefulWidget {
 
   /// The callback that is going to be called when a dragging node was
   /// successfully dropped onto this drag target. It should then apply the
-  /// reordering to the tree view nodes and call [TreeController.rebuild] to
-  /// show the newly reordered tree data..
+  /// reordering to the tree view nodes and call [SliverTreeState.rebuild]
+  /// to show the newly reordered tree data.
   final TreeOnReorderCallback<T> onReorder;
 
   /// Called to build the contents of this widget.

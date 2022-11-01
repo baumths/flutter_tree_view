@@ -39,14 +39,21 @@ class ExampleApp extends StatelessWidget {
 ///
 /// [ImplicitTreeNodeId] is used because it is not imortant to identify nodes in
 /// this example. This mixin creates an ordinary [Object] for the id of a node.
-class MyNode extends TreeNode<MyNode> with ImplicitTreeNodeId {
+class MyNode extends TreeNode<MyNode> {
   MyNode({
     required this.label,
     this.children = const [],
 
-    /// The expansion state of this node
+    /// The expansion state of this node.
     super.isExpanded,
   });
+
+  /// The unique identifier of this node, used by [SliverTreeState] to cache
+  /// some values. If your implementation of [TreeNode] has complex `hashCode`
+  /// and `operator ==`, consider overriding this property to provide a simpler
+  /// identifier like [String], [int], [Key], etc...
+  @override
+  final Object id = Object();
 
   /// The direct children of this node. Can be any [Iterable].
   @override

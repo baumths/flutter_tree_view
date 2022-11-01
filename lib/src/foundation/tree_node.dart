@@ -4,8 +4,7 @@ import 'package:flutter/foundation.dart'
         Diagnosticable,
         DiagnosticableTreeMixin,
         DiagnosticsNode,
-        DiagnosticsProperty,
-        optionalTypeArgs;
+        DiagnosticsProperty;
 
 /// Signature of a function that takes a `T` value and returns a `R` value.
 typedef Mapper<T, R> = R Function(T value);
@@ -16,27 +15,11 @@ typedef Visitor<T> = void Function(T node);
 /// The default level used for root [TreeNode]s when flattening the tree.
 const int defaultTreeRootLevel = 0;
 
-/// A simple mixin on [TreeNode] that creates an ordinary [Object] as its id.
-///
-/// This mixin is useful in usecases where identifying tree nodes is not
-/// important for the application; but the package still needs a way to reliably
-/// cache some values for each tree node and a simple unique object is enough.
-/// > From [Object]'s documentation:
-/// > [Object] instances have no meaningful state, and are only useful
-/// > through their identity. An [Object] instance is equal to itself
-/// > only.
-@optionalTypeArgs
-mixin ImplicitTreeNodeId<T extends TreeNode<T>> on TreeNode<T> {
-  @override
-  final Object id = Object();
-}
-
 /// An interface for handling the nodes that compose a tree.
 ///
 /// The properties of this class are going to be called very frequently during
-/// flattening and command executions, consider caching the results (i.e. avoid
-/// doing heavy computational tasks in [id], [children], [isExpanded],
-/// [includeChildrenWhenFlattening], etc...).
+/// flattening, consider caching the results (i.e. avoid doing heavy tasks in
+/// [id], [children], [includeChildrenWhenFlattening], etc...).
 abstract class TreeNode<T extends TreeNode<T>> with DiagnosticableTreeMixin {
   /// Abstract constant constructor.
   TreeNode({this.isExpanded = false});
@@ -49,10 +32,12 @@ abstract class TreeNode<T extends TreeNode<T>> with DiagnosticableTreeMixin {
   /// Make sure the id provided for a node is always the same and unique among
   /// other ids, otherwise it could lead to inconsistent tree state.
   ///
-  /// See also:
-  /// * [ImplicitTreeNodeId], which (in simple usecases) can be mixed in with
-  ///   this node to provide a unique object as the id of each new instance.
-  Object get id;
+  /// If the implementation of [TreeNode] has expensive `hashCode` and
+  /// `operator ==`, consider overriding this property to use a simpler
+  /// identifier, like [String], [int], [Key], etc...
+  ///
+  /// Defaults to returning `this`.
+  Object get id => this;
 
   /// The direct children of this node.
   Iterable<T> get children;
@@ -308,7 +293,7 @@ class TreeEntry<T extends TreeNode<T>> with TreeIndentDetails, Diagnosticable {
   /// The index of [node] in the list returned by [buildFlatTree].
   final int index;
 
-  /// The expansion state of [node] at the time when this entry was created.
+  /// The expansion state of [node] when this entry was created.
   ///
   /// Prefer using [node.isExpanded] as the source of truth since it may have
   /// changed after this entry was created.
@@ -344,6 +329,7 @@ class TreeEntry<T extends TreeNode<T>> with TreeIndentDetails, Diagnosticable {
     properties
       ..add(DiagnosticsProperty<T>('node', node))
       ..add(DiagnosticsProperty<int>('index', index))
+      ..add(DiagnosticsProperty<bool>('isExpanded', isExpanded))
       ..add(DiagnosticsProperty<int>('level', level))
       ..add(DiagnosticsProperty<bool>('hasNextSibling', hasNextSibling))
       ..add(DiagnosticsProperty<T?>('parent node', parent?.node));

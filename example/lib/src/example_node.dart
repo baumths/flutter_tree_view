@@ -66,10 +66,7 @@ class ExampleNode extends TreeNode<ExampleNode> {
 
   bool get isHighlighted => focusNode.hasFocus;
 
-  final FocusNode focusNode = FocusNode(
-    descendantsAreFocusable: false,
-    descendantsAreTraversable: false,
-  );
+  final FocusNode focusNode = FocusNode();
 
   void dispose() {
     focusNode.dispose();

@@ -1,5 +1,5 @@
 import 'dart:collection'
-    show HashMap, UnmodifiableListView, UnmodifiableSetView;
+    show HashMap, HashSet, UnmodifiableListView, UnmodifiableSetView;
 import 'dart:math' as math show min;
 
 import 'package:flutter/material.dart';
@@ -188,7 +188,7 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   TreeEntry<T>? _entryOf(T node) => _entryByIdCache[node.id];
   final HashMap<Object, TreeEntry<T>> _entryByIdCache = HashMap();
 
-  final Set<Object> _animatingNodes = <Object>{};
+  final HashSet<Object> _animatingNodes = HashSet();
 
   void _onAnimationComplete(T node) {
     _animatingNodes.remove(node.id);
@@ -351,7 +351,7 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
     final TreeEntry<T>? entry = _entryOf(node);
     if (entry == null) return;
 
-    final Set<Object> path = <Object>{node.id};
+    final HashSet<Object> path = HashSet()..add(node.id);
 
     TreeEntry<T>? current = entry.parent;
     while (current != null) {
@@ -372,7 +372,7 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   @override
   void initState() {
     super.initState();
-    _updateFlatTree();
+    _updateFlatTree(animate: false);
   }
 
   @override

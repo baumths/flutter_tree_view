@@ -2,14 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'tree_indentation.dart';
 
-/// Examples can assume:
-/// ```dart
-/// class MyNode extends TreeNode<MyNode> {}
-///
-/// final TreeController<MyNode> treeController;
-/// final MyNode node;
-/// ```
-
 /// A simple widget to be used in a [Treeview].
 ///
 /// The [indentGuide] can be used to configure line painting and define the
@@ -31,7 +23,7 @@ import 'tree_indentation.dart';
 ///       ),
 ///       ExpandIcon(
 ///         isExpanded: node.isExpanded,
-///         onPressed: (_) => treeController.toggleExpansion(node),
+///         onPressed: (_) => SliverTree.of<T>(context).toggleExpansion(node),
 ///       ),
 ///     ],
 ///   ),
@@ -42,7 +34,7 @@ import 'tree_indentation.dart';
 ///
 /// ```dart
 /// TreeItem(
-///   onTap: () => treeController.toggleExpansion(node),
+///   onTap: () => SliverTree.of<T>(context).toggleExpansion(node),
 ///   child: const Text('My node Title'),
 /// );
 /// ```
