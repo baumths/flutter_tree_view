@@ -20,8 +20,11 @@ const int defaultTreeRootLevel = 0;
 /// The properties of this class are going to be called very frequently during
 /// flattening, consider caching the results (i.e. avoid doing heavy tasks in
 /// [id], [children], [includeChildrenWhenFlattening], etc...).
+///
+/// See also:
+/// * [ParentedTreeNode], an interface that enables upwards tree traversal.
 abstract class TreeNode<T extends TreeNode<T>> with DiagnosticableTreeMixin {
-  /// Abstract constant constructor.
+  /// Abstract constructor.
   TreeNode({this.isExpanded = false});
 
   /// The unique identifier of this node.
@@ -33,7 +36,7 @@ abstract class TreeNode<T extends TreeNode<T>> with DiagnosticableTreeMixin {
   /// other ids, otherwise it could lead to inconsistent tree state.
   ///
   /// If the implementation of [TreeNode] has expensive `hashCode` and
-  /// `operator ==`, consider overriding this property to use a simpler
+  /// `operator ==`, consider overriding this getter to use a simpler
   /// identifier, like [String], [int], [Key], etc...
   ///
   /// Defaults to returning `this`.
@@ -76,6 +79,35 @@ abstract class TreeNode<T extends TreeNode<T>> with DiagnosticableTreeMixin {
   }
 }
 
+/// An interface that adds a `T? get parent` getter to enable upwards tree
+/// traversal to [TreeNode]s.
+abstract class ParentedTreeNode<T extends ParentedTreeNode<T>>
+    extends TreeNode<T> {
+  /// Abstract constructor.
+  ParentedTreeNode({super.isExpanded});
+
+  /// The direct parent of this node.
+  T? get parent;
+
+  /// Walks up the tree applying a [visit] callback to each ancestor node.
+  ///
+  /// Starts at `this.parent` and stops when the first `null` ancestor is found.
+  void visitAncestors(Visitor<T> visit) {
+    T? current = parent;
+
+    while (current != null) {
+      visit(current);
+      current = current.parent;
+    }
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty<T?>('parent', parent));
+  }
+}
+
 /// A simple extension on [Iterable] that provides a method for flattening a
 /// tree, starting from the elements on `this` as the roots of the tree.
 extension TreeFlatteningExtension<T extends TreeNode<T>> on Iterable<T> {
@@ -92,16 +124,16 @@ extension TreeFlatteningExtension<T extends TreeNode<T>> on Iterable<T> {
   /// [onTraverse] is an optional function that is called after a [TreeEntry]
   /// is created but before descending into its subtree.
   ///
-  /// [startingLevel] the level to use for root nodes, must be a positive
-  /// integer and defaults to [defaultTreeRootLevel].
+  /// [rootLevel] the level to use for root nodes, must be a positive integer
+  /// and defaults to [defaultTreeRootLevel].
   List<TreeEntry<T>> flatten({
     Mapper<TreeEntry<T>, bool>? descendCondition,
     Visitor<TreeEntry<T>>? onTraverse,
-    int startingLevel = defaultTreeRootLevel,
+    int rootLevel = defaultTreeRootLevel,
   }) {
     assert(
-      startingLevel >= 0,
-      'startingLevel of TreeFlatteningExtension.flatten() must be >= 0.',
+      rootLevel >= 0,
+      'rootLevel of TreeFlatteningExtension.flatten() must be >= 0.',
     );
 
     final Mapper<TreeEntry<T>, bool> shouldDescend = descendCondition ??
@@ -152,7 +184,7 @@ extension TreeFlatteningExtension<T extends TreeNode<T>> on Iterable<T> {
     mapNodesToEntries(
       parent: null,
       nodes: this,
-      level: startingLevel,
+      level: rootLevel,
     );
 
     return flatTree;

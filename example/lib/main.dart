@@ -36,9 +36,6 @@ class ExampleApp extends StatelessWidget {
 }
 
 /// Create a "Tree Node" model implementing the [TreeNode] contract.
-///
-/// [ImplicitTreeNodeId] is used because it is not imortant to identify nodes in
-/// this example. This mixin creates an ordinary [Object] for the id of a node.
 class MyNode extends TreeNode<MyNode> {
   MyNode({
     required this.label,

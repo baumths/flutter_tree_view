@@ -217,7 +217,7 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
     }
 
     final List<TreeEntry<T>> flatTree = roots.flatten(
-      startingLevel: 0,
+      rootLevel: 0,
       onTraverse: onTraverse,
       descendCondition: (TreeEntry<T> entry) {
         if (_animatingNodes.contains(entry.node.id)) {
@@ -633,7 +633,7 @@ class _SubtreeState<T extends TreeNode<T>> extends State<_Subtree<T>> {
   void initState() {
     super.initState();
     final List<TreeEntry<T>> flatTree = virtualRoot.node.children.flatten(
-      startingLevel: virtualRoot.level + 1,
+      rootLevel: virtualRoot.level + 1,
       onTraverse: (TreeEntry<T> entry) {
         // Apply the unreachable ancestor lines to make sure this subtree
         // doesn't appear floating "contextless" in the line hierarchy.

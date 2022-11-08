@@ -3,7 +3,7 @@ import 'dart:collection' show UnmodifiableListView;
 import 'package:flutter/widgets.dart' show FocusNode;
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
-class ExampleNode extends TreeNode<ExampleNode> {
+class ExampleNode extends ParentedTreeNode<ExampleNode> {
   static int _autoIncrementedId = 0;
 
   ExampleNode({
@@ -27,6 +27,7 @@ class ExampleNode extends TreeNode<ExampleNode> {
 
   final List<ExampleNode> _children;
 
+  @override
   ExampleNode? get parent => _parent;
   ExampleNode? _parent;
 
