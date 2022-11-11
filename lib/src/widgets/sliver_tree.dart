@@ -3,7 +3,6 @@ import 'dart:collection'
 import 'dart:math' as math show min;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 
 import '../foundation.dart';
 import 'tree_indentation.dart' show TreeIndentDetailsScope;
@@ -49,7 +48,6 @@ class SliverTree<T extends TreeNode<T>> extends StatefulWidget {
     this.animationDuration = const Duration(milliseconds: 300),
     this.animationCurve = Curves.linear,
     this.maxNodesToShowWhenAnimating = 50,
-    this.tryAutoScrollingWhenAnimating = true,
   });
 
   /// The root [TreeNode]s of the tree.
@@ -96,15 +94,6 @@ class SliverTree<T extends TreeNode<T>> extends StatefulWidget {
   ///
   /// Defaults to `50`.
   final int maxNodesToShowWhenAnimating;
-
-  /// Whether to try to auto scroll the viewport during the animation of the
-  /// expansion of a node.
-  ///
-  /// Useful if the expanded node is at the bottom edge of the viewport to make
-  /// sure that its subtree is not hidden by the viewport offset.
-  ///
-  /// Defaults to `true`.
-  final bool tryAutoScrollingWhenAnimating;
 
   /// The [SliverTree] from the closest instance of this class that encloses the
   /// given context.
@@ -437,7 +426,6 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
       maxNodesToShow: widget.maxNodesToShowWhenAnimating,
       curve: widget.animationCurve,
       duration: widget.animationDuration,
-      shouldAutoScroll: widget.tryAutoScrollingWhenAnimating,
       shouldAnimate: _animatingNodes.contains(entry.node.id),
     );
   }
@@ -457,7 +445,6 @@ class _TreeEntry<T extends TreeNode<T>> extends StatefulWidget {
     required this.maxNodesToShow,
     required this.curve,
     required this.duration,
-    required this.shouldAutoScroll,
     required this.shouldAnimate,
   });
 
@@ -469,7 +456,6 @@ class _TreeEntry<T extends TreeNode<T>> extends StatefulWidget {
   final int maxNodesToShow;
   final Curve curve;
   final Duration duration;
-  final bool shouldAutoScroll;
   final bool shouldAnimate;
 
   @override
@@ -490,27 +476,6 @@ class _TreeEntryState<T extends TreeNode<T>> extends State<_TreeEntry<T>>
     widget.onAnimationComplete(node);
     if (!mounted) return;
     setState(() {});
-  }
-
-  void _autoScrollAnimationListener() {
-    switch (animationController.status) {
-      case AnimationStatus.dismissed:
-      case AnimationStatus.reverse:
-        // do not auto scroll when collapsing
-        return;
-
-      // Auto scroll in both "forward" and "completed" to make sure the entire
-      // RenderObject is revealed. If "complete" is not included, a portion of
-      // the bottom of the RenderObject remains hidden.
-      case AnimationStatus.forward:
-      case AnimationStatus.completed:
-        break;
-    }
-
-    final RenderObject? renderObject = context.findRenderObject();
-    RenderAbstractViewport.of(renderObject)?.showOnScreen(
-      descendant: renderObject,
-    );
   }
 
   void expand() {
@@ -542,10 +507,6 @@ class _TreeEntryState<T extends TreeNode<T>> extends State<_TreeEntry<T>>
       value: isExpanded ? 1.0 : 0.0,
       duration: widget.duration,
     );
-
-    if (widget.shouldAutoScroll) {
-      animationController.addListener(_autoScrollAnimationListener);
-    }
   }
 
   @override
@@ -554,14 +515,6 @@ class _TreeEntryState<T extends TreeNode<T>> extends State<_TreeEntry<T>>
 
     curveTween.curve = widget.curve;
     animationController.duration = widget.duration;
-
-    if (oldWidget.shouldAutoScroll != widget.shouldAutoScroll) {
-      if (widget.shouldAutoScroll) {
-        animationController.addListener(_autoScrollAnimationListener);
-      } else {
-        animationController.removeListener(_autoScrollAnimationListener);
-      }
-    }
 
     if (isExpanded != node.isExpanded) {
       isExpanded = node.isExpanded;
