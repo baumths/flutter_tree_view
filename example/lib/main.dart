@@ -40,9 +40,7 @@ class MyNode extends TreeNode<MyNode> {
   MyNode({
     required this.label,
     this.children = const [],
-
-    /// The expansion state of this node.
-    super.isExpanded,
+    this.isExpanded = false,
   });
 
   /// The unique identifier of this node, used by [SliverTreeState] to cache
@@ -55,6 +53,9 @@ class MyNode extends TreeNode<MyNode> {
   /// The direct children of this node. Can be any [Iterable].
   @override
   final List<MyNode> children;
+
+  @override
+  bool isExpanded;
 
   /// Include any additional data that you may need to pass around.
   final String label;
@@ -75,13 +76,12 @@ class SimpleTreeView extends StatefulWidget with PageInfo {
 
 class _SimpleTreeViewState extends State<SimpleTreeView> {
   late final MyNode root;
+  late final TreeController<MyNode> treeController;
 
   @override
   void initState() {
     super.initState();
 
-    // This "nested" approach could be represented differently depending on the
-    // usecase or how your app retrieves data.
     root = MyNode(
       label: '/',
       isExpanded: true,
@@ -123,12 +123,26 @@ class _SimpleTreeViewState extends State<SimpleTreeView> {
         MyNode(label: 'Root 3'),
       ],
     );
+
+    treeController = TreeController<MyNode>(
+      roots: root.children,
+      onExpansionChanged: (MyNode node, bool expanded) {
+        node.isExpanded = expanded;
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    /// Don't forget to dispose your [TreeController].
+    treeController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return TreeView<MyNode>(
-      roots: root.children,
+      controller: treeController,
       itemBuilder: (BuildContext context, TreeEntry<MyNode> entry) {
         // [TreeNode]s are wrapped in [TreeEntry]s when the [TreeController] is
         // flattening the tree. [TreeEntry]s hold important info about the node

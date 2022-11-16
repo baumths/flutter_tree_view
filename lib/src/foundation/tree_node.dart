@@ -12,6 +12,12 @@ typedef Mapper<T, R> = R Function(T value);
 /// Signature of a function used to visit nodes during tree traversal.
 typedef Visitor<T> = void Function(T node);
 
+/// Signature of a function used to update the expansion state of a tree node.
+typedef TreeExpansionStateSetter<T extends TreeNode<T>> = void Function(
+  T node,
+  bool expanded,
+);
+
 /// The default level used for root [TreeNode]s when flattening the tree.
 const int defaultTreeRootLevel = 0;
 
@@ -24,8 +30,8 @@ const int defaultTreeRootLevel = 0;
 /// See also:
 /// * [ParentedTreeNode], an interface that enables upwards tree traversal.
 abstract class TreeNode<T extends TreeNode<T>> with DiagnosticableTreeMixin {
-  /// Abstract constructor.
-  TreeNode({this.isExpanded = false});
+  /// Abstract constant constructor.
+  const TreeNode();
 
   /// The unique identifier of this node.
   ///
@@ -49,7 +55,7 @@ abstract class TreeNode<T extends TreeNode<T>> with DiagnosticableTreeMixin {
   ///
   /// If `true`, this node is expanded and its subtree should be visible on a
   /// tree view.
-  bool isExpanded;
+  bool get isExpanded;
 
   /// Convenient getter to access `children.isNotEmpty`.
   bool get hasChildren => children.isNotEmpty;
@@ -83,8 +89,8 @@ abstract class TreeNode<T extends TreeNode<T>> with DiagnosticableTreeMixin {
 /// traversal to [TreeNode]s.
 abstract class ParentedTreeNode<T extends ParentedTreeNode<T>>
     extends TreeNode<T> {
-  /// Abstract constructor.
-  ParentedTreeNode({super.isExpanded});
+  /// Abstract constant constructor.
+  const ParentedTreeNode();
 
   /// The direct parent of this node.
   T? get parent;

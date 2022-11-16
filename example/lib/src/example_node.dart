@@ -1,6 +1,5 @@
 import 'dart:collection' show UnmodifiableListView;
 
-import 'package:flutter/widgets.dart' show FocusNode;
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
 class ExampleNode extends ParentedTreeNode<ExampleNode> {
@@ -8,7 +7,7 @@ class ExampleNode extends ParentedTreeNode<ExampleNode> {
 
   ExampleNode({
     required this.label,
-    super.isExpanded,
+    this.isExpanded = false,
     List<ExampleNode>? children,
   })  : id = _autoIncrementedId++,
         _children = children ?? [] {
@@ -17,6 +16,9 @@ class ExampleNode extends ParentedTreeNode<ExampleNode> {
 
   @override
   final int id;
+
+  @override
+  bool isExpanded;
 
   final String label;
 
@@ -64,62 +66,52 @@ class ExampleNode extends ParentedTreeNode<ExampleNode> {
     child._parent?.removeChild(child);
     child._parent = this;
   }
+}
 
-  bool get isHighlighted => focusNode.hasFocus;
+typedef NodeFactory<T extends TreeNode<T>> = T Function({
+  required String label,
+  List<T>? children,
+});
 
-  final FocusNode focusNode = FocusNode();
-
-  void dispose() {
-    focusNode.dispose();
-  }
-
-  void visitDescendants(void Function(ExampleNode descendant) visit) {
-    visit(this);
-    for (final ExampleNode child in _children) {
-      child.visitDescendants(visit);
-    }
-  }
-
-  static ExampleNode createSampleTree() {
-    return ExampleNode(
-      label: '/',
-      children: [
-        ExampleNode(
-          label: 'Root 1',
-          children: [
-            ExampleNode(
-              label: 'Node 1.A',
-              children: [
-                ExampleNode(label: 'Node 1.A.1'),
-                ExampleNode(label: 'Node 1.A.2'),
-              ],
-            ),
-            ExampleNode(label: 'Node 1.B'),
-          ],
-        ),
-        ExampleNode(
-          label: 'Root 2',
-          children: [
-            ExampleNode(
-              label: 'Node 2.A',
-              children: [
-                for (int index = 1; index <= 5; index++)
-                  ExampleNode(label: 'Node 2.A.$index'),
-              ],
-            ),
-            ExampleNode(label: 'Node 2.B'),
-            ExampleNode(
-              label: 'Node 2.C',
-              children: [
-                for (int index = 1; index <= 5; index++)
-                  ExampleNode(label: 'Node 2.C.$index'),
-              ],
-            ),
-            ExampleNode(label: 'Node 2.D'),
-          ],
-        ),
-        ExampleNode(label: 'Root 3'),
-      ],
-    );
-  }
+T createSampleTree<T extends TreeNode<T>>(NodeFactory<T> nodeFactory) {
+  return nodeFactory(
+    label: '/',
+    children: [
+      nodeFactory(
+        label: 'Root 1',
+        children: [
+          nodeFactory(
+            label: 'Node 1.A',
+            children: [
+              nodeFactory(label: 'Node 1.A.1'),
+              nodeFactory(label: 'Node 1.A.2'),
+            ],
+          ),
+          nodeFactory(label: 'Node 1.B'),
+        ],
+      ),
+      nodeFactory(
+        label: 'Root 2',
+        children: [
+          nodeFactory(
+            label: 'Node 2.A',
+            children: [
+              for (int index = 1; index <= 5; index++)
+                nodeFactory(label: 'Node 2.A.$index'),
+            ],
+          ),
+          nodeFactory(label: 'Node 2.B'),
+          nodeFactory(
+            label: 'Node 2.C',
+            children: [
+              for (int index = 1; index <= 5; index++)
+                nodeFactory(label: 'Node 2.C.$index'),
+            ],
+          ),
+          nodeFactory(label: 'Node 2.D'),
+        ],
+      ),
+      nodeFactory(label: 'Root 3'),
+    ],
+  );
 }

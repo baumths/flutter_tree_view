@@ -62,12 +62,25 @@ extension<T extends TreeNode<T>> on TreeReorderingDetails<T> {
 
 class _ReorderableTreeViewState extends State<ReorderableTreeView> {
   late final ExampleNode virtualRoot;
-  late final GlobalKey<TreeViewState<ExampleNode>> treeViewKey = GlobalKey();
+  late final TreeController<ExampleNode> treeController;
 
   @override
   void initState() {
     super.initState();
-    virtualRoot = ExampleNode.createSampleTree();
+    virtualRoot = createSampleTree(ExampleNode.new);
+
+    treeController = TreeController<ExampleNode>(
+      roots: virtualRoot.children,
+      onExpansionChanged: (ExampleNode node, bool expanded) {
+        node.isExpanded = expanded;
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    treeController.dispose();
+    super.dispose();
   }
 
   void _onReorder(TreeReorderingDetails<ExampleNode> details) {
@@ -102,7 +115,7 @@ class _ReorderableTreeViewState extends State<ReorderableTreeView> {
     newParent.isExpanded = true;
 
     // Rebuild the flattened tree to make sure the changes are shown.
-    treeViewKey.currentState!.rebuild(animate: newParent.children.isNotEmpty);
+    treeController.rebuild();
 
     briefHighlight(details.draggedNode.id);
   }
@@ -117,16 +130,13 @@ class _ReorderableTreeViewState extends State<ReorderableTreeView> {
     return DefaultIndentGuide(
       guide: const ScopingLinesGuide(indent: 20, origin: 1),
       child: TreeView<ExampleNode>(
-        key: treeViewKey,
-        roots: virtualRoot.children,
+        controller: treeController,
         itemBuilder: (BuildContext context, TreeEntry<ExampleNode> entry) {
           // The [ReorderableTreeNodeTile] widget can be found down below.
           final Widget tile = ReorderableTreeNodeTile(
             node: entry.node,
             onReorder: _onReorder,
-            onFolderPressed: () {
-              treeViewKey.currentState!.toggleExpansion(entry.node);
-            },
+            onFolderPressed: () => treeController.toggleExpansion(entry.node),
           );
 
           if (highlightedId == entry.node.id) {
@@ -203,6 +213,7 @@ class _ReorderableTreeNodeTileState extends State<ReorderableTreeNodeTile> {
       leading: TreeDraggable<ExampleNode>(
         key: _dragHandleKey,
         node: widget.node,
+        expandOnDragEnd: false,
         feedback: DragFeedback(node: widget.node),
         onDragStarted: onDragStarted,
         onDragEnd: onDragEnd,

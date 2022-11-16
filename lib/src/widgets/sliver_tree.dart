@@ -42,7 +42,7 @@ class SliverTree<T extends TreeNode<T>> extends StatefulWidget {
   /// Creates a [SliverTree].
   const SliverTree({
     super.key,
-    required this.roots,
+    required this.controller,
     required this.itemBuilder,
     this.transitionBuilder = defaultTreeViewTransitionBuilder,
     this.animationDuration = const Duration(milliseconds: 300),
@@ -50,11 +50,16 @@ class SliverTree<T extends TreeNode<T>> extends StatefulWidget {
     this.maxNodesToShowWhenAnimating = 50,
   });
 
-  /// The root [TreeNode]s of the tree.
+  /// A simple controller used to dynamically manage the state of the tree.
   ///
-  /// These nodes are used as a starting point to build the flat representation
-  /// of the tree.
-  final Iterable<T> roots;
+  /// This controller serves two main purposes:
+  ///   1) to provide the root nodes that will compose the tree and a way to
+  ///      toggle the expansion state of [TreeNode]s;
+  ///   2) to notify its listeners that the tree structure changed in some
+  ///      way ([SliverTreeState] will listen to this controller to update
+  ///      its internal flat representation of the tree that is provided by
+  ///      [TreeController.roots]).
+  final TreeController<T> controller;
 
   /// Callback used to map your data into widgets.
   ///
@@ -70,6 +75,8 @@ class SliverTree<T extends TreeNode<T>> extends StatefulWidget {
   final TreeViewTransitionBuilder transitionBuilder;
 
   /// The default duration to use when animating the expand/collapse operations.
+  ///
+  /// Provide an [animationDuration] of `Duration.zero` to disable animations.
   ///
   /// Defaults to `Duration(milliseconds: 300)`.
   final Duration animationDuration;
@@ -165,7 +172,7 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   /// The root [TreeNode]s of the tree.
   ///
   /// Used as a starting point to build the flat representation of the tree.
-  Iterable<T> get roots => widget.roots;
+  Iterable<T> get roots => widget.controller.roots;
 
   /// The most recent tree flattened from [SliverTree.roots].
   UnmodifiableListView<TreeEntry<T>> get flatTree => _flatTree;
@@ -185,12 +192,11 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   }
 
   void _updateFlatTree({bool animate = true}) {
-    final Map<Object, TreeEntry<T>> oldEntries = Map.of(_entryByIdCache);
-    _entryByIdCache.clear();
+    Visitor<TreeEntry<T>> onTraverse;
 
-    final Visitor<TreeEntry<T>> onTraverse;
+    if (animate && widget.animationDuration != Duration.zero) {
+      final Map<Object, TreeEntry<T>> oldEntries = Map.of(_entryByIdCache);
 
-    if (animate) {
       onTraverse = (TreeEntry<T> entry) {
         _entryByIdCache[entry.node.id] = entry;
         final TreeEntry<T>? oldEntry = oldEntries[entry.node.id];
@@ -204,6 +210,8 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
         _entryByIdCache[entry.node.id] = entry;
       };
     }
+
+    _entryByIdCache.clear();
 
     final List<TreeEntry<T>> flatTree = roots.flatten(
       rootLevel: 0,
@@ -222,7 +230,6 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
     _flatTree = UnmodifiableListView<TreeEntry<T>>(flatTree);
   }
 
-  /// {@template flutter_fancy_tree_view.SliverTreeState.rebuild}
   /// Rebuilds the current flat tree.
   ///
   /// Call this method whenever the tree nodes are updated (i.e., expansion
@@ -230,14 +237,12 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   /// flat tree can be refreshed to include the new changes.
   ///
   /// [animate] can be used to do an additional check when flattening to verify
-  /// if a node's expansion state changed, if it did, the [TreeEntry] of that
-  /// node will have its [TreeEntry.shouldAnimate] value set to `true` resulting
-  /// in it being animated after this rebuild is complete.
-  /// {@endtemplate}
+  /// if a node's expansion state changed, if it did, it will be marked to
+  /// animate when the flattening finishes.
   ///
   /// Example:
   /// ```dart
-  /// class Node extends TreeNode<Node> { /* ... */ }
+  /// class Node extends TreeNode<Node> { ... }
   ///
   /// final SliverTreeState<Node> treeState = SliverTree.of<Node>(context);
   ///
@@ -274,24 +279,14 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
     setState(() => _updateFlatTree(animate: animate));
   }
 
-  /// {@template flutter_fancy_tree_view.SliverTreeState.toggleExpansion}
   /// Updates [node]'s expansion state to the opposite state and rebuilds the
   /// tree.
   ///
   /// A check to [node.hasChildren] is done to avoid having to rebuild the tree
   /// if its structure won't change.
-  ///
-  /// [animate] can be used to play an expand/collapse animation when the tree
-  /// is done flattening.
-  /// {@endtemplate}
   void toggleExpansion(T node, {bool animate = true}) {
-    node.isExpanded = !node.isExpanded;
-
-    if (node.hasChildren) {
-      rebuild(animate: animate);
-    } else {
-      setState(() {});
-    }
+    widget.controller.onExpansionChanged(node, !node.isExpanded);
+    node.hasChildren ? rebuild(animate: animate) : setState(() {});
   }
 
   //* REORDERING ---------------------------------------------------------------
@@ -362,14 +357,17 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   void initState() {
     super.initState();
     _updateFlatTree(animate: false);
+    widget.controller.addListener(rebuild);
   }
 
   @override
   void didUpdateWidget(covariant SliverTree<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (oldWidget.roots != widget.roots) {
-      _updateFlatTree();
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(rebuild);
+      widget.controller.addListener(rebuild);
+      _updateFlatTree(animate: false);
     }
   }
 
@@ -390,8 +388,12 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
 
   @override
   void dispose() {
-    _flatTree = UnmodifiableListView(const []);
+    widget.controller.removeListener(rebuild);
+    stopAutoScroll();
+    _autoScrollRect = Rect.zero;
     _entryByIdCache.clear();
+    _flatTree = UnmodifiableListView(const []);
+    _draggingNodePath = UnmodifiableSetView(const {});
     super.dispose();
   }
 
@@ -418,7 +420,7 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
     final TreeEntry<T> entry = entryAt(index);
 
     return _TreeEntry<T>(
-      key: _SaltedKey(entry.node.id),
+      key: _SaltedTreeEntryKey(entry.node.id),
       entry: entry,
       itemBuilder: _wrapWithDetails,
       transitionBuilder: widget.transitionBuilder,
@@ -431,8 +433,8 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   }
 }
 
-class _SaltedKey<T extends State<StatefulWidget>> extends GlobalObjectKey<T> {
-  const _SaltedKey(super.value);
+class _SaltedTreeEntryKey extends GlobalObjectKey {
+  const _SaltedTreeEntryKey(super.value);
 }
 
 class _TreeEntry<T extends TreeNode<T>> extends StatefulWidget {
@@ -479,8 +481,8 @@ class _TreeEntryState<T extends TreeNode<T>> extends State<_TreeEntry<T>>
   }
 
   void expand() {
-    // Sometimes when [isExpanded] changes and [entry.shouldAnimate] is set to
-    // `false`, the animation value is not reset, then latter when a subsequent
+    // Sometimes when [isExpanded] changes and [widget.shouldAnimate] is set to
+    // `false`, the animation value is not reset, then later when a subsequent
     // animation starts, the controller is already completed and no animation
     // is played at all.
     final double? from = animationController.value == 1.0 ? 0.0 : null;
@@ -488,8 +490,8 @@ class _TreeEntryState<T extends TreeNode<T>> extends State<_TreeEntry<T>>
   }
 
   void collapse() {
-    // Sometimes when [isExpanded] changes and [entry.shouldAnimate] is set to
-    // `false`, the animation value is not reset, then latter when a subsequent
+    // Sometimes when [isExpanded] changes and [widget.shouldAnimate] is set to
+    // `false`, the animation value is not reset, then later when a subsequent
     // animation starts, the controller is already completed and no animation
     // is played at all.
     final double? from = animationController.value == 0.0 ? 1.0 : null;
@@ -536,7 +538,7 @@ class _TreeEntryState<T extends TreeNode<T>> extends State<_TreeEntry<T>>
     final Widget tile = widget.itemBuilder(context, entry);
 
     if (widget.shouldAnimate || animationController.isAnimating) {
-      final Widget subtree = _Subtree(
+      final Widget subtree = _Subtree<T>(
         virtualRoot: entry,
         maxNodesToShow: widget.maxNodesToShow,
         itemBuilder: widget.itemBuilder,
