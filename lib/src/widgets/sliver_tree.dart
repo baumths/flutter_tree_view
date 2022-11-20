@@ -42,7 +42,8 @@ class SliverTree<T extends TreeNode<T>> extends StatefulWidget {
   /// Creates a [SliverTree].
   const SliverTree({
     super.key,
-    required this.controller,
+    required this.roots,
+    this.controller,
     required this.itemBuilder,
     this.transitionBuilder = defaultTreeViewTransitionBuilder,
     this.animationDuration = const Duration(milliseconds: 300),
@@ -50,16 +51,20 @@ class SliverTree<T extends TreeNode<T>> extends StatefulWidget {
     this.maxNodesToShowWhenAnimating = 50,
   });
 
-  /// A simple controller used to dynamically manage the state of the tree.
+  /// The root [TreeNode]s of the tree.
   ///
-  /// This controller serves two main purposes:
-  ///   1) to provide the root nodes that will compose the tree and a way to
-  ///      toggle the expansion state of [TreeNode]s;
-  ///   2) to notify its listeners that the tree structure changed in some
-  ///      way ([SliverTreeState] will listen to this controller to update
-  ///      its internal flat representation of the tree that is provided by
-  ///      [TreeController.roots]).
-  final TreeController<T> controller;
+  /// These nodes are used as a starting point to build the flat representation
+  /// of the tree.
+  final Iterable<T> roots;
+
+  /// An optional controller that can be used to dynamically manage the state of
+  /// the tree.
+  ///
+  /// This controller must be provided when using some methods like
+  /// [SliverTreeState.toggleExpansion]. Also for [TreeDraggable] and
+  /// [TreeDragTarget] to work properly since they use this controller
+  /// to update the expansion state of its nodes when necessary.
+  final TreeController<T>? controller;
 
   /// Callback used to map your data into widgets.
   ///
@@ -67,11 +72,12 @@ class SliverTree<T extends TreeNode<T>> extends StatefulWidget {
   /// the current tree context of the particular [TreeEntry.node] that it holds.
   final TreeViewItemBuilder<T> itemBuilder;
 
-  /// Callback used to animate the expansion state changes of a subtree.
+  /// A widget builder used to apply a transition to the expansion state changes
+  /// of a node subtree when animations are enabled.
   ///
   /// See also:
   ///
-  ///   * [defaultTreeViewTransitionBuilder] that uses a [SizeTransition].
+  /// * [defaultTreeViewTransitionBuilder] which uses a [SizeTransition].
   final TreeViewTransitionBuilder transitionBuilder;
 
   /// The default duration to use when animating the expand/collapse operations.
@@ -172,7 +178,7 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   /// The root [TreeNode]s of the tree.
   ///
   /// Used as a starting point to build the flat representation of the tree.
-  Iterable<T> get roots => widget.controller.roots;
+  Iterable<T> get roots => widget.roots;
 
   /// The most recent tree flattened from [SliverTree.roots].
   UnmodifiableListView<TreeEntry<T>> get flatTree => _flatTree;
@@ -246,17 +252,14 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   ///
   /// final SliverTreeState<Node> treeState = SliverTree.of<Node>(context);
   ///
-  /// // DON'T use rebuild when calling [SliverTreeState.toggleExpansion]:
-  /// void toggleExpansion(Node node) {
-  ///   treeState.toggleExpansion(node);
-  ///   // treeState.rebuild(); // No need to call rebuild here.
-  /// }
-  ///
-  /// // DO use rebuild when the expansion state is changed by outside sources:
+  /// // DO use rebuild when the expansion state is changed:
   /// void toggleExpansion(Node node) {
   ///   node.isExpanded = !node.isExpanded;
   ///   treeState.rebuild(); // Call rebuild to update the tree
   /// }
+  ///
+  /// // Alternatively, call [TreeController.toggleExpansion], which covers the
+  /// // above boilerplate.
   ///
   /// // DO use rebuild when nodes are added/removed/reordered:
   /// void addChild(Node parent, Node child) {
@@ -264,7 +267,7 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   ///   treeState.rebuild(animate: false);
   /// }
   ///
-  /// /// Consider doing bulk updating before calling rebuild:
+  /// // Consider doing bulk updating before calling rebuild:
   /// void addChildren(Node parent, List<Node> children) {
   ///   for (final Node child in children) {
   ///     parent.children.add(child);
@@ -284,8 +287,16 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   ///
   /// A check to [node.hasChildren] is done to avoid having to rebuild the tree
   /// if its structure won't change.
+  ///
+  /// This method **requires** [SliverTree.controller] to be provided. Throws an
+  /// assertion error in debug mode when the controller is `null`.
   void toggleExpansion(T node, {bool animate = true}) {
-    widget.controller.onExpansionChanged(node, !node.isExpanded);
+    assert(
+      widget.controller != null,
+      'A TreeController is required for SliverTreeState.toggleExpansion() to work',
+    );
+
+    widget.controller?.onExpansionChanged(node, !node.isExpanded);
     node.hasChildren ? rebuild(animate: animate) : setState(() {});
   }
 
@@ -357,7 +368,7 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   void initState() {
     super.initState();
     _updateFlatTree(animate: false);
-    widget.controller.addListener(rebuild);
+    widget.controller?.addListener(rebuild);
   }
 
   @override
@@ -365,8 +376,11 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
     super.didUpdateWidget(oldWidget);
 
     if (oldWidget.controller != widget.controller) {
-      oldWidget.controller.removeListener(rebuild);
-      widget.controller.addListener(rebuild);
+      oldWidget.controller?.removeListener(rebuild);
+      widget.controller?.addListener(rebuild);
+    }
+
+    if (oldWidget.roots != roots) {
       _updateFlatTree(animate: false);
     }
   }
@@ -388,7 +402,7 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
 
   @override
   void dispose() {
-    widget.controller.removeListener(rebuild);
+    widget.controller?.removeListener(rebuild);
     stopAutoScroll();
     _autoScrollRect = Rect.zero;
     _entryByIdCache.clear();

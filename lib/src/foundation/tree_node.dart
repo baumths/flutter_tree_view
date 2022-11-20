@@ -68,6 +68,14 @@ abstract class TreeNode<T extends TreeNode<T>> with DiagnosticableTreeMixin {
   /// Defaults to `isExpanded && hasChildren`.
   bool get includeChildrenWhenFlattening => isExpanded && hasChildren;
 
+  /// Walks down the tree applying the [visit] callback to each descendant node.
+  void visitDescendants(Visitor<T> visit) {
+    for (final T child in children) {
+      visit(child);
+      child.visitDescendants(visit);
+    }
+  }
+
   @override
   List<DiagnosticsNode> debugDescribeChildren() {
     if (children.isEmpty) {

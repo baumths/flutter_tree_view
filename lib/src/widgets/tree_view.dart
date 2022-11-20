@@ -14,7 +14,8 @@ class TreeView<T extends TreeNode<T>> extends StatelessWidget {
   /// Creates a [TreeView].
   const TreeView({
     super.key,
-    required this.controller,
+    required this.roots,
+    this.controller,
     required this.itemBuilder,
     this.transitionBuilder = defaultTreeViewTransitionBuilder,
     this.animationDuration = const Duration(milliseconds: 300),
@@ -34,16 +35,20 @@ class TreeView<T extends TreeNode<T>> extends StatelessWidget {
     this.clipBehavior = Clip.hardEdge,
   }) : assert(maxNodesToShowWhenAnimating > 0);
 
-  /// A simple controller used to dynamically manage the state of the tree.
+  /// The root [TreeNode]s of the tree.
   ///
-  /// This controller serves two main purposes:
-  ///   1) provide the root nodes that will compose the tree and a way to
-  ///      toggle the expansion state of [TreeNode]s;
-  ///   2) to notify its listeners that the tree structure changed in some
-  ///      way ([SliverTreeState] will listen to this controller to update
-  ///      its internal flat representation of the tree that is provided by
-  ///      [TreeController.roots]).
-  final TreeController<T> controller;
+  /// These nodes are used as a starting point to build the flat representation
+  /// of the tree.
+  final Iterable<T> roots;
+
+  /// An optional controller that can be used to dynamically manage the state of
+  /// the tree.
+  ///
+  /// This controller must be provided when using some methods like
+  /// [SliverTreeState.toggleExpansion]. [TreeDraggable] and [TreeDragTarget]
+  /// use this controller to update the expansion state of its nodes when
+  /// necessary.
+  final TreeController<T>? controller;
 
   /// Callback used to map your data into widgets.
   ///
@@ -51,11 +56,12 @@ class TreeView<T extends TreeNode<T>> extends StatelessWidget {
   /// the current tree context of the particular [TreeEntry.node] that it holds.
   final TreeViewItemBuilder<T> itemBuilder;
 
-  /// Callback used to animate the expansion state change of a subtree.
+  /// A widget builder used to apply a transition to the expansion state changes
+  /// of a node subtree when animations are enabled.
   ///
   /// See also:
   ///
-  /// * [defaultTreeViewTransitionBuilder] that uses a [SizeTransition].
+  /// * [defaultTreeViewTransitionBuilder] which uses a [SizeTransition].
   final TreeViewTransitionBuilder transitionBuilder;
 
   /// The default duration to use when animating the expand/collapse operations.
@@ -166,6 +172,7 @@ class TreeView<T extends TreeNode<T>> extends StatelessWidget {
         SliverPadding(
           padding: padding ?? EdgeInsets.zero,
           sliver: SliverTree<T>(
+            roots: roots,
             controller: controller,
             itemBuilder: itemBuilder,
             transitionBuilder: transitionBuilder,

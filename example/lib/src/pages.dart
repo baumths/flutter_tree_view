@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 
+export 'samples/lazy_loading.dart';
+export 'samples/navigation.dart';
+export 'samples/reordering.dart';
+
 mixin PageInfo on Widget {
   String get title;
-  String? get description;
+  String? get description => null;
 }
 
 class ExamplePages extends StatefulWidget {
@@ -21,7 +25,7 @@ class _ExamplePagesState extends State<ExamplePages> {
 
   int currentPage = 0;
 
-  void animate(int page) {
+  void jumpToPage(int page) {
     setState(() {
       currentPage = page;
       pageController.jumpToPage(currentPage);
@@ -29,11 +33,11 @@ class _ExamplePagesState extends State<ExamplePages> {
   }
 
   void previousTree() {
-    animate(currentPage == 0 ? lastPage : currentPage - 1);
+    jumpToPage(currentPage == 0 ? lastPage : currentPage - 1);
   }
 
   void nextTree() {
-    animate(currentPage == lastPage ? 0 : currentPage + 1);
+    jumpToPage(currentPage == lastPage ? 0 : currentPage + 1);
   }
 
   @override

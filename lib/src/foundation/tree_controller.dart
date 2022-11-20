@@ -2,43 +2,37 @@ import 'package:flutter/foundation.dart' show ChangeNotifier;
 
 import 'tree_node.dart';
 
-/// A simple controller used by [SliverTree] to create and update the flat
-/// representation of the tree built from [TreeController.roots].
+/// A simple controller that can be used to dynamically update the state of a
+/// tree.
+///
+/// When provided to a [TreeView] or [SliverTree], whenever this controller
+/// notifies its listeners the [SliverTree] will assume that the tree structure
+/// changed in some way and will rebuild its internal flat representaton of the
+/// tree, showing/hiding the updated nodes (if any).
 class TreeController<T extends TreeNode<T>> with ChangeNotifier {
   /// Creates a [TreeController].
   ///
-  /// The [roots] parameter is used by [SliverTree] as a starting point to
-  /// build the flat representation of the roots hierarchies.
+  /// [TreeController.onExpansionChanged] is required to properly update the
+  /// expansion state of tree nodes when using the expand/collapse methods of
+  /// this controller.
   TreeController({
-    required Iterable<T> roots,
     required this.onExpansionChanged,
-  }) : _roots = roots;
-
-  /// The root [TreeNode]s of the tree.
-  ///
-  /// These nodes are used as a starting point to build the flat representation
-  /// of the tree.
-  ///
-  /// When updating this property, [rebuild] is implicitly called.
-  Iterable<T> get roots => _roots;
-  Iterable<T> _roots;
-  set roots(Iterable<T> nodes) {
-    if (nodes == _roots) return;
-    _roots = nodes;
-    rebuild();
-  }
+  });
 
   /// A callback that should update the expansion state of a tree node when
   /// called.
   ///
   /// The `bool expanded` parameter represents the **new** expansion state.
-  final TreeExpansionStateSetter<T> onExpansionChanged;
+  ///
+  /// The expand and collapse methods of this controller will use this callback
+  /// to update the expansion state of nodes when necessary.
+  TreeExpansionStateSetter<T> onExpansionChanged;
 
   /// Notify listeners that the tree structure changed in some way.
   ///
   /// Call this method whenever the tree nodes are updated (i.e., expansion
   /// state changed, child added or removed, node reordered, etc...), so that
-  /// listeners can rebuild their flat trees to include the new changes.
+  /// listeners can update their flat trees to include the new changes.
   ///
   /// Example:
   /// ```dart
@@ -46,6 +40,7 @@ class TreeController<T extends TreeNode<T>> with ChangeNotifier {
   ///   @override
   ///   bool isExpanded = false;
   /// }
+  ///
   /// TreeController<Node> controller = ...;
   ///
   /// void expand(Node node) {
@@ -55,10 +50,68 @@ class TreeController<T extends TreeNode<T>> with ChangeNotifier {
   ///```
   void rebuild() => notifyListeners();
 
-  /// Updates the expansion state of [node] to the opposite state and notifies
-  /// listeners.
+  /// Updates the expansion state of [node] to the opposite state and calls
+  /// [rebuild].
   void toggleExpansion(T node) {
     onExpansionChanged(node, !node.isExpanded);
+    rebuild();
+  }
+
+  /// Expands [node] and calls [rebuild].
+  ///
+  /// If [node] is already expanded, nothing happens.
+  void expand(T node) {
+    if (node.isExpanded) return;
+    onExpansionChanged(node, true);
+    rebuild();
+  }
+
+  /// Walks down the subtree of [node] calling `onExpansionChanged(node, true)`
+  /// with [node] and every descendant node, then calls [rebuild].
+  void expandCascading(T node) {
+    _doExpand(node);
+    node.visitDescendants(_doExpand);
+    rebuild();
+  }
+
+  /// Collapses [node] and calls [rebuild].
+  ///
+  /// If [node] is already collapsed, nothing happens.
+  void collapse(T node) {
+    if (!node.isExpanded) return;
+    onExpansionChanged(node, false);
+    rebuild();
+  }
+
+  /// Walks down the subtree of [node] calling `onExpansionChanged(node, false)`
+  /// with [node] and every descendant node, then calls [rebuild].
+  void collpaseCascading(T node) {
+    _doCollapse(node);
+    node.visitDescendants(_doCollapse);
+    rebuild();
+  }
+
+  void _doExpand(T node) => onExpansionChanged(node, true);
+  void _doCollapse(T node) => onExpansionChanged(node, false);
+}
+
+/// A simple extension on [TreeController] that adds methods that require the
+/// `T extends ParentedTreeNode<T>` type bound.
+///
+/// This extension will only be available for instances of [TreeController] that
+/// were created for subclasses of [ParentedTreeNode].
+///
+/// This enables the possibility to work with [ParentedTreeNode] without having
+/// to deal with type bounds.
+extension ParentedTreeControllerExtension<T extends ParentedTreeNode<T>>
+    on TreeController<T> {
+  /// Walks up the path of [node] and calls `onExpansionChanged(node, true)` for
+  /// every ancestor node. Note: [node] is not expanded by this method.
+  ///
+  /// This can be used to reveal a hidden node (e.g. when searching for a node
+  /// in a search view).
+  void expandPath(T node) {
+    node.visitAncestors(_doExpand);
     rebuild();
   }
 }

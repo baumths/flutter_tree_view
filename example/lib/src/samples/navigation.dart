@@ -1,8 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderAbstractViewport;
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
-import '../example_node.dart';
+import '../example_node.dart' show createSampleTree;
 import '../pages.dart' show PageInfo;
+
+class NavigableNode extends TreeNode<NavigableNode> {
+  NavigableNode({
+    required this.label,
+    List<NavigableNode>? children,
+    this.isExpanded = false,
+  }) : children = children ?? <NavigableNode>[];
+
+  final String label;
+
+  @override
+  final List<NavigableNode> children;
+
+  @override
+  bool isExpanded;
+
+  FocusNode get focusNode => _focusNode ??= FocusNode();
+  FocusNode? _focusNode;
+
+  void dispose() {
+    _focusNode?.dispose();
+    _focusNode = null;
+  }
+}
 
 class NavigableTreeView extends StatefulWidget with PageInfo {
   const NavigableTreeView({super.key});
@@ -13,10 +39,10 @@ class NavigableTreeView extends StatefulWidget with PageInfo {
   @override
   String? get description {
     return 'Use the keyboard arrow keys to navigate around:'
-        '\n↑    highlight previous node'
-        '\n↓    highlight next node'
-        '\n→    expand or highlight next'
-        '\n←    collapse or highlight parent';
+        '\n↑    focus previous node'
+        '\n↓    focus next node'
+        '\n→    expand or focus next'
+        '\n←    collapse or focus parent';
   }
 
   @override
@@ -24,46 +50,48 @@ class NavigableTreeView extends StatefulWidget with PageInfo {
 }
 
 class _NavigableTreeViewState extends State<NavigableTreeView> {
-  late final ExampleNode root;
-  late final GlobalKey<TreeViewState<ExampleNode>> treeViewKey = GlobalKey();
+  late final NavigableNode root;
+  late final TreeController<NavigableNode> treeController;
 
-  ExampleNode? currentHighlight;
+  void toggleExpansionWithoutAnimating(NavigableNode node) {
+    treeController.toggleExpansion(node);
+  }
 
   @override
   void initState() {
     super.initState();
+    root = createSampleTree<NavigableNode>(NavigableNode.new);
 
-    root = ExampleNode.createSampleTree();
-
-    // highlight the first visible node
-    currentHighlight = root.children.first;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // request focus as soon as the view renders so that the
-      // navigation focus is ready to receive keyboard input.
-      currentHighlight?.focusNode.requestFocus();
-    });
+    treeController = TreeController<NavigableNode>(
+      onExpansionChanged: (NavigableNode node, bool expanded) {
+        node.isExpanded = expanded;
+      },
+    );
   }
 
   @override
   void dispose() {
-    root.visitDescendants((ExampleNode descendant) => descendant.dispose());
-    super.dispose();
-  }
+    treeController.dispose();
+    void disposeRecursive(NavigableNode node) {
+      node
+        ..dispose()
+        ..children.forEach(disposeRecursive);
+    }
 
-  void toggleExpansionWithoutAnimating(ExampleNode node) {
-    treeViewKey.currentState!.toggleExpansion(node, animate: false);
+    disposeRecursive(root);
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return TreeView<ExampleNode>(
-      key: treeViewKey,
+    return TreeView<NavigableNode>(
       roots: root.children,
-      itemBuilder: (BuildContext context, TreeEntry<ExampleNode> entry) {
+      controller: treeController,
+      animationDuration: Duration.zero,
+      itemBuilder: (BuildContext context, TreeEntry<NavigableNode> entry) {
         return NavigableTreeItem(
           entry: entry,
-          onToggle: () => treeViewKey.currentState!.toggleExpansion(entry.node),
+          onToggle: () => treeController.toggleExpansion(entry.node),
         );
       },
     );
@@ -77,7 +105,7 @@ class NavigableTreeItem extends StatefulWidget {
     required this.onToggle,
   });
 
-  final TreeEntry<ExampleNode> entry;
+  final TreeEntry<NavigableNode> entry;
   final VoidCallback onToggle;
 
   @override
@@ -85,113 +113,114 @@ class NavigableTreeItem extends StatefulWidget {
 }
 
 class _NavigableTreeItemState extends State<NavigableTreeItem> {
-  TreeEntry<ExampleNode> get entry => widget.entry;
-  ExampleNode get node => entry.node;
+  TreeEntry<NavigableNode> get entry => widget.entry;
+  NavigableNode get node => entry.node;
 
-  late SliverTreeState<ExampleNode> treeState;
+  FocusNode get focusNode => node.focusNode;
+  late SliverTreeState<NavigableNode> treeState;
+  bool isRightToLeft = false;
 
-  late final Map<Type, Action<Intent>> _acitons = {
-    DirectionalFocusIntent: CallbackAction<DirectionalFocusIntent>(
-      onInvoke: directionalFocusAction,
-    ),
-  };
-
-  void directionalFocusAction(DirectionalFocusIntent intent) {
-    TreeEntry<ExampleNode>? target;
-    ScrollPositionAlignmentPolicy policy =
-        ScrollPositionAlignmentPolicy.explicit;
-
-    switch (intent.direction) {
-      case TraversalDirection.up:
-        target = entry.previousEntry;
-        policy = ScrollPositionAlignmentPolicy.keepVisibleAtStart;
-        break;
-      case TraversalDirection.right:
-        policy = ScrollPositionAlignmentPolicy.keepVisibleAtEnd;
-        if (entry.node.isExpanded) {
-          target = entry.nextEntry;
-        } else {
-          entry.node.isExpanded = true;
-          treeState.rebuild(animate: false);
-        }
-        break;
-      case TraversalDirection.down:
-        policy = ScrollPositionAlignmentPolicy.keepVisibleAtEnd;
-        target = entry.nextEntry;
-        break;
-      case TraversalDirection.left:
-        policy = ScrollPositionAlignmentPolicy.keepVisibleAtStart;
-        if (entry.node.isExpanded) {
-          entry.node.isExpanded = false;
-          treeState.rebuild(animate: false);
-        } else {
-          target = entry.parent;
-        }
-        break;
+  KeyEventResult _handleKeyEvent(LogicalKeyboardKey key) {
+    if (key == LogicalKeyboardKey.arrowUp) {
+      (entry.previousEntry ?? entry).node.focusNode.requestFocus();
+      return KeyEventResult.handled;
+    } else if (key == LogicalKeyboardKey.arrowDown) {
+      (entry.nextEntry ?? entry).node.focusNode.requestFocus();
+      return KeyEventResult.handled;
+    } else if (key == LogicalKeyboardKey.arrowRight) {
+      if (node.isExpanded) {
+        (entry.nextEntry ?? entry).node.focusNode.requestFocus();
+      } else {
+        node.isExpanded = true;
+        treeState.rebuild(animate: false);
+      }
+      return KeyEventResult.handled;
+    } else if (key == LogicalKeyboardKey.arrowLeft) {
+      if (node.isExpanded) {
+        node.isExpanded = true;
+        treeState.rebuild(animate: false);
+      } else {
+        (entry.nextEntry ?? entry).node.focusNode.requestFocus();
+      }
+      return KeyEventResult.handled;
     }
-
-    final FocusNode focusNode = (target ?? entry).node.focusNode;
-    focusNode.requestFocus();
-    if (focusNode.context == null) return;
-    Scrollable.ensureVisible(
-      focusNode.context!,
-      alignment: 1.0,
-      alignmentPolicy: policy,
-    );
+    return KeyEventResult.ignored;
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    treeState = SliverTree.of<ExampleNode>(context);
+    treeState = SliverTree.of<NavigableNode>(context);
+    isRightToLeft = Directionality.maybeOf(context) == TextDirection.rtl;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Actions(
-      actions: _acitons,
-      child: TreeItem(
-        focusNode: node.focusNode,
-        focusColor: Theme.of(context).colorScheme.primary.withOpacity(.3),
-        onFocusChange: (bool hasFocus) {
-          if (!hasFocus) return;
+    return Focus(
+      focusNode: focusNode,
+      descendantsAreFocusable: false,
+      descendantsAreTraversable: false,
+      onFocusChange: (bool hasFocus) {
+        if (!hasFocus) return;
+        _showOnScreen();
+      },
+      onKeyEvent: (FocusNode node, KeyEvent event) {
+        if (KeyEvent is! RawKeyEvent) return KeyEventResult.ignored;
+        return _handleKeyEvent(event.logicalKey);
+      },
+      child: NavigableNodeTile(node: node),
+    );
+  }
 
-          // final RenderObject? renderObject = context.findRenderObject();
-          // RenderAbstractViewport.of(renderObject)?.showOnScreen(
-          //   descendant: renderObject,
-          // );
-        },
-        onTap: () {
-          node.focusNode.requestFocus();
+  void _showOnScreen() {
+    final RenderObject? renderObject = context.findRenderObject();
+    if (renderObject == null) return;
+    RenderAbstractViewport.of(renderObject)?.showOnScreen(
+      descendant: renderObject,
+    );
+  }
+}
 
-          if (node.hasChildren) {
-            widget.onToggle();
-          }
-        },
-        onLongPress: () {
-          node.isHighlighted
-              ? node.focusNode.unfocus()
-              : node.focusNode.requestFocus();
-        },
-        child: SizedBox(
-          height: 40,
-          child: Row(
-            children: [
-              if (node.children.isEmpty)
-                const IconButton(
-                  onPressed: null,
-                  icon: Icon(Icons.article_outlined),
-                )
-              else
-                ExpandIcon(
-                  isExpanded: node.isExpanded,
-                  onPressed: (_) => widget.onToggle(),
-                ),
-              Expanded(
-                child: Text(node.label),
+class NavigableNodeTile extends StatelessWidget {
+  const NavigableNodeTile({super.key, required this.node});
+
+  final NavigableNode node;
+
+  FocusNode get focusNode => node.focusNode;
+
+  @override
+  Widget build(BuildContext context) {
+    return TreeItem(
+      onTap: () {
+        focusNode.requestFocus();
+
+        if (node.hasChildren) {
+          SliverTree.of<NavigableNode>(context).toggleExpansion(node);
+        }
+      },
+      onLongPress: () {
+        focusNode.hasFocus ? focusNode.unfocus() : focusNode.requestFocus();
+      },
+      child: SizedBox(
+        height: 40,
+        child: Row(
+          children: [
+            if (node.children.isEmpty)
+              const IconButton(
+                onPressed: null,
+                icon: Icon(Icons.article_outlined),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: node.isExpanded
+                    ? const Icon(Icons.expand_less)
+                    : const Icon(Icons.expand_more),
               ),
-            ],
-          ),
+            Expanded(
+              child: Text(node.label),
+            ),
+          ],
         ),
       ),
     );

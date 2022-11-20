@@ -70,7 +70,6 @@ class _ReorderableTreeViewState extends State<ReorderableTreeView> {
     virtualRoot = createSampleTree(ExampleNode.new);
 
     treeController = TreeController<ExampleNode>(
-      roots: virtualRoot.children,
       onExpansionChanged: (ExampleNode node, bool expanded) {
         node.isExpanded = expanded;
       },
@@ -130,6 +129,7 @@ class _ReorderableTreeViewState extends State<ReorderableTreeView> {
     return DefaultIndentGuide(
       guide: const ScopingLinesGuide(indent: 20, origin: 1),
       child: TreeView<ExampleNode>(
+        roots: virtualRoot.children,
         controller: treeController,
         itemBuilder: (BuildContext context, TreeEntry<ExampleNode> entry) {
           // The [ReorderableTreeNodeTile] widget can be found down below.

@@ -75,9 +75,15 @@ class TreeDraggable<T extends TreeNode<T>> extends StatefulWidget {
   final T node;
 
   /// Whether [node] should be collapsed when the drag gesture starts.
+  ///
+  /// This requires that a [TreeController] is provided to [TreeView] or
+  /// [SliverTree].
   final bool collapseOnDragStart;
 
   /// Whether [node] should be expanded when the drag gesture ends.
+  ///
+  /// This requires that a [TreeController] is provided to [TreeView] or
+  /// [SliverTree].
   final bool expandOnDragEnd;
 
   /// Defines the size of the [Rect] created around the drag global position
@@ -448,6 +454,9 @@ class TreeDragTarget<T extends TreeNode<T>> extends StatefulWidget {
   /// The default time to wait before toggling the expansion of [node] when it
   /// is being hovered by another node.
   ///
+  /// This requires that a [TreeController] is provided to [TreeView] or
+  /// [SliverTree].
+  ///
   /// To disable auto expansion toggle, provide a duration of [Duration.zero].
   ///
   /// Defaults to `const Duration(seconds: 1)`.
@@ -507,7 +516,7 @@ class _TreeDragTargetState<T extends TreeNode<T>>
   void startToggleExpansionTimer() {
     stopToggleExpansionTimer();
 
-    if (_canToggle && widget.canStartToggleExpansionTimer) {
+    if (widget.canStartToggleExpansionTimer && _canToggle) {
       _toggleExpansionTimer = Timer(
         widget.toggleExpansionTimeout,
         () => _treeState.toggleExpansion(node),
