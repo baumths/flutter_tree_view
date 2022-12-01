@@ -293,7 +293,7 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   //* REORDERING ---------------------------------------------------------------
 
   Rect _autoScrollRect = Rect.zero;
-  VerticalEdgeDraggingAutoScroller? _autoScroller;
+  EdgeDraggingAutoScroller? _autoScroller;
 
   void _handleScrollableAutoScrolled() {
     if (_autoScrollRect == Rect.zero) return;
@@ -399,8 +399,8 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
 
     if (_autoScroller?.scrollable != scrollable) {
       _autoScroller?.stopAutoScroll();
-      _autoScroller = VerticalEdgeDraggingAutoScroller(
-        scrollable: scrollable,
+      _autoScroller = EdgeDraggingAutoScroller(
+        scrollable,
         onScrollViewScrolled: _handleScrollableAutoScrolled,
       );
     }
