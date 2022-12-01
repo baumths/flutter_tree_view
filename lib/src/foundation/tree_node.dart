@@ -23,52 +23,61 @@ const int defaultTreeRootLevel = 0;
 
 /// An interface for handling the nodes that compose a tree.
 ///
-/// The properties of this class are going to be called very frequently during
+/// The getters of this class are going to be called very frequently during
 /// flattening, consider caching the results (i.e. avoid doing heavy tasks in
-/// [id], [children], [includeChildrenWhenFlattening], etc...).
-///
-/// See also:
-/// * [ParentedTreeNode], an interface that enables upwards tree traversal.
+/// [key], [children], [parent] etc...).
 abstract class TreeNode<T extends TreeNode<T>> with DiagnosticableTreeMixin {
   /// Abstract constant constructor.
   const TreeNode();
 
-  /// The unique identifier of this node.
+  /// The unique key of this node.
   ///
-  /// A unique id is required to enable property caching, e.g., to cache the
-  /// animating state of nodes when expanding/collapsing.
+  /// A unique key is required to enable property caching (e.g. to cache the
+  /// animating state of nodes when expanding/collapsing, the dragging state,
+  /// etc.).
   ///
-  /// Make sure the id provided for a node is always the same and unique among
-  /// other ids, otherwise it could lead to inconsistent tree state.
+  /// Make sure the key provided for a node is always the same and unique among
+  /// other node keys, otherwise it could lead to inconsistent tree state.
   ///
   /// If the implementation of [TreeNode] has expensive `hashCode` and
   /// `operator ==`, consider overriding this getter to use a simpler
-  /// identifier, like [String], [int], [Key], etc...
+  /// object, like [int], [String], [Key], etc...
   ///
   /// Defaults to returning `this`.
-  Object get id => this;
+  Object get key => this;
 
   /// The direct children of this node.
   Iterable<T> get children;
 
-  /// The expansion state of this node.
+  /// The direct parent of this node or `null` if this node is a root node.
   ///
-  /// If `true`, this node is expanded and its subtree should be visible on a
-  /// tree view.
-  bool get isExpanded;
+  /// This always retuns `null` by default, the "parent" binding must be
+  /// provided by subclasses of this interface.
+  ///
+  /// This must be implemented for [visitAncestors] to work properly.
+  T? get parent => null;
 
   /// Convenient getter to access `children.isNotEmpty`.
   bool get hasChildren => children.isNotEmpty;
 
-  /// Used when flattening the tree to decide if the children of this node
-  /// should be traversed or not.
+  /// Walks up the ancestors of this node applying the [visit] callback to them.
   ///
-  /// Subclasses can override this method to change the default behavior.
+  /// Starts with the `this.parent`  and stops when the first `null` ancestor
+  /// is encountered.
   ///
-  /// Defaults to `isExpanded && hasChildren`.
-  bool get includeChildrenWhenFlattening => isExpanded && hasChildren;
+  /// For this method to work, [parent] must be properly implemented, which
+  /// by default just returns `null`.
+  void visitAncestors(Visitor<T> visit) {
+    T? current = parent;
 
-  /// Walks down the tree applying the [visit] callback to each descendant node.
+    while (current != null) {
+      visit(current);
+      current = current.parent;
+    }
+  }
+
+  /// Walks down the subtree of this node in pre order applying the [visit]
+  /// callback to every descendant node.
   void visitDescendants(Visitor<T> visit) {
     for (final T child in children) {
       visit(child);
@@ -88,37 +97,8 @@ abstract class TreeNode<T extends TreeNode<T>> with DiagnosticableTreeMixin {
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties
-      ..add(DiagnosticsProperty<Object>('id', id))
-      ..add(DiagnosticsProperty<bool>('isExpanded', isExpanded));
-  }
-}
-
-/// An interface that adds a `T? get parent` getter to enable upwards tree
-/// traversal to [TreeNode]s.
-abstract class ParentedTreeNode<T extends ParentedTreeNode<T>>
-    extends TreeNode<T> {
-  /// Abstract constant constructor.
-  const ParentedTreeNode();
-
-  /// The direct parent of this node.
-  T? get parent;
-
-  /// Walks up the tree applying a [visit] callback to each ancestor node.
-  ///
-  /// Starts at `this.parent` and stops when the first `null` ancestor is found.
-  void visitAncestors(Visitor<T> visit) {
-    T? current = parent;
-
-    while (current != null) {
-      visit(current);
-      current = current.parent;
-    }
-  }
-
-  @override
-  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
-    properties.add(DiagnosticsProperty<T?>('parent', parent));
+      ..add(DiagnosticsProperty<Object>('key', key))
+      ..add(DiagnosticsProperty<T?>('parent', parent));
   }
 }
 
@@ -129,11 +109,14 @@ extension TreeFlatteningExtension<T extends TreeNode<T>> on Iterable<T> {
   /// order creating and accumulating [TreeEntry] instances for each visited
   /// node to then return it as a plain dart [List].
   ///
+  /// [getExpansionState] is used to populate the [TreeEntry.isExpanded]
+  /// property during flattening. If not provided, a function that always
+  /// returns `true` will be used, so every node will be expanded.
+  ///
   /// [descendCondition] is used to determine if the descendants of the entry
   /// passed to it should be included in the final flat tree or not. Defaults
-  /// to `(TreeEntry<T> entry) => entry.node.includeChildrenWhenFlattening`
-  /// when not provided, which makes sure only "visible" nodes get included in
-  /// the flattened tree.
+  /// to `(TreeEntry<T> entry) => entry.isExpanded` when not provided, wich
+  /// makes sure only "visible" nodes get included in the flattened tree.
   ///
   /// [onTraverse] is an optional function that is called after a [TreeEntry]
   /// is created but before descending into its subtree.
@@ -142,6 +125,7 @@ extension TreeFlatteningExtension<T extends TreeNode<T>> on Iterable<T> {
   /// and defaults to [defaultTreeRootLevel].
   List<TreeEntry<T>> flatten({
     Mapper<TreeEntry<T>, bool>? descendCondition,
+    Mapper<T, bool>? getExpansionState,
     Visitor<TreeEntry<T>>? onTraverse,
     int rootLevel = defaultTreeRootLevel,
   }) {
@@ -149,9 +133,10 @@ extension TreeFlatteningExtension<T extends TreeNode<T>> on Iterable<T> {
       rootLevel >= 0,
       'rootLevel of TreeFlatteningExtension.flatten() must be >= 0.',
     );
+    final Mapper<T, bool> isExpanded = getExpansionState ?? (T _) => true;
 
-    final Mapper<TreeEntry<T>, bool> shouldDescend = descendCondition ??
-        (TreeEntry<T> entry) => entry.node.includeChildrenWhenFlattening;
+    final Mapper<TreeEntry<T>, bool> shouldDescend =
+        descendCondition ?? (TreeEntry<T> entry) => entry.isExpanded;
 
     final List<TreeEntry<T>> flatTree = <TreeEntry<T>>[];
     int globalIndex = 0;
@@ -169,6 +154,7 @@ extension TreeFlatteningExtension<T extends TreeNode<T>> on Iterable<T> {
         final TreeEntry<T> entry = TreeEntry<T>(
           node: node,
           index: globalIndex++,
+          isExpanded: isExpanded(node),
           level: level,
           parent: parent,
         );
@@ -183,7 +169,7 @@ extension TreeFlatteningExtension<T extends TreeNode<T>> on Iterable<T> {
         onTraverse?.call(entry);
         flatTree.add(entry);
 
-        if (shouldDescend(entry)) {
+        if (shouldDescend(entry) && node.hasChildren) {
           mapNodesToEntries(
             parent: entry,
             nodes: node.children,
@@ -327,11 +313,11 @@ class TreeEntry<T extends TreeNode<T>> with TreeIndentDetails, Diagnosticable {
   TreeEntry({
     required this.node,
     required this.index,
+    required this.isExpanded,
     required this.level,
     required this.parent,
     bool hasNextSibling = true,
-  })  : _hasNextSibling = hasNextSibling,
-        isExpanded = node.isExpanded;
+  }) : _hasNextSibling = hasNextSibling;
 
   /// The [TreeNode] that originated this entry.
   final T node;
@@ -339,10 +325,9 @@ class TreeEntry<T extends TreeNode<T>> with TreeIndentDetails, Diagnosticable {
   /// The index of [node] in the list returned by [buildFlatTree].
   final int index;
 
-  /// The expansion state of [node] when this entry was created.
+  /// The expansion state of [node].
   ///
-  /// Prefer using [node.isExpanded] as the source of truth since it may have
-  /// changed after this entry was created.
+  /// This value may have changed since this entry was created.
   final bool isExpanded;
 
   @override

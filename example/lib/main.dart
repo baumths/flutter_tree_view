@@ -10,37 +10,24 @@ import 'src/pages.dart';
 // `ExampleApp` was moved down below to avoid obstructing this example.
 void main() => runApp(const ExampleApp());
 
-/// Create a "Tree Node" model implementing the [TreeNode] contract.
+// Create a "Tree Node" model implementing the [TreeNode] contract.
 class MyNode extends TreeNode<MyNode> {
   MyNode({
     required this.label,
-    this.children = const [],
-    this.isExpanded = false,
-  });
 
-  /// The unique identifier of this node, used by [SliverTreeState] to cache
-  /// some values. If your implementation of [TreeNode] has complex `hashCode`
-  /// and `operator ==`, consider overriding this property to provide a simpler
-  /// identifier like [String], [int], [Key], etc...
-  @override
-  final Object id = Object();
+    // if defined as `this.children = const []` we wouldn't be able to modify
+    // the children list later.
+    List<MyNode>? children,
+  }) : children = children ?? <MyNode>[];
 
-  /// The direct children of this node. Can be any [Iterable].
+  // Add any additional properties to your tree nodes.
+  final String label;
+
   @override
   final List<MyNode> children;
-
-  // Store the expansion state of this node.
-  //
-  // This way of storing the expansion state of tree nodes could be represented
-  // differently if desired (e.g. using a `Set` to enable immutability).
-  @override
-  bool isExpanded;
-
-  /// Include any additional data that you may need to pass around.
-  final String label;
 }
 
-// Create a `StatefulWidget` to hold your tree nodes and controller.
+// Create a `StatefulWidget` to hold your tree nodes.
 class SimpleTreeView extends StatefulWidget with PageInfo {
   const SimpleTreeView({super.key});
 
@@ -52,88 +39,58 @@ class SimpleTreeView extends StatefulWidget with PageInfo {
 }
 
 class _SimpleTreeViewState extends State<SimpleTreeView> {
-  // This optional controller can be used to notify the [TreeView] that the
-  // tree structure changed in some way so the [TreeView] can rebuild its
-  // internal flat representation of the tree to show the new information.
-  late final TreeController<MyNode> treeController;
-
-  // The root nodes of your tree.
-  late final List<MyNode> roots;
+  // An indexing node that will hold the roots of the tree as its children.
+  // This node is not displayed on the tree in this example.
+  late final MyNode root;
 
   @override
   void initState() {
     super.initState();
 
     // Create/Fetch your hierarchical data
-    roots = <MyNode>[
-      MyNode(
-        label: 'Root 1',
-        children: [
-          MyNode(
-            label: 'Node 1.A',
-            children: [
-              MyNode(label: 'Node 1.A.1'),
-              MyNode(label: 'Node 1.A.2'),
-            ],
-          ),
-          MyNode(label: 'Node 1.B'),
-        ],
-      ),
-      MyNode(
-        label: 'Root 2',
-        children: [
-          MyNode(
-            label: 'Node 2.A',
-            children: [
-              for (int index = 1; index <= 5; index++)
-                MyNode(label: 'Node 2.A.$index'),
-            ],
-          ),
-          MyNode(label: 'Node 2.B'),
-          MyNode(
-            label: 'Node 2.C',
-            children: [
-              for (int index = 1; index <= 5; index++)
-                MyNode(label: 'Node 2.C.$index'),
-            ],
-          ),
-          MyNode(label: 'Node 2.D'),
-        ],
-      ),
-      MyNode(label: 'Root 3'),
-    ];
-
-    // Create a [TreeController] to dynamically manage the state of the tree
-    // if desired.
-    treeController = TreeController<MyNode>(
-      // A callback that updates the expansion state of your nodes must be
-      // provided. This callback is used internally by the package to update
-      // the expansion state of nodes dynamically (e.g. when reordering, when
-      // calling `TreeController.toggleExpansion()`, etc.).
-      onExpansionChanged: (MyNode node, bool expanded) {
-        // This way of updating the expansion state of tree nodes could be
-        // represented differently if desired (e.g. using a `Set` to enable
-        // immutability).
-        node.isExpanded = expanded;
-      },
+    root = MyNode(
+      label: '/',
+      children: <MyNode>[
+        MyNode(
+          label: 'Root 1',
+          children: [
+            MyNode(
+              label: 'Node 1.A',
+              children: [
+                MyNode(label: 'Node 1.A.1'),
+                MyNode(label: 'Node 1.A.2'),
+              ],
+            ),
+            MyNode(label: 'Node 1.B'),
+          ],
+        ),
+        MyNode(
+          label: 'Root 2',
+          children: [
+            MyNode(
+              label: 'Node 2.A',
+              children: [
+                MyNode(
+                  label: 'Node 2.A.1',
+                  children: List.generate(
+                    5,
+                    (int index) => MyNode(label: 'Node 2.A.1.${index + 1}'),
+                  ),
+                ),
+                MyNode(label: 'Node 2.A.2'),
+              ],
+            ),
+            MyNode(label: 'Node 2.B')
+          ],
+        ),
+      ],
     );
-  }
-
-  @override
-  void dispose() {
-    /// Don't forget to dispose your [TreeController].
-    treeController.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return TreeView<MyNode>(
-      // Provide the nodes that will be used to build the flat representation
-      // of its hierarchy.
-      roots: roots,
-      // Provide the optional controller to update the tree dinamically.
-      controller: treeController,
+      roots: root.children,
       // Provide a widget builder callback to map your tree nodes into widgets.
       itemBuilder: (BuildContext context, TreeEntry<MyNode> entry) {
         // [TreeNode]s are wrapped in [TreeEntry]s when the [SliverTree] is
@@ -156,26 +113,25 @@ class _SimpleTreeViewState extends State<SimpleTreeView> {
           // [TreeItem] doesn't do it by itself, this way you could opt to use
           // a leading/trailing button instead.
 
-          // As an alternative for the following callback, if using a [TreeController]
-          // with `onTap: () => treeController.toggleExpansion(node),` is enough.
           onTap: () {
-            // Update the expansion state of your nodes directly and then
-            // make sure to call `SliverTreeState.rebuild()` so that the
-            // tree view can rebuild its flattened tree.
-            node.isExpanded = !node.isExpanded;
+            // As an alternative to the following, use a [TreeController] with
+            // `treeController.toggleExpansion(node)`.
+            SliverTree.of<MyNode>(context).toggleExpansion(node);
+          },
+          onLongPress: () {
+            final TreeController<MyNode> treeController =
+                SliverTree.of<MyNode>(context).controller;
 
-            // If the toggled node has no children, the tree structure won't
-            // change after a rebuild therefore a simple setState is enough.
-            if (node.hasChildren) {
-              SliverTree.of<MyNode>(context).rebuild();
+            if (entry.isExpanded) {
+              treeController.collapseCascading(node);
             } else {
-              setState(() {});
+              treeController.expandCascading(node);
             }
           },
           // Provide an indent guide if desired. Indent guides can be used to
           // add decorations to the indentation of tree nodes.
-          // This could be provided through a [DefaultTreeIndentGuide] above
-          // the [TreeView].
+          // This could also be provided through a [DefaultTreeIndentGuide]
+          // above the [TreeView].
           indentGuide: const IndentGuide.blank(),
           // The widget to show to the side of [TreeIndentation]'s indent and
           // lines. The internal [TreeIndentation] respects the text direction
@@ -184,11 +140,11 @@ class _SimpleTreeViewState extends State<SimpleTreeView> {
             padding: const EdgeInsets.all(8.0),
             child: Row(
               children: [
-                /// Show a simple arrow to indicate the expansion state of this
-                /// node. See also: [FolderButton] and [ExpandIcon].
-                node.isExpanded
-                    ? const Icon(Icons.keyboard_arrow_down)
-                    : const Icon(Icons.keyboard_arrow_right),
+                // Show a simple arrow to indicate the expansion state of this
+                // node. See also: [FolderButton] and [ExpandIcon].
+                entry.isExpanded
+                    ? const Icon(Icons.arrow_drop_down)
+                    : const Icon(Icons.arrow_right),
                 const SizedBox(width: 8),
                 Text(node.label),
               ],

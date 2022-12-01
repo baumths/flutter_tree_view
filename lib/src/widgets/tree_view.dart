@@ -44,10 +44,7 @@ class TreeView<T extends TreeNode<T>> extends StatelessWidget {
   /// An optional controller that can be used to dynamically manage the state of
   /// the tree.
   ///
-  /// This controller must be provided when using some methods like
-  /// [SliverTreeState.toggleExpansion]. [TreeDraggable] and [TreeDragTarget]
-  /// use this controller to update the expansion state of its nodes when
-  /// necessary.
+  /// If not provided, the inner [SliverTree] will create its own controller.
   final TreeController<T>? controller;
 
   /// Callback used to map your data into widgets.

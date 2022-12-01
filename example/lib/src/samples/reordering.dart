@@ -62,18 +62,13 @@ extension<T extends TreeNode<T>> on TreeReorderingDetails<T> {
 
 class _ReorderableTreeViewState extends State<ReorderableTreeView> {
   late final ExampleNode virtualRoot;
-  late final TreeController<ExampleNode> treeController;
+  late final ExampleTreeController treeController;
 
   @override
   void initState() {
     super.initState();
     virtualRoot = createSampleTree(ExampleNode.new);
-
-    treeController = TreeController<ExampleNode>(
-      onExpansionChanged: (ExampleNode node, bool expanded) {
-        node.isExpanded = expanded;
-      },
-    );
+    treeController = ExampleTreeController();
   }
 
   @override
@@ -116,7 +111,7 @@ class _ReorderableTreeViewState extends State<ReorderableTreeView> {
     // Rebuild the flattened tree to make sure the changes are shown.
     treeController.rebuild();
 
-    briefHighlight(details.draggedNode.id);
+    briefHighlight(details.draggedNode.key);
   }
 
   @override
@@ -139,7 +134,7 @@ class _ReorderableTreeViewState extends State<ReorderableTreeView> {
             onFolderPressed: () => treeController.toggleExpansion(entry.node),
           );
 
-          if (highlightedId == entry.node.id) {
+          if (highlightedKey == entry.node.key) {
             return Material(
               color: highlightColor,
               child: tile,
@@ -154,18 +149,21 @@ class _ReorderableTreeViewState extends State<ReorderableTreeView> {
 
   // opinionated way of highlighting a node after been reordered
   Timer? highlightTimer;
-  int? highlightedId;
+  int? highlightedKey;
 
-  void briefHighlight(int id) {
+  void briefHighlight(int key) {
     highlightTimer?.cancel();
 
     setState(() {
-      highlightedId = id;
+      highlightedKey = key;
     });
 
     highlightTimer = Timer(
       const Duration(seconds: 2),
-      () => setState(() => highlightedId = null),
+      () {
+        highlightedKey = null;
+        if (mounted) setState(() {});
+      },
     );
   }
 }
@@ -317,6 +315,7 @@ class TreeNodeContent extends StatelessWidget {
           if (onFolderPressed != null)
             if (node.hasChildren)
               ExpandIcon(
+                key: GlobalObjectKey(node.key),
                 padding: EdgeInsets.zero,
                 isExpanded: node.isExpanded,
                 onPressed: (_) => onFolderPressed!(),

@@ -234,6 +234,8 @@ class _TreeDraggableState<T extends TreeNode<T>> extends State<TreeDraggable<T>>
 
   late SliverTreeState<T> _treeState;
 
+  bool get isExpanded => _treeState.controller.getExpansionState(node);
+
   @override
   bool get wantKeepAlive => _isDragging;
 
@@ -269,7 +271,7 @@ class _TreeDraggableState<T extends TreeNode<T>> extends State<TreeDraggable<T>>
       ..stopAutoScroll()
       ..onNodeDragEnded();
 
-    if (widget.expandOnDragEnd && !node.isExpanded) {
+    if (widget.expandOnDragEnd && !isExpanded) {
       _treeState.toggleExpansion(node, animate: false);
     }
   }
@@ -279,7 +281,7 @@ class _TreeDraggableState<T extends TreeNode<T>> extends State<TreeDraggable<T>>
 
     _treeState.onNodeDragStarted(node);
 
-    if (widget.collapseOnDragStart && node.isExpanded) {
+    if (widget.collapseOnDragStart && isExpanded) {
       _treeState.toggleExpansion(node, animate: false);
     }
 
@@ -532,7 +534,7 @@ class _TreeDragTargetState<T extends TreeNode<T>>
   late bool _isToggleExpansionEnabled;
 
   bool get _isInDraggedNodePath {
-    return _treeState.draggingNodePath.contains(node.id);
+    return _treeState.draggingNodePath.contains(node.key);
   }
 
   // Only toggle the expansion of a node if it is not in the path to the target
@@ -561,16 +563,18 @@ class _TreeDragTargetState<T extends TreeNode<T>>
     if (widget.onWillAccept != null) {
       return widget.onWillAccept!(data);
     }
-    return !(data == null || data.id == node.id);
+    return !(data == null || data.key == node.key);
   }
 
   void onMove(DragTargetDetails<T> details) {
     // Do not allow dropping a node on itself.
-    if (details.data.id == node.id) return;
+    if (details.data.key == node.key) return;
 
     // If the incoming data is not the same as the cached data, reject it.
     // This makes sure we only handle one draggable at a time.
-    if (_details != null && details.data.id != _details!.draggedNode.id) return;
+    if (_details != null && details.data.key != _details!.draggedNode.key) {
+      return;
+    }
 
     stopToggleExpansionTimer();
 
@@ -585,7 +589,9 @@ class _TreeDragTargetState<T extends TreeNode<T>>
   void onAccept(T incomingNode) {
     stopToggleExpansionTimer();
 
-    if (_details == null || _details!.draggedNode.id != incomingNode.id) return;
+    if (_details == null || _details!.draggedNode.key != incomingNode.key) {
+      return;
+    }
 
     widget.onReorder(_details!);
 
@@ -597,7 +603,11 @@ class _TreeDragTargetState<T extends TreeNode<T>>
   }
 
   void onLeave(T? data) {
-    if (_details == null || _details!.draggedNode.id != data?.id) return;
+    if (_details == null ||
+        data == null ||
+        _details!.draggedNode.key != data.key) {
+      return;
+    }
 
     stopToggleExpansionTimer();
 

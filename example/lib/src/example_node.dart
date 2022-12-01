@@ -2,25 +2,24 @@ import 'dart:collection' show UnmodifiableListView;
 
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
-class ExampleNode extends ParentedTreeNode<ExampleNode> {
-  static int _autoIncrementedId = 0;
+class ExampleNode extends TreeNode<ExampleNode> {
+  static int _uniqueKey = 0;
 
   ExampleNode({
     required this.label,
     this.isExpanded = false,
     List<ExampleNode>? children,
-  })  : id = _autoIncrementedId++,
+  })  : key = _uniqueKey++,
         _children = children ?? [] {
     _children.forEach(_reparent);
   }
 
-  @override
-  final int id;
-
-  @override
   bool isExpanded;
 
   final String label;
+
+  @override
+  final int key;
 
   @override
   UnmodifiableListView<ExampleNode> get children {
@@ -68,12 +67,24 @@ class ExampleNode extends ParentedTreeNode<ExampleNode> {
   }
 }
 
-typedef NodeFactory<T extends TreeNode<T>> = T Function({
+class ExampleTreeController extends TreeController<ExampleNode> {
+  @override
+  bool getExpansionState(ExampleNode node) {
+    return node.isExpanded;
+  }
+
+  @override
+  void setExpansionState(ExampleNode node, bool expanded) {
+    node.isExpanded = expanded;
+  }
+}
+
+typedef NodeFactory<T extends Object> = T Function({
   required String label,
   List<T>? children,
 });
 
-T createSampleTree<T extends TreeNode<T>>(NodeFactory<T> nodeFactory) {
+T createSampleTree<T extends Object>(NodeFactory<T> nodeFactory) {
   return nodeFactory(
     label: '/',
     children: [
