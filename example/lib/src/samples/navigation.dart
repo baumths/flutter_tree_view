@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderAbstractViewport;
-import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
 import '../example_node.dart' show createSampleTree;
@@ -89,31 +88,6 @@ class _NavigableTreeItemState extends State<NavigableTreeItem> {
   late SliverTreeState<NavigableNode> treeState;
   bool isRightToLeft = false;
 
-  KeyEventResult _handleKeyEvent(LogicalKeyboardKey key) {
-    if (key == LogicalKeyboardKey.arrowUp) {
-      (entry.previousEntry ?? entry).node.focusNode.requestFocus();
-      return KeyEventResult.handled;
-    } else if (key == LogicalKeyboardKey.arrowDown) {
-      (entry.nextEntry ?? entry).node.focusNode.requestFocus();
-      return KeyEventResult.handled;
-    } else if (key == LogicalKeyboardKey.arrowRight) {
-      if (entry.isExpanded) {
-        (entry.nextEntry ?? entry).node.focusNode.requestFocus();
-      } else {
-        treeState.toggleExpansion(entry.node, animate: false);
-      }
-      return KeyEventResult.handled;
-    } else if (key == LogicalKeyboardKey.arrowLeft) {
-      if (entry.isExpanded) {
-        treeState.toggleExpansion(entry.node, animate: false);
-      } else {
-        (entry.nextEntry ?? entry).node.focusNode.requestFocus();
-      }
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
-  }
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -130,10 +104,6 @@ class _NavigableTreeItemState extends State<NavigableTreeItem> {
       onFocusChange: (bool hasFocus) {
         if (!hasFocus) return;
         _showOnScreen();
-      },
-      onKeyEvent: (FocusNode node, KeyEvent event) {
-        if (KeyEvent is! RawKeyEvent) return KeyEventResult.ignored;
-        return _handleKeyEvent(event.logicalKey);
       },
       child: NavigableNodeTile(
         node: node,

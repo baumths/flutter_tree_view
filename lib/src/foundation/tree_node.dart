@@ -141,8 +141,6 @@ extension TreeFlatteningExtension<T extends TreeNode<T>> on Iterable<T> {
     final List<TreeEntry<T>> flatTree = <TreeEntry<T>>[];
     int globalIndex = 0;
 
-    TreeEntry<T>? previousEntry;
-
     void mapNodesToEntries({
       required TreeEntry<T>? parent,
       required Iterable<T> nodes,
@@ -160,11 +158,6 @@ extension TreeFlatteningExtension<T extends TreeNode<T>> on Iterable<T> {
         );
 
         lastEntry = entry;
-
-        previousEntry?._nextEntry = entry;
-        entry._previousEntry = previousEntry;
-
-        previousEntry = entry;
 
         onTraverse?.call(entry);
         flatTree.add(entry);
@@ -202,21 +195,16 @@ mixin TreeIndentDetails {
   /// If `null`, this details is attached to a root node.
   TreeIndentDetails? get parent;
 
-  /// The level of the node that owns this details on the tree.
+  /// The level of the node that owns this details on the tree. Example:
   ///
-  /// Example:
-  /// ```dart
-  /// /*
-  /// 0  1  2  3  4
-  ///    A
-  ///    ├─ B
-  ///    │  ├─ C
-  ///    │  │  └─ D
-  ///    │  └─ E
-  ///    F
-  ///    └─ G
-  /// */
-  /// ```
+  /// 0  1  2  3
+  /// A  ⋅  ⋅  ⋅
+  /// ├─ B  ⋅  ⋅
+  /// │  ├─ C  ⋅
+  /// │  │  └─ D
+  /// │  └─ E  ⋅
+  /// F  ⋅  ⋅  ⋅
+  /// └─ G  ⋅  ⋅
   int get level;
 
   /// Whether the node that owns this details has another node after it at the
@@ -245,28 +233,24 @@ mixin TreeIndentDetails {
   /// Should contain the levels of all ancestors that have sibling(s) after it
   /// at the same level. Example:
   ///
-  /// ```dart
-  /// /*
-  /// The "→" arrow shows the level that must be added to the set.
+  /// The "→" shows the level that must be added to the set.
   /// The "{}" shows the levels of that row that have a vertical line.
   ///
-  /// 0  1  2  3  4  5  6 ...
-  ///    A  ⋅  ⋅  ⋅  ⋅  ⋅  {}
-  ///   →├─ B  ⋅  ⋅  ⋅  ⋅  {1}
-  ///   →│ →├─ C  ⋅  ⋅  ⋅  {1,2}
-  ///   →│ →│  └─ D  ⋅  ⋅  {1,2}
-  ///   →│ →│    →├─ E  ⋅  {1,2,4}
-  /// * →│ →│    →│  └─ F  {1,2,4}
-  ///   →│ →│     └─ G  ⋅  {1,2}
-  ///   →│  └─ H  ⋅  ⋅  ⋅  {1}
-  ///   →I  ⋅  ⋅  ⋅  ⋅  ⋅  {}
-  ///    └─ J  ⋅  ⋅  ⋅  ⋅  {}
+  ///  0  1  2  3  4  5
+  ///  A  ⋅  ⋅  ⋅  ⋅  ⋅  {}
+  /// →├─ B  ⋅  ⋅  ⋅  ⋅  {1}
+  /// →│ →├─ C  ⋅  ⋅  ⋅  {1,2}
+  /// →│ →│  └─ D  ⋅  ⋅  {1,2}
+  /// →│ →│    →├─ E  ⋅  {1,2,4}
+  /// →│ →│    →│  └─ F  {1,2,4} *
+  /// →│ →│     └─ G  ⋅  {1,2}
+  /// →│  └─ H  ⋅  ⋅  ⋅  {1}
+  ///  I  ⋅  ⋅  ⋅  ⋅  ⋅  {}
+  ///  └─ J  ⋅  ⋅  ⋅  ⋅  {}
   ///
   /// How to read (*):
   /// The node "F" has vertical lines at levels {1,2,4}, a blank space at level
   /// {3} and an "L" shaped line at level {5}.
-  /// */
-  /// ```
   ///
   /// The [ConnectingLinesGuide] will use this set to correctly paint lines and
   /// its connections at each level.
@@ -340,19 +324,6 @@ class TreeEntry<T extends TreeNode<T>> with TreeIndentDetails, Diagnosticable {
   /// The direct parent of [node] on the tree.
   @override
   final TreeEntry<T>? parent;
-
-  /// The entry before this in the flattened tree.
-  ///
-  /// The only entry that has `previousEntry == null` is the first entry of the
-  /// flatteneed tree.
-  TreeEntry<T>? get previousEntry => _previousEntry;
-  TreeEntry<T>? _previousEntry;
-
-  /// The entry after this in the flattened tree.
-  ///
-  /// If `null`, this entry is the last element of the flattened tree.
-  TreeEntry<T>? get nextEntry => _nextEntry;
-  TreeEntry<T>? _nextEntry;
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {

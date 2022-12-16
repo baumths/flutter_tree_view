@@ -17,10 +17,11 @@ class TreeView<T extends TreeNode<T>> extends StatelessWidget {
     required this.roots,
     this.controller,
     required this.itemBuilder,
-    this.transitionBuilder = defaultTreeViewTransitionBuilder,
+    this.transitionBuilder = defaultTreeTransitionBuilder,
     this.animationDuration = const Duration(milliseconds: 300),
     this.animationCurve = Curves.linear,
     this.maxNodesToShowWhenAnimating = 50,
+    this.rootLevel = defaultTreeRootLevel,
     this.padding,
     this.scrollController,
     this.primary,
@@ -33,7 +34,7 @@ class TreeView<T extends TreeNode<T>> extends StatelessWidget {
     this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.manual,
     this.restorationId,
     this.clipBehavior = Clip.hardEdge,
-  }) : assert(maxNodesToShowWhenAnimating > 0);
+  });
 
   /// The root [TreeNode]s of the tree.
   ///
@@ -51,15 +52,15 @@ class TreeView<T extends TreeNode<T>> extends StatelessWidget {
   ///
   /// The `TreeEntry<T> entry` parameter contains important information about
   /// the current tree context of the particular [TreeEntry.node] that it holds.
-  final TreeViewItemBuilder<T> itemBuilder;
+  final TreeNodeBuilder<T> itemBuilder;
 
   /// A widget builder used to apply a transition to the expansion state changes
   /// of a node subtree when animations are enabled.
   ///
   /// See also:
   ///
-  /// * [defaultTreeViewTransitionBuilder] which uses a [SizeTransition].
-  final TreeViewTransitionBuilder transitionBuilder;
+  /// * [defaultTreeTransitionBuilder] which uses a [SizeTransition].
+  final TreeTransitionBuilder transitionBuilder;
 
   /// The default duration to use when animating the expand/collapse operations.
   ///
@@ -73,21 +74,16 @@ class TreeView<T extends TreeNode<T>> extends StatelessWidget {
   /// Defaults to `Curves.linear`.
   final Curve animationCurve;
 
-  /// The amount of nodes that are going to be shown on an animating subtree.
-  ///
-  /// Must be greater than `0`.
-  ///
-  /// When animating the expand/collapse state changes, all descendant nodes
-  /// whose visibility will change are rendered along with the toggled node,
-  /// i.e. a [Column] is used, therefore rendering the entire subtree regardless
-  /// of being a "lazy" rendered view.
-  ///
-  /// This value can be used to limit how many nodes are actually rendered
-  /// during the animation, since there could be cases where not all widgets
-  /// are visible due to scroll offsets.
-  ///
-  /// Defaults to `50`.
+  /// {@macro flutter_fancy_tree_view.SliverTree.maxNodesToShowWhenAnimating}
   final int maxNodesToShowWhenAnimating;
+
+  /// {@macro flutter_fancy_tree_view.SliverTree.rootLevel}
+  final int rootLevel;
+
+  /// The amount of space by which to inset the tree contents.
+  ///
+  /// It defaults to `EdgeInsets.zero`.
+  final EdgeInsetsGeometry? padding;
 
   /// {@macro flutter.widgets.scroll_view.controller}
   final ScrollController? scrollController;
@@ -108,11 +104,6 @@ class TreeView<T extends TreeNode<T>> extends StatelessWidget {
 
   /// {@macro flutter.widgets.scroll_view.shrinkWrap}
   final bool shrinkWrap;
-
-  /// The amount of space by which to inset the tree contents.
-  ///
-  /// It defaults to `EdgeInsets.zero`.
-  final EdgeInsetsGeometry? padding;
 
   /// {@macro flutter.rendering.RenderViewportBase.cacheExtent}
   final double? cacheExtent;
@@ -176,6 +167,7 @@ class TreeView<T extends TreeNode<T>> extends StatelessWidget {
             animationDuration: animationDuration,
             animationCurve: animationCurve,
             maxNodesToShowWhenAnimating: maxNodesToShowWhenAnimating,
+            rootLevel: rootLevel,
           ),
         ),
       ],

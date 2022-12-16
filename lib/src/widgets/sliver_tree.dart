@@ -7,32 +7,33 @@ import 'package:flutter/material.dart';
 import '../foundation.dart';
 import 'tree_indentation.dart' show TreeIndentDetailsScope;
 
-/// Signature for a function that creates a widget for a given entry, e.g., in a
-/// tree.
-typedef TreeViewItemBuilder<T extends TreeNode<T>> = Widget Function(
+/// Signature for a function that creates a widget for a given tree node, e.g.,
+/// in a tree view.
+typedef TreeNodeBuilder<T extends TreeNode<T>> = Widget Function(
   BuildContext context,
   TreeEntry<T> entry,
 );
 
 /// Signature for a function that takes a widget and an animation to apply
 /// transitions if needed.
-typedef TreeViewTransitionBuilder = Widget Function(
+typedef TreeTransitionBuilder = Widget Function(
   BuildContext context,
   Widget child,
   Animation<double> animation,
 );
 
 /// The default transition builder used by [SliverTree] to animate the expansion
-/// state changes of a node.
+/// state changes of a tree node.
 ///
 /// Wraps [child] in [SizeTransition].
-Widget defaultTreeViewTransitionBuilder(
+Widget defaultTreeTransitionBuilder(
   BuildContext context,
   Widget child,
   Animation<double> animation,
 ) {
   return SizeTransition(
     sizeFactor: animation,
+    axisAlignment: -1.0,
     child: child,
   );
 }
@@ -45,11 +46,13 @@ class SliverTree<T extends TreeNode<T>> extends StatefulWidget {
     required this.roots,
     this.controller,
     required this.itemBuilder,
-    this.transitionBuilder = defaultTreeViewTransitionBuilder,
+    this.transitionBuilder = defaultTreeTransitionBuilder,
     this.animationDuration = const Duration(milliseconds: 300),
     this.animationCurve = Curves.linear,
     this.maxNodesToShowWhenAnimating = 50,
-  });
+    this.rootLevel = defaultTreeRootLevel,
+  })  : assert(maxNodesToShowWhenAnimating > 0),
+        assert(rootLevel >= 0);
 
   /// The root [TreeNode]s of the tree.
   ///
@@ -63,19 +66,19 @@ class SliverTree<T extends TreeNode<T>> extends StatefulWidget {
   /// If not provided, this widget will create its own controller.
   final TreeController<T>? controller;
 
-  /// Callback used to map your data into widgets.
+  /// Callback used to map tree nodes into widgets.
   ///
   /// The `TreeEntry<T> entry` parameter contains important information about
   /// the current tree context of the particular [TreeEntry.node] that it holds.
-  final TreeViewItemBuilder<T> itemBuilder;
+  final TreeNodeBuilder<T> itemBuilder;
 
   /// A widget builder used to apply a transition to the expansion state changes
   /// of a node subtree when animations are enabled.
   ///
   /// See also:
   ///
-  /// * [defaultTreeViewTransitionBuilder] which uses a [SizeTransition].
-  final TreeViewTransitionBuilder transitionBuilder;
+  /// * [defaultTreeTransitionBuilder] which uses a [SizeTransition].
+  final TreeTransitionBuilder transitionBuilder;
 
   /// The default duration to use when animating the expand/collapse operations.
   ///
@@ -89,6 +92,7 @@ class SliverTree<T extends TreeNode<T>> extends StatefulWidget {
   /// Defaults to `Curves.linear`.
   final Curve animationCurve;
 
+  /// {@template flutter_fancy_tree_view.SliverTree.maxNodesToShowWhenAnimating}
   /// The amount of nodes that are going to be shown on an animating subtree.
   ///
   /// Must be greater than `0`.
@@ -103,7 +107,26 @@ class SliverTree<T extends TreeNode<T>> extends StatefulWidget {
   /// are visible due to scroll offsets.
   ///
   /// Defaults to `50`.
+  /// {@endtemplate}
   final int maxNodesToShowWhenAnimating;
+
+  /// {@template flutter_fancy_tree_view.SliverTree.rootLevel}
+  /// Used when flattening the tree to determine the level of root nodes.
+  ///
+  /// Must be a positive integer.
+  ///
+  /// Can be used to increase the indentation of nodes, if set to `1` root nodes
+  /// will have 1 level of indentation and lines will be painted at root level
+  /// (if line painting is enabled), if set to `0` ([defaultTreeRootLevel])
+  /// root nodes won't have any indentation and no lines will be painted for
+  /// them.
+  ///
+  /// The higher the root level, more [IndentGuide.indent] is going to be added
+  /// to the indentation of a node.
+  ///
+  /// Defaults to [defaultTreeRootLevel], usual values are `0` or `1`.
+  /// {@endtemplate}
+  final int rootLevel;
 
   /// The [SliverTree] from the closest instance of this class that encloses the
   /// given context.
@@ -229,7 +252,7 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
     _entryByIdCache.clear();
 
     final List<TreeEntry<T>> flatTree = widget.roots.flatten(
-      rootLevel: 0,
+      rootLevel: widget.rootLevel,
       onTraverse: onTraverse,
       getExpansionState: _getExpansionState,
       descendCondition: (TreeEntry<T> entry) {
@@ -272,8 +295,7 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   /// void addChildren(Node parent, List<Node> children) {
   ///   for (final Node child in children) {
   ///     parent.children.add(child);
-  ///     // DON'T rebuild after each child insertion
-  ///     // treeState.rebuild();
+  ///     // treeState.rebuild(); DON'T rebuild after each child insertion
   ///   }
   ///   // DO rebuild after all nodes are processed
   ///   treeState.rebuild(animate: false);
@@ -318,9 +340,9 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
     _autoScrollRect = Rect.zero;
   }
 
-  /// An unordered set of node ids composed by the ids of every ancestor of the
-  /// node that is currently being dragged (if any).
-  /// If no node is currenlty being dragged, returns an empty set.
+  /// An unordered set of tree node keys composed by the keys of every ancestor
+  /// of the node that is currently being dragged (if any).
+  /// If no node is currenlty being dragged, defaults to an empty set.
   ///
   /// Used by [TreeDragTarget] to avoid collapsing the ancestors of a dragging
   /// node.
@@ -370,8 +392,9 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   void didUpdateWidget(covariant SliverTree<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (oldWidget.roots != widget.roots) {
-      _updateFlatTree(animate: false);
+    if (oldWidget.roots != widget.roots ||
+        oldWidget.rootLevel != widget.rootLevel) {
+      _updateFlatTree();
     }
 
     if (oldWidget.controller != widget.controller) {
@@ -479,9 +502,9 @@ class _TreeEntry<T extends TreeNode<T>> extends StatefulWidget {
   final TreeEntry<T> entry;
   final Mapper<T, bool> expansionStateGetter;
 
-  final TreeViewItemBuilder<T> itemBuilder;
+  final TreeNodeBuilder<T> itemBuilder;
 
-  final TreeViewTransitionBuilder transitionBuilder;
+  final TreeTransitionBuilder transitionBuilder;
   final ValueSetter<T> onAnimationComplete;
   final int maxNodesToShow;
   final Curve curve;
@@ -608,7 +631,7 @@ class _Subtree<T extends TreeNode<T>> extends StatefulWidget {
   final TreeEntry<T> virtualRoot;
   final Mapper<T, bool> expansionStateGetter;
   final int maxNodesToShow;
-  final TreeViewItemBuilder<T> itemBuilder;
+  final TreeNodeBuilder<T> itemBuilder;
 
   @override
   State<_Subtree<T>> createState() => _SubtreeState<T>();
