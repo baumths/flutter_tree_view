@@ -6,8 +6,6 @@ import 'theme.dart';
 
 export 'theme.dart';
 
-final showRootProvider = StateProvider<bool>((ref) => false);
-
 final rootLevelProvider = StateProvider<int>((ref) => 0);
 
 final animatedExpansionsProvider = StateProvider<bool>((ref) => true);
@@ -48,7 +46,7 @@ final indentGuideProvider = StateProvider<IndentGuide>(
           origin: lineOrigin,
           color: lineColor,
         );
-      case IndentType.empty:
+      case IndentType.blank:
         return IndentGuide.blank(indent: indent);
     }
   },

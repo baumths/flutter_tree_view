@@ -1,7 +1,7 @@
 enum IndentType {
   connectingLines('Connecting Lines'),
   scopingLines('Scoping Lines'),
-  empty('Empty Indent');
+  blank('Blank');
 
   final String label;
 

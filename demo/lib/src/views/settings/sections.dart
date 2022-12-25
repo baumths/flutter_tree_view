@@ -11,7 +11,6 @@ import 'sections/line_origin.dart';
 import 'sections/line_thickness.dart';
 import 'sections/root_level.dart';
 import 'sections/rounded_connections.dart';
-import 'sections/show_root.dart';
 import 'sections/text_direction.dart';
 
 class Sections extends ConsumerWidget {
@@ -26,11 +25,10 @@ class Sections extends ConsumerWidget {
         const ColorSelector(),
         const Direction(),
         const AnimatedExpansions(),
-        const ShowRoot(),
         const RootLevel(),
         const IndentGuideType(),
         const Indent(),
-        if (indentType != IndentType.empty) ...[
+        if (indentType != IndentType.blank) ...[
           const LineThickness(),
           const LineOrigin(),
           if (indentType == IndentType.connectingLines)

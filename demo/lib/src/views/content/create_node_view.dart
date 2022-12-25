@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/responsive.dart' show Screen;
-import '../../providers/tree.dart';
+import '../../tree.dart';
 
 final _labelInputState = StateProvider.autoDispose<String>((ref) => '');
 

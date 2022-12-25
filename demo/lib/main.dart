@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'src/providers/responsive.dart';
 import 'src/providers/settings.dart';
-import 'src/providers/tree.dart';
+import 'src/tree.dart';
 import 'src/views/content.dart';
 import 'src/views/settings.dart';
 
