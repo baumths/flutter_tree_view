@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../foundation.dart' show TreeIndentDetails;
 
-/// A simple [InheritedWidget] that provides a [TreeIndentDetails] to its widget
+/// An [InheritedWidget] that provides a [TreeIndentDetails] to its widget
 /// subtree.
 ///
 /// This widget is created internally by [SliverTree] for each node of the tree.
@@ -83,11 +83,18 @@ class TreeIndentation extends StatelessWidget {
   const TreeIndentation({
     super.key,
     required this.child,
+    this.details,
     this.guide,
   });
 
   /// The widget that is going to be displayed to the side of indentation.
   final Widget child;
+
+  /// Optional [TreeIndentDetails] that provides the relevant details (i.e.,
+  /// level, line offsets, etc.) when indenting and/or painting indent guides.
+  ///
+  /// When not provided, [TreeIndentDetailsScope.of] will be used instead.
+  final TreeIndentDetails? details;
 
   /// The configuration used to indent and paint lines (if enabled).
   ///
@@ -99,14 +106,15 @@ class TreeIndentation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final TreeIndentDetails details = TreeIndentDetailsScope.of(context);
+    final TreeIndentDetails effectiveDetails =
+        details ?? TreeIndentDetailsScope.of(context);
 
-    if (details.skipIndentAndPaint) {
+    if (effectiveDetails.skipIndentAndPaint) {
       return child;
     }
 
     final IndentGuide effectiveGuide = guide ?? DefaultIndentGuide.of(context);
-    return effectiveGuide.wrap(context, child, details);
+    return effectiveGuide.wrap(context, child, effectiveDetails);
   }
 }
 
@@ -312,7 +320,8 @@ abstract class AbstractLineGuide extends BlankIndentGuide {
   }
 }
 
-/// Simple configuration for painting vertical lines at every level of the tree.
+/// The [IndentGuide] configuration for painting vertical lines at every level
+/// of the tree.
 ///
 /// Check out the factory constructors of [IndentGuide] to discover the
 /// available indent guide decorations.
@@ -410,8 +419,8 @@ class _ScopingLinesPainter extends CustomPainter {
       oldDelegate.textDirection != textDirection;
 }
 
-/// Simple configuration for painting vertical lines that have a horizontal
-/// connection to its tree node.
+/// The [IndentGuide] configuration for painting vertical lines that have a
+/// horizontal connection to its tree node.
 ///
 /// Check out the factory constructors of [IndentGuide] to discover the
 /// available indent guide decorations.

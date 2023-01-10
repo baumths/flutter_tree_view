@@ -4,19 +4,18 @@ import 'package:flutter/material.dart';
 import '../foundation.dart';
 import 'sliver_tree.dart';
 
-/// A simple and highly customizable hierarchy visualization widget.
+/// A highly customizable hierarchy visualization widget.
 ///
 /// See also:
 ///
 /// * [SliverTree], which is created internally by [TreeView]. It can be used to
 ///   create more sophisticated scrolling experiences.
-class TreeView<T extends TreeNode<T>> extends StatelessWidget {
+class TreeView<T extends Object> extends StatelessWidget {
   /// Creates a [TreeView].
   const TreeView({
     super.key,
-    required this.roots,
-    this.controller,
-    required this.itemBuilder,
+    required this.controller,
+    required this.nodeBuilder,
     this.transitionBuilder = defaultTreeTransitionBuilder,
     this.animationDuration = const Duration(milliseconds: 300),
     this.animationCurve = Curves.linear,
@@ -36,23 +35,15 @@ class TreeView<T extends TreeNode<T>> extends StatelessWidget {
     this.clipBehavior = Clip.hardEdge,
   });
 
-  /// The root [TreeNode]s of the tree.
-  ///
-  /// These nodes are used as a starting point to build the flat representation
-  /// of the tree.
-  final Iterable<T> roots;
-
-  /// An optional controller that can be used to dynamically manage the state of
-  /// the tree.
-  ///
-  /// If not provided, the inner [SliverTree] will create its own controller.
-  final TreeController<T>? controller;
+  /// The controller responsible for providing the tree hierarchy and expansion
+  /// state of tree nodes.
+  final TreeController<T> controller;
 
   /// Callback used to map your data into widgets.
   ///
   /// The `TreeEntry<T> entry` parameter contains important information about
   /// the current tree context of the particular [TreeEntry.node] that it holds.
-  final TreeNodeBuilder<T> itemBuilder;
+  final TreeNodeBuilder<T> nodeBuilder;
 
   /// A widget builder used to apply a transition to the expansion state changes
   /// of a node subtree when animations are enabled.
@@ -160,9 +151,8 @@ class TreeView<T extends TreeNode<T>> extends StatelessWidget {
         SliverPadding(
           padding: padding ?? EdgeInsets.zero,
           sliver: SliverTree<T>(
-            roots: roots,
             controller: controller,
-            itemBuilder: itemBuilder,
+            nodeBuilder: nodeBuilder,
             transitionBuilder: transitionBuilder,
             animationDuration: animationDuration,
             animationCurve: animationCurve,

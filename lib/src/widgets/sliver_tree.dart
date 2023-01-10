@@ -1,5 +1,4 @@
-import 'dart:collection'
-    show HashMap, HashSet, UnmodifiableListView, UnmodifiableSetView;
+import 'dart:collection' show UnmodifiableListView, UnmodifiableSetView;
 import 'dart:math' as math show min;
 
 import 'package:flutter/material.dart';
@@ -9,7 +8,7 @@ import 'tree_indentation.dart' show TreeIndentDetailsScope;
 
 /// Signature for a function that creates a widget for a given tree node, e.g.,
 /// in a tree view.
-typedef TreeNodeBuilder<T extends TreeNode<T>> = Widget Function(
+typedef TreeNodeBuilder<T extends Object> = Widget Function(
   BuildContext context,
   TreeEntry<T> entry,
 );
@@ -39,13 +38,12 @@ Widget defaultTreeTransitionBuilder(
 }
 
 /// A widget that wraps a [SliverList] adding tree viewing capabilities.
-class SliverTree<T extends TreeNode<T>> extends StatefulWidget {
+class SliverTree<T extends Object> extends StatefulWidget {
   /// Creates a [SliverTree].
   const SliverTree({
     super.key,
-    required this.roots,
-    this.controller,
-    required this.itemBuilder,
+    required this.controller,
+    required this.nodeBuilder,
     this.transitionBuilder = defaultTreeTransitionBuilder,
     this.animationDuration = const Duration(milliseconds: 300),
     this.animationCurve = Curves.linear,
@@ -54,23 +52,15 @@ class SliverTree<T extends TreeNode<T>> extends StatefulWidget {
   })  : assert(maxNodesToShowWhenAnimating > 0),
         assert(rootLevel >= 0);
 
-  /// The root [TreeNode]s of the tree.
-  ///
-  /// These nodes are used as a starting point to build the flat representation
-  /// of the tree.
-  final Iterable<T> roots;
-
-  /// An optional controller that can be used to dynamically manage the state
-  /// of tree nodes.
-  ///
-  /// If not provided, this widget will create its own controller.
-  final TreeController<T>? controller;
+  /// The controller responsible for providing the tree hierarchy and expansion
+  /// state of tree nodes.
+  final TreeController<T> controller;
 
   /// Callback used to map tree nodes into widgets.
   ///
   /// The `TreeEntry<T> entry` parameter contains important information about
   /// the current tree context of the particular [TreeEntry.node] that it holds.
-  final TreeNodeBuilder<T> itemBuilder;
+  final TreeNodeBuilder<T> nodeBuilder;
 
   /// A widget builder used to apply a transition to the expansion state changes
   /// of a node subtree when animations are enabled.
@@ -117,14 +107,14 @@ class SliverTree<T extends TreeNode<T>> extends StatefulWidget {
   ///
   /// Can be used to increase the indentation of nodes, if set to `1` root nodes
   /// will have 1 level of indentation and lines will be painted at root level
-  /// (if line painting is enabled), if set to `0` ([defaultTreeRootLevel])
+  /// (if line painting is enabled), if set to `0` ([rootLevel])
   /// root nodes won't have any indentation and no lines will be painted for
   /// them.
   ///
   /// The higher the root level, more [IndentGuide.indent] is going to be added
   /// to the indentation of a node.
   ///
-  /// Defaults to [defaultTreeRootLevel], usual values are `0` or `1`.
+  /// Defaults to [rootLevel], usual values are `0` or `1`.
   /// {@endtemplate}
   final int rootLevel;
 
@@ -142,9 +132,7 @@ class SliverTree<T extends TreeNode<T>> extends StatefulWidget {
   ///
   ///  * [of], which will throw in debug mode if no [SliverTree] ancestor exists
   ///    in the widget tree.
-  static SliverTreeState<T>? maybeOf<T extends TreeNode<T>>(
-    BuildContext context,
-  ) {
+  static SliverTreeState<T>? maybeOf<T extends Object>(BuildContext context) {
     return context.findAncestorStateOfType<SliverTreeState<T>>();
   }
 
@@ -164,7 +152,7 @@ class SliverTree<T extends TreeNode<T>> extends StatefulWidget {
   ///
   ///  * [maybeOf], which will return null if no [SliverTree] ancestor exists in
   ///    the widget tree.
-  static SliverTreeState<T> of<T extends TreeNode<T>>(BuildContext context) {
+  static SliverTreeState<T> of<T extends Object>(BuildContext context) {
     final SliverTreeState<T>? instance = maybeOf<T>(context);
     assert(() {
       if (instance == null) {
@@ -198,19 +186,10 @@ class SliverTree<T extends TreeNode<T>> extends StatefulWidget {
 /// This state object can be obtained by [SliverTree.of] and [SliverTree.maybeOf]
 /// to execute some actions on the current state of the tree (e.g. to toggle
 /// the expansion state of a node, etc.).
-class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
-  /// The root [TreeNode]s of the tree.
-  ///
-  /// Used as a starting point to build the flat representation of the tree.
-  Iterable<T> get roots => widget.roots;
-
-  /// The [TreeController] responsible for managing the state of this tree.
-  /// If [SliverTree.controller] is not provided, a default controller is
-  /// created internally.
-  TreeController<T> get controller => widget.controller ?? _fallbackController!;
-  TreeController<T>? _fallbackController;
-
-  bool _getExpansionState(T node) => controller.getExpansionState(node);
+class SliverTreeState<T extends Object> extends State<SliverTree<T>> {
+  /// The controller responsible for providing the tree hierarchy and expansion
+  /// state of tree nodes.
+  TreeController<T> get controller => widget.controller;
 
   /// The most recent tree flattened from [SliverTree.roots].
   UnmodifiableListView<TreeEntry<T>> get flatTree => _flatTree;
@@ -219,13 +198,13 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   /// Returns the [TreeEntry] at the given [index] of the current [flatTree].
   TreeEntry<T> entryAt(int index) => _flatTree[index];
 
-  TreeEntry<T>? _entryOf(T node) => _entryByIdCache[node.key];
-  final HashMap<Object, TreeEntry<T>> _entryByIdCache = HashMap();
+  TreeEntry<T>? _entryOf(T node) => _entryByIdCache[node];
+  final Map<T, TreeEntry<T>> _entryByIdCache = <T, TreeEntry<T>>{};
 
-  final HashSet<Object> _animatingNodes = HashSet();
+  final Set<T> _animatingNodes = <T>{};
 
   void _onAnimationComplete(T node) {
-    _animatingNodes.remove(node.key);
+    _animatingNodes.remove(node);
     rebuild(animate: false);
   }
 
@@ -236,27 +215,26 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
       final Map<Object, TreeEntry<T>> oldEntries = Map.of(_entryByIdCache);
 
       onTraverse = (TreeEntry<T> entry) {
-        _entryByIdCache[entry.node.key] = entry;
-        final TreeEntry<T>? oldEntry = oldEntries[entry.node.key];
+        _entryByIdCache[entry.node] = entry;
+        final TreeEntry<T>? oldEntry = oldEntries[entry.node];
 
         if (oldEntry != null && oldEntry.isExpanded != entry.isExpanded) {
-          _animatingNodes.add(entry.node.key);
+          _animatingNodes.add(entry.node);
         }
       };
     } else {
       onTraverse = (TreeEntry<T> entry) {
-        _entryByIdCache[entry.node.key] = entry;
+        _entryByIdCache[entry.node] = entry;
       };
     }
 
     _entryByIdCache.clear();
 
-    final List<TreeEntry<T>> flatTree = widget.roots.flatten(
+    final List<TreeEntry<T>> flatTree = controller.buildFlatTree(
       rootLevel: widget.rootLevel,
       onTraverse: onTraverse,
-      getExpansionState: _getExpansionState,
       descendCondition: (TreeEntry<T> entry) {
-        if (_animatingNodes.contains(entry.node.key)) {
+        if (_animatingNodes.contains(entry.node)) {
           // The descendants of a node that is animating are not included in the
           // flattened tree since those nodes are going to be rendered in a
           // single tile.
@@ -281,7 +259,9 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   ///
   /// Example:
   /// ```dart
-  /// class Node extends TreeNode<Node> { ... }
+  /// class Node {
+  ///   List<Node> children;
+  /// }
   ///
   /// final SliverTreeState<Node> treeState = SliverTree.of<Node>(context);
   ///
@@ -346,8 +326,8 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   ///
   /// Used by [TreeDragTarget] to avoid collapsing the ancestors of a dragging
   /// node.
-  UnmodifiableSetView<Object> get draggingNodePath => _draggingNodePath;
-  UnmodifiableSetView<Object> _draggingNodePath = UnmodifiableSetView(const {});
+  UnmodifiableSetView<T> get draggingNodePath => _draggingNodePath;
+  UnmodifiableSetView<T> _draggingNodePath = UnmodifiableSetView(const {});
 
   /// Called by [TreeDraggable] when it starts dragging to make sure that the
   /// dragged node stays visible during the drag gesture by disabling auto
@@ -358,15 +338,15 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
     final TreeEntry<T>? entry = _entryOf(node);
     if (entry == null) return;
 
-    final HashSet<Object> path = HashSet()..add(node.key);
+    final Set<T> path = <T>{node};
 
     TreeEntry<T>? current = entry.parent;
     while (current != null) {
-      path.add(current.node.key);
+      path.add(current.node);
       current = current.parent;
     }
 
-    _draggingNodePath = UnmodifiableSetView<Object>(path);
+    _draggingNodePath = UnmodifiableSetView<T>(path);
   }
 
   /// Called by [TreeDraggable] when it stops dragging to clear [draggingNodePath].
@@ -379,11 +359,6 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   @override
   void initState() {
     super.initState();
-
-    if (widget.controller == null) {
-      _fallbackController = TreeController<T>();
-    }
-
     controller.addListener(rebuild);
     _updateFlatTree(animate: false);
   }
@@ -392,24 +367,12 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   void didUpdateWidget(covariant SliverTree<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (oldWidget.roots != widget.roots ||
-        oldWidget.rootLevel != widget.rootLevel) {
+    if (oldWidget.rootLevel != widget.rootLevel) {
       _updateFlatTree();
     }
 
-    if (oldWidget.controller != widget.controller) {
-      if (oldWidget.controller == null) {
-        assert(_fallbackController != null);
-        assert(widget.controller != null);
-        _fallbackController!.dispose();
-        _fallbackController = null;
-      } else {
-        oldWidget.controller?.removeListener(rebuild);
-        if (widget.controller == null) {
-          _fallbackController = TreeController<T>();
-        }
-      }
-
+    if (oldWidget.controller != controller) {
+      oldWidget.controller.removeListener(rebuild);
       controller.addListener(rebuild);
     }
   }
@@ -432,9 +395,7 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   @override
   void dispose() {
     stopAutoScroll();
-    widget.controller?.removeListener(rebuild);
-    _fallbackController?.dispose();
-    _fallbackController = null;
+    controller.removeListener(rebuild);
     _autoScrollRect = Rect.zero;
     _entryByIdCache.clear();
     _flatTree = UnmodifiableListView(const []);
@@ -446,7 +407,7 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
   Widget build(BuildContext context) {
     return SliverList(
       delegate: SliverChildBuilderDelegate(
-        _itemBuilder,
+        _nodeBuilder,
         childCount: _flatTree.length,
       ),
     );
@@ -456,27 +417,26 @@ class SliverTreeState<T extends TreeNode<T>> extends State<SliverTree<T>> {
     return TreeIndentDetailsScope(
       details: entry,
       child: Builder(
-        builder: (BuildContext context) => widget.itemBuilder(context, entry),
+        builder: (BuildContext context) => widget.nodeBuilder(context, entry),
       ),
     );
   }
 
-  Widget _itemBuilder(BuildContext context, int index) {
+  Widget _nodeBuilder(BuildContext context, int index) {
     final TreeEntry<T> entry = entryAt(index);
 
-    final Object key = entry.node.key;
-
     return _TreeEntry<T>(
-      key: _SaltedTreeEntryKey(key),
+      key: _SaltedTreeEntryKey(entry.node),
       entry: entry,
-      expansionStateGetter: controller.getExpansionState,
-      itemBuilder: _wrapWithDetails,
+      childrenGetter: controller.childrenProvider,
+      expansionStateProvider: controller.getExpansionState,
+      nodeBuilder: _wrapWithDetails,
       transitionBuilder: widget.transitionBuilder,
       onAnimationComplete: _onAnimationComplete,
       maxNodesToShow: widget.maxNodesToShowWhenAnimating,
       curve: widget.animationCurve,
       duration: widget.animationDuration,
-      shouldAnimate: _animatingNodes.contains(key),
+      shouldAnimate: _animatingNodes.contains(entry.node),
     );
   }
 }
@@ -485,12 +445,13 @@ class _SaltedTreeEntryKey extends GlobalObjectKey {
   const _SaltedTreeEntryKey(super.value);
 }
 
-class _TreeEntry<T extends TreeNode<T>> extends StatefulWidget {
+class _TreeEntry<T extends Object> extends StatefulWidget {
   const _TreeEntry({
     super.key,
     required this.entry,
-    required this.expansionStateGetter,
-    required this.itemBuilder,
+    required this.childrenGetter,
+    required this.expansionStateProvider,
+    required this.nodeBuilder,
     required this.transitionBuilder,
     required this.onAnimationComplete,
     required this.maxNodesToShow,
@@ -500,9 +461,10 @@ class _TreeEntry<T extends TreeNode<T>> extends StatefulWidget {
   });
 
   final TreeEntry<T> entry;
-  final Mapper<T, bool> expansionStateGetter;
+  final ChildrenProvider<T> childrenGetter;
+  final Mapper<T, bool> expansionStateProvider;
 
-  final TreeNodeBuilder<T> itemBuilder;
+  final TreeNodeBuilder<T> nodeBuilder;
 
   final TreeTransitionBuilder transitionBuilder;
   final ValueSetter<T> onAnimationComplete;
@@ -515,7 +477,7 @@ class _TreeEntry<T extends TreeNode<T>> extends StatefulWidget {
   State<_TreeEntry<T>> createState() => _TreeEntryState<T>();
 }
 
-class _TreeEntryState<T extends TreeNode<T>> extends State<_TreeEntry<T>>
+class _TreeEntryState<T extends Object> extends State<_TreeEntry<T>>
     with SingleTickerProviderStateMixin {
   TreeEntry<T> get entry => widget.entry;
   T get node => entry.node;
@@ -553,7 +515,7 @@ class _TreeEntryState<T extends TreeNode<T>> extends State<_TreeEntry<T>>
   @override
   void initState() {
     super.initState();
-    isExpanded = widget.expansionStateGetter(node);
+    isExpanded = widget.expansionStateProvider(node);
 
     curveTween.curve = widget.curve;
     animationController = AnimationController(
@@ -572,7 +534,7 @@ class _TreeEntryState<T extends TreeNode<T>> extends State<_TreeEntry<T>>
     curveTween.curve = widget.curve;
     animationController.duration = widget.duration;
 
-    final bool expansionState = widget.expansionStateGetter(node);
+    final bool expansionState = widget.expansionStateProvider(node);
 
     if (isExpanded != expansionState) {
       isExpanded = expansionState;
@@ -591,14 +553,14 @@ class _TreeEntryState<T extends TreeNode<T>> extends State<_TreeEntry<T>>
 
   @override
   Widget build(BuildContext context) {
-    final Widget tile = widget.itemBuilder(context, entry);
+    final Widget tile = widget.nodeBuilder(context, entry);
 
     if (widget.shouldAnimate || animationController.isAnimating) {
       final Widget subtree = _Subtree<T>(
         virtualRoot: entry,
-        expansionStateGetter: widget.expansionStateGetter,
+        treeFlattener: SliverTree.of<T>(context).controller,
+        nodeBuilder: widget.nodeBuilder,
         maxNodesToShow: widget.maxNodesToShow,
-        itemBuilder: widget.itemBuilder,
       );
 
       return Column(
@@ -619,25 +581,25 @@ class _TreeEntryState<T extends TreeNode<T>> extends State<_TreeEntry<T>>
   }
 }
 
-class _Subtree<T extends TreeNode<T>> extends StatefulWidget {
+class _Subtree<T extends Object> extends StatefulWidget {
   const _Subtree({
     super.key,
     required this.virtualRoot,
-    required this.expansionStateGetter,
+    required this.treeFlattener,
+    required this.nodeBuilder,
     required this.maxNodesToShow,
-    required this.itemBuilder,
   });
 
   final TreeEntry<T> virtualRoot;
-  final Mapper<T, bool> expansionStateGetter;
+  final TreeFlattener<T> treeFlattener;
+  final TreeNodeBuilder<T> nodeBuilder;
   final int maxNodesToShow;
-  final TreeNodeBuilder<T> itemBuilder;
 
   @override
   State<_Subtree<T>> createState() => _SubtreeState<T>();
 }
 
-class _SubtreeState<T extends TreeNode<T>> extends State<_Subtree<T>> {
+class _SubtreeState<T extends Object> extends State<_Subtree<T>> {
   TreeEntry<T> get virtualRoot => widget.virtualRoot;
 
   late List<TreeEntry<T>> virtualEntries;
@@ -647,9 +609,9 @@ class _SubtreeState<T extends TreeNode<T>> extends State<_Subtree<T>> {
   void initState() {
     super.initState();
 
-    final List<TreeEntry<T>> flatTree = virtualRoot.node.children.flatten(
+    final List<TreeEntry<T>> flatTree = widget.treeFlattener.buildFlatTree(
+      nodes: <T>[virtualRoot.node],
       rootLevel: virtualRoot.level + 1,
-      getExpansionState: widget.expansionStateGetter,
       onTraverse: (TreeEntry<T> entry) {
         // Apply the unreachable ancestor lines to make sure this subtree
         // doesn't appear floating "contextless" in the line hierarchy.
@@ -671,7 +633,7 @@ class _SubtreeState<T extends TreeNode<T>> extends State<_Subtree<T>> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (final TreeEntry<T> virtualEntry in virtualEntries)
-            widget.itemBuilder(context, virtualEntry),
+            widget.nodeBuilder(context, virtualEntry),
         ],
       ),
     );

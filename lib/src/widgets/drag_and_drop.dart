@@ -21,7 +21,7 @@ import '../foundation.dart';
 import 'sliver_tree.dart';
 
 /// A widget that wraps [AdaptiveDraggable] providing auto scrolling capabilities.
-/// It is also responsible for automatically collapsing the [TreeNode] it holds
+/// It is also responsible for automatically collapsing the node it holds
 /// when the drag starts and expanding it back when the drag ends (if it was
 /// collapsed). This can be toggled off in [collapseOnDragStart].
 ///
@@ -35,7 +35,7 @@ import 'sliver_tree.dart';
 /// [SliverTreeState.draggingNodePath] set.
 ///
 /// Depends on an ancestor [SliverTree] to work.
-class TreeDraggable<T extends TreeNode<T>> extends StatefulWidget {
+class TreeDraggable<T extends Object> extends StatefulWidget {
   /// Creates a [TreeDraggable].
   const TreeDraggable({
     super.key,
@@ -71,7 +71,7 @@ class TreeDraggable<T extends TreeNode<T>> extends StatefulWidget {
   /// {@macro flutter.widgets.ProxyWidget.child}
   final Widget child;
 
-  /// The [TreeNode] that is going to be provided to [Draggable.data].
+  /// The tree node that is going to be provided to [Draggable.data].
   final T node;
 
   /// Whether [node] should be collapsed when the drag gesture starts.
@@ -228,7 +228,7 @@ class TreeDraggable<T extends TreeNode<T>> extends StatefulWidget {
   State<TreeDraggable<T>> createState() => _TreeDraggableState<T>();
 }
 
-class _TreeDraggableState<T extends TreeNode<T>> extends State<TreeDraggable<T>>
+class _TreeDraggableState<T extends Object> extends State<TreeDraggable<T>>
     with AutomaticKeepAliveClientMixin {
   T get node => widget.node;
 
@@ -343,7 +343,7 @@ class _TreeDraggableState<T extends TreeNode<T>> extends State<TreeDraggable<T>>
 /// Contains the exact position where the drop ocurred [dropPosition] as well as
 /// the bounding box [targetBounds] of the target widget providing versatility
 /// to what happens when reordering nodes on a tree.
-class TreeReorderingDetails<T extends TreeNode<T>> with Diagnosticable {
+class TreeReorderingDetails<T extends Object> with Diagnosticable {
   /// Creates a [TreeReorderingDetails].
   const TreeReorderingDetails({
     required this.draggedNode,
@@ -403,14 +403,14 @@ class TreeReorderingDetails<T extends TreeNode<T>> with Diagnosticable {
 
 /// Signature for a function used by [TreeDragTarget] to build a widget based
 /// on the provided [details].
-typedef TreeDraggableBuilder<T extends TreeNode<T>> = Widget Function(
+typedef TreeDraggableBuilder<T extends Object> = Widget Function(
   BuildContext context,
   TreeReorderingDetails<T>? details,
 );
 
 /// Signature for a function that takes a [TreeReorderingDetails] instance.
 /// Used by [TreeDragTarget] to complete a reordering action.
-typedef TreeOnReorderCallback<T extends TreeNode<T>> = void Function(
+typedef TreeOnReorderCallback<T extends Object> = void Function(
   TreeReorderingDetails<T> details,
 );
 
@@ -418,7 +418,7 @@ typedef TreeOnReorderCallback<T extends TreeNode<T>> = void Function(
 /// capabilities.
 ///
 /// Depends on an ancestor [SliverTree] to work.
-class TreeDragTarget<T extends TreeNode<T>> extends StatefulWidget {
+class TreeDragTarget<T extends Object> extends StatefulWidget {
   /// Creates a [TreeDragTarget].
   const TreeDragTarget({
     super.key,
@@ -435,7 +435,7 @@ class TreeDragTarget<T extends TreeNode<T>> extends StatefulWidget {
     this.hitTestBehavior = HitTestBehavior.translucent,
   });
 
-  /// The [TreeNode] that is going to receive the drop of a [TreeDraggable].
+  /// The tree node that is going to receive the drop of a [TreeDraggable].
   final T node;
 
   /// The callback that is going to be called when a dragging node was
@@ -464,8 +464,8 @@ class TreeDragTarget<T extends TreeNode<T>> extends StatefulWidget {
   /// Defaults to `const Duration(seconds: 1)`.
   final Duration toggleExpansionTimeout;
 
-  /// A simple flag used to decide if the toggle expansion timer should start
-  /// when this node is being hovered by another dragging node.
+  /// A flag used to decide if the toggle expansion timer should start when this
+  /// node is being hovered by another dragging node.
   ///
   /// Defaults to `true`.
   final bool canStartToggleExpansionTimer;
@@ -507,8 +507,7 @@ class TreeDragTarget<T extends TreeNode<T>> extends StatefulWidget {
   State<TreeDragTarget<T>> createState() => _TreeDragTargetState<T>();
 }
 
-class _TreeDragTargetState<T extends TreeNode<T>>
-    extends State<TreeDragTarget<T>> {
+class _TreeDragTargetState<T extends Object> extends State<TreeDragTarget<T>> {
   T get node => widget.node;
 
   late SliverTreeState<T> _treeState;
@@ -534,7 +533,7 @@ class _TreeDragTargetState<T extends TreeNode<T>>
   late bool _isToggleExpansionEnabled;
 
   bool get _isInDraggedNodePath {
-    return _treeState.draggingNodePath.contains(node.key);
+    return _treeState.draggingNodePath.contains(node);
   }
 
   // Only toggle the expansion of a node if it is not in the path to the target
@@ -563,18 +562,16 @@ class _TreeDragTargetState<T extends TreeNode<T>>
     if (widget.onWillAccept != null) {
       return widget.onWillAccept!(data);
     }
-    return !(data == null || data.key == node.key);
+    return !(data == null || data == node);
   }
 
   void onMove(DragTargetDetails<T> details) {
     // Do not allow dropping a node on itself.
-    if (details.data.key == node.key) return;
+    if (details.data == node) return;
 
     // If the incoming data is not the same as the cached data, reject it.
     // This makes sure we only handle one draggable at a time.
-    if (_details != null && details.data.key != _details!.draggedNode.key) {
-      return;
-    }
+    if (_details != null && details.data != _details!.draggedNode) return;
 
     stopToggleExpansionTimer();
 
@@ -589,9 +586,7 @@ class _TreeDragTargetState<T extends TreeNode<T>>
   void onAccept(T incomingNode) {
     stopToggleExpansionTimer();
 
-    if (_details == null || _details!.draggedNode.key != incomingNode.key) {
-      return;
-    }
+    if (_details == null || _details!.draggedNode != incomingNode) return;
 
     widget.onReorder(_details!);
 
@@ -603,9 +598,7 @@ class _TreeDragTargetState<T extends TreeNode<T>>
   }
 
   void onLeave(T? data) {
-    if (_details == null ||
-        data == null ||
-        _details!.draggedNode.key != data.key) {
+    if (_details == null || data == null || _details!.draggedNode != data) {
       return;
     }
 
