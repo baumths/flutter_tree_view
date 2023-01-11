@@ -49,8 +49,7 @@ class SliverTree<T extends Object> extends StatefulWidget {
     this.animationCurve = Curves.linear,
     this.maxNodesToShowWhenAnimating = 50,
     this.rootLevel = defaultTreeRootLevel,
-  })  : assert(maxNodesToShowWhenAnimating > 0),
-        assert(rootLevel >= 0);
+  }) : assert(maxNodesToShowWhenAnimating > 0);
 
   /// The controller responsible for providing the tree hierarchy and expansion
   /// state of tree nodes.
@@ -428,8 +427,7 @@ class SliverTreeState<T extends Object> extends State<SliverTree<T>> {
     return _TreeEntry<T>(
       key: _SaltedTreeEntryKey(entry.node),
       entry: entry,
-      childrenGetter: controller.childrenProvider,
-      expansionStateProvider: controller.getExpansionState,
+      treeFlattener: controller,
       nodeBuilder: _wrapWithDetails,
       transitionBuilder: widget.transitionBuilder,
       onAnimationComplete: _onAnimationComplete,
@@ -449,8 +447,7 @@ class _TreeEntry<T extends Object> extends StatefulWidget {
   const _TreeEntry({
     super.key,
     required this.entry,
-    required this.childrenGetter,
-    required this.expansionStateProvider,
+    required this.treeFlattener,
     required this.nodeBuilder,
     required this.transitionBuilder,
     required this.onAnimationComplete,
@@ -461,8 +458,7 @@ class _TreeEntry<T extends Object> extends StatefulWidget {
   });
 
   final TreeEntry<T> entry;
-  final ChildrenProvider<T> childrenGetter;
-  final Mapper<T, bool> expansionStateProvider;
+  final TreeFlattener<T> treeFlattener;
 
   final TreeNodeBuilder<T> nodeBuilder;
 
@@ -482,7 +478,6 @@ class _TreeEntryState<T extends Object> extends State<_TreeEntry<T>>
   TreeEntry<T> get entry => widget.entry;
   T get node => entry.node;
 
-  late SliverTreeState<T> treeState;
   late final AnimationController animationController;
   late final CurveTween curveTween = CurveTween(curve: Curves.ease);
 
@@ -515,7 +510,7 @@ class _TreeEntryState<T extends Object> extends State<_TreeEntry<T>>
   @override
   void initState() {
     super.initState();
-    isExpanded = widget.expansionStateProvider(node);
+    isExpanded = widget.treeFlattener.getExpansionState(node);
 
     curveTween.curve = widget.curve;
     animationController = AnimationController(
@@ -523,8 +518,6 @@ class _TreeEntryState<T extends Object> extends State<_TreeEntry<T>>
       value: isExpanded ? 1.0 : 0.0,
       duration: widget.duration,
     );
-
-    treeState = SliverTree.of<T>(context);
   }
 
   @override
@@ -534,7 +527,7 @@ class _TreeEntryState<T extends Object> extends State<_TreeEntry<T>>
     curveTween.curve = widget.curve;
     animationController.duration = widget.duration;
 
-    final bool expansionState = widget.expansionStateProvider(node);
+    final bool expansionState = widget.treeFlattener.getExpansionState(node);
 
     if (isExpanded != expansionState) {
       isExpanded = expansionState;
@@ -558,7 +551,7 @@ class _TreeEntryState<T extends Object> extends State<_TreeEntry<T>>
     if (widget.shouldAnimate || animationController.isAnimating) {
       final Widget subtree = _Subtree<T>(
         virtualRoot: entry,
-        treeFlattener: SliverTree.of<T>(context).controller,
+        treeFlattener: widget.treeFlattener,
         nodeBuilder: widget.nodeBuilder,
         maxNodesToShow: widget.maxNodesToShow,
       );
@@ -610,7 +603,7 @@ class _SubtreeState<T extends Object> extends State<_Subtree<T>> {
     super.initState();
 
     final List<TreeEntry<T>> flatTree = widget.treeFlattener.buildFlatTree(
-      nodes: <T>[virtualRoot.node],
+      nodes: widget.treeFlattener.childrenProvider(virtualRoot.node),
       rootLevel: virtualRoot.level + 1,
       onTraverse: (TreeEntry<T> entry) {
         // Apply the unreachable ancestor lines to make sure this subtree

@@ -127,7 +127,8 @@ class TreeController<T extends Object> with TreeFlattener<T>, ChangeNotifier {
   @override
   bool getExpansionState(T node) => expandedNodes.contains(node);
 
-  /// Updates the expansion state of [node] to the value of [expanded].
+  /// Updates the expansion state of [node] to the value of [expanded] without
+  /// calling [rebuild].
   ///
   /// By default, this method calls [onExpand] when [expanded] is `true` and
   /// [onCollapse] when [expanded] is `false`.
