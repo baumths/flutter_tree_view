@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 /// The default transition builder used by [FolderButton].
+///
+/// By default, wraps [child] with a [ScaleTransition].
 Widget defaultFolderButtonTransitionBuilder(
   Widget child,
   Animation<double> animation,
@@ -20,6 +22,7 @@ class FolderButton extends StatelessWidget {
     this.isOpen = true,
     this.openedIcon = const Icon(Icons.folder_open),
     this.closedIcon = const Icon(Icons.folder),
+    this.icon = const Icon(Icons.article),
     this.iconSize,
     this.visualDensity,
     this.padding = const EdgeInsets.all(8.0),
@@ -44,14 +47,23 @@ class FolderButton extends StatelessWidget {
     this.transitionBuilder = defaultFolderButtonTransitionBuilder,
   });
 
-  /// Defines which of [openedIcon] or [closedIcon] is currently shown.
-  final bool isOpen;
+  /// Defines which of [openedIcon], [closedIcon] and [icon] is currently shown.
+  final bool? isOpen;
 
   /// The icon to show when [isOpen] is set to `true`.
+  ///
+  /// Defaults to `Icon(Icons.folder_open)`.
   final Widget openedIcon;
 
   /// The icon to show when [isOpen] is set to `false`.
+  ///
+  /// Defaults to `Icon(Icons.folder)`.
   final Widget closedIcon;
+
+  /// The icon to show when [isOpen] is set to `null`.
+  ///
+  /// Defaults to `Icon(Icons.article)`.
+  final Widget icon;
 
   /// The size of the icon inside the button.
   ///
@@ -279,6 +291,18 @@ class FolderButton extends StatelessWidget {
   ///    how a transition builder should function.
   final AnimatedSwitcherTransitionBuilder transitionBuilder;
 
+  Widget get _effectiveIcon {
+    switch (isOpen) {
+      case true:
+        return openedIcon;
+      case false:
+        return closedIcon;
+      case null:
+      default:
+        return icon;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return IconButton(
@@ -308,7 +332,7 @@ class FolderButton extends StatelessWidget {
         transitionBuilder: transitionBuilder,
         child: KeyedSubtree(
           key: Key('$isOpen'),
-          child: isOpen ? openedIcon : closedIcon,
+          child: _effectiveIcon,
         ),
       ),
     );
