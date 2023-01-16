@@ -1,7 +1,7 @@
-import 'package:flutter/foundation.dart' show ChangeNotifier, protected;
+import 'package:flutter/foundation.dart' show ChangeNotifier;
 
-import 'tree_flattening.dart';
-import 'typedefs.dart' show ChildrenProvider, ParentProvider, Visitor;
+import 'tree_expansion_state.dart';
+import 'typedefs.dart';
 
 /// A controller that can be used to dynamically update the state of a tree.
 ///
@@ -9,131 +9,24 @@ import 'typedefs.dart' show ChildrenProvider, ParentProvider, Visitor;
 /// will assume that the tree structure changed in some way and will rebuild
 /// their internal flat representaton of the tree, showing/hiding the updated
 /// nodes (if any).
-///
-/// The default implementations of [getExpansionState], [onCollapse] and
-/// [onExpand] use a [Set] to store the expansion state of nodes. This
-/// behavior can be changed by extending this class. In the following example
-/// each node holds its own expansion state:
-///
-/// ```dart
-/// class MyNode {
-///   bool isExpanded = false;
-/// }
-///
-/// class MyController extends TreeController<MyNode> {
-///   @override
-///   void onCollapse(MyNode node) => node.isExpanded = false;
-///
-///   @override
-///   void onExpand(MyNode node) => node.isExpanded = true;
-///
-///   @override
-///   bool getExpansionState(MyNode node) => node.isExpanded;
-/// }
-/// ```
-class TreeController<T extends Object> with TreeFlattener<T>, ChangeNotifier {
+class TreeController<T extends Object> with ChangeNotifier {
   /// Creates a [TreeController].
   ///
-  /// [roots] the nodes that will originate the tree hierarchy.
-  ///
-  /// [initiallyExpandedNodes] can be provided to have some nodes already
-  /// expanded by default.
+  /// [expansionState], the tree nodes expansion state cache, when absent,
+  /// defaults to [TreeExpansionStateSet].
   TreeController({
-    required Iterable<T> roots,
-    required this.childrenProvider,
-    Set<T>? initiallyExpandedNodes,
-  }) : _roots = roots {
-    if (initiallyExpandedNodes == null) return;
-    expandedNodes.addAll(initiallyExpandedNodes);
-  }
+    TreeExpansionState<T>? expansionState,
+  }) : _expansionState = expansionState ?? TreeExpansionStateSet<T>();
 
-  /// The roots of the tree.
+  /// The tree nodes expansion state cache.
   ///
-  /// These nodes are used as a starting point to build the flat representation
-  /// of the tree.
-  @override
-  Iterable<T> get roots => _roots;
-  Iterable<T> _roots;
-  set roots(Iterable<T> nodes) {
-    _roots = nodes;
+  /// When not provided, defaults to [TreeExpansionStateSet].
+  TreeExpansionState<T> get expansionState => _expansionState;
+  TreeExpansionState<T> _expansionState;
+  set expansionState(TreeExpansionState<T> state) {
+    if (_expansionState == state) return;
+    _expansionState = state;
     rebuild();
-  }
-
-  /// A callback that must provide the children of a given node.
-  ///
-  /// This callback will be used to build the flat representation of the tree.
-  ///
-  /// Avoid doing heavy computations in this callback since it is going to be
-  /// called a lot during tree flattening.
-  ///
-  /// Consider calling [rebuild] when updating this property.
-  @override
-  ChildrenProvider<T> childrenProvider;
-
-  /// The set of nodes that are currently expanded.
-  ///
-  /// This implies that the default implementations of [onCollapse] and
-  /// [onExpand] weren't overriden. Otherwise, will just return a new
-  /// empty set.
-  @protected
-  Set<T> get expandedNodes => _expandedNodes ??= <T>{};
-  Set<T>? _expandedNodes;
-  set expandedNodes(Set<T> nodes) {
-    _expandedNodes = nodes;
-    rebuild();
-  }
-
-  /// Must update the expansion state of [node] to `false`.
-  ///
-  /// This method can be overriden by subclasses that want to store/manipulate
-  /// the expansion state of tree nodes in a different way.
-  /// When overriding this method, both [onExpand] and [getExpansionState]
-  /// should also be overriden.
-  ///
-  /// By default, this method attempts to remove [node] from the [Set] of
-  /// expanded nodes.
-  ///
-  /// Avoid calling `notifyListeners` in this method as it may be called
-  /// recursively on "cascading" operations.
-  @protected
-  void onCollapse(T node) => expandedNodes.remove(node);
-
-  /// Must update the expansion state of [node] to `true`.
-  ///
-  /// This method can be overriden by subclasses that want to store/manipulate
-  /// the expansion state of tree nodes in a different way.
-  /// When overriding this method, both [onCollapse] and [getExpansionState]
-  /// should also be overriden.
-  ///
-  /// By default, this method attempts to add [node] to the [Set] of expanded
-  /// nodes.
-  ///
-  /// Avoid calling `notifyListeners` in this method as it may be called
-  /// recursively on "cascading" operations.
-  @protected
-  void onExpand(T node) => expandedNodes.add(node);
-
-  /// The current expansion state of [node].
-  ///
-  /// If this method returns `true`, the children of [node] should be visible
-  /// in tree views.
-  ///
-  /// This method can be overriden by subclasses that want to store/manipulate
-  /// the expansion state of tree nodes in a different way.
-  /// When overriding this method, both [onCollapse] and [onExpand] should also
-  /// be overriden.
-  ///
-  /// By default, this method checks if the expanded nodes [Set] contains [node].
-  @override
-  bool getExpansionState(T node) => expandedNodes.contains(node);
-
-  /// Updates the expansion state of [node] to the value of [expanded] without
-  /// calling [rebuild].
-  ///
-  /// By default, this method calls [onExpand] when [expanded] is `true` and
-  /// [onCollapse] when [expanded] is `false`.
-  void setExpansionState(T node, bool expanded) {
-    expanded ? onExpand(node) : onCollapse(node);
   }
 
   /// Notify listeners that the tree structure changed in some way.
@@ -141,6 +34,8 @@ class TreeController<T extends Object> with TreeFlattener<T>, ChangeNotifier {
   /// Call this method whenever the tree nodes are updated (i.e., expansion
   /// state changed, child added or removed, node reordered, etc...), so that
   /// listeners may handle the updated values.
+  /// Most methods of this controller (like expand, collapse, etc.) already call
+  /// [rebuild] inplicitly.
   ///
   /// Example:
   /// ```dart
@@ -156,10 +51,13 @@ class TreeController<T extends Object> with TreeFlattener<T>, ChangeNotifier {
   ///```
   void rebuild() => notifyListeners();
 
+  void _doCollapse(T node) => expansionState.set(node, false);
+  void _doExpand(T node) => expansionState.set(node, true);
+
   /// Updates the expansion state of [node] to the opposite state, then calls
   /// [rebuild].
   void toggleExpansion(T node) {
-    getExpansionState(node) ? onCollapse(node) : onExpand(node);
+    expansionState.get(node) ? _doCollapse(node) : _doExpand(node);
     rebuild();
   }
 
@@ -167,8 +65,8 @@ class TreeController<T extends Object> with TreeFlattener<T>, ChangeNotifier {
   ///
   /// If [node] is already expanded, nothing happens.
   void expand(T node) {
-    if (getExpansionState(node)) return;
-    onExpand(node);
+    if (expansionState.get(node)) return;
+    _doExpand(node);
     rebuild();
   }
 
@@ -176,29 +74,43 @@ class TreeController<T extends Object> with TreeFlattener<T>, ChangeNotifier {
   ///
   /// If [node] is already collapsed, nothing happens.
   void collapse(T node) {
-    if (!getExpansionState(node)) return;
-    onCollapse(node);
+    if (!expansionState.get(node)) return;
+    _doCollapse(node);
     rebuild();
   }
 
-  void _applyCascadingAction(Iterable<T> nodes, Visitor<T> action) {
+  void _applyCascadingAction(
+    Iterable<T> nodes,
+    ChildrenProvider<T> childrenProvider,
+    Visitor<T> action,
+  ) {
     for (final T node in nodes) {
       action(node);
-      _applyCascadingAction(childrenProvider(node), action);
+      _applyCascadingAction(
+        childrenProvider(node),
+        childrenProvider,
+        action,
+      );
     }
   }
 
   /// Traverses the subtrees of [nodes] in depth first order expanding every
   /// visited node, then calls [rebuild].
-  void expandCascading(Iterable<T> nodes) {
-    _applyCascadingAction(nodes, onExpand);
+  void expandCascading(
+    Iterable<T> nodes,
+    ChildrenProvider<T> childrenProvider,
+  ) {
+    _applyCascadingAction(nodes, childrenProvider, _doExpand);
     rebuild();
   }
 
   /// Traverses the subtrees of [nodes] in depth first order collapsing every
   /// visited node, then calls [rebuild].
-  void collapseCascading(Iterable<T> nodes) {
-    _applyCascadingAction(nodes, onCollapse);
+  void collapseCascading(
+    Iterable<T> nodes,
+    ChildrenProvider<T> childrenProvider,
+  ) {
+    _applyCascadingAction(nodes, childrenProvider, _doCollapse);
     rebuild();
   }
 
@@ -214,16 +126,10 @@ class TreeController<T extends Object> with TreeFlattener<T>, ChangeNotifier {
     T? current = parentProvider(node);
 
     while (current != null) {
-      onExpand(current);
+      _doExpand(current);
       current = parentProvider(current);
     }
 
     rebuild();
-  }
-
-  @override
-  void dispose() {
-    _expandedNodes = null;
-    super.dispose();
   }
 }

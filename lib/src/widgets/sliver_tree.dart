@@ -1,4 +1,3 @@
-import 'dart:collection' show UnmodifiableListView, UnmodifiableSetView;
 import 'dart:math' as math show min;
 
 import 'package:flutter/material.dart';
@@ -37,23 +36,123 @@ Widget defaultTreeTransitionBuilder(
   );
 }
 
-/// A widget that wraps a [SliverList] adding tree viewing capabilities.
+/// A wrapper around [SliverList] that adds tree viewing capabilities.
+///
+/// Usage:
+/// ```dart
+/// class Node {
+///   Node(this.title) : children = <Node>[];
+///   String title;
+///   List<Node> chilren;
+/// }
+///
+/// class MyTreeView extends StatelessWidget {
+///   @override
+///   Widget build(BuildContext context) {
+///     return CustomScrollView(
+///       slivers: [
+///         SliverTree<Node>(
+///           roots: [Node('Root')],
+///           childrenProvider: (Node node) => node.children,
+///           nodeBuilder: (BuildContext context, TreeEntry<Node> entry) {
+///             return MyTreeTile(entry: entry);
+///           },
+///         ),
+///       ],
+///     );
+///   }
+/// }
+///
+/// class MyTreeTile extends StatelessWidget {
+///   const MyTreeTile({super.key, required this.entry});
+///
+///   final TreeEntry<Node> entry;
+///
+///   @override
+///   Widget build(BuildContext context) {
+///     return TreeIndentation(
+///       child: Row(
+///         children: [
+///           FolderButton(
+///             isOpen: entry.isExpanded,
+///             onPressed: () {
+///               SliverTree.of<Node>(context).toggleExpansion(entry.node);
+///             },
+///           ),
+///           Flexible(
+///             child: Text(entry.node.title),
+///           ),
+///         ],
+///       ),
+///     );
+///   }
+/// }
+/// ```
+///
+/// See also:
+/// * [TreeView], which covers the [CustomScrollView] boilerplate.
 class SliverTree<T extends Object> extends StatefulWidget {
   /// Creates a [SliverTree].
   const SliverTree({
     super.key,
-    required this.controller,
+    required this.roots,
+    required this.childrenProvider,
+    this.controller,
     required this.nodeBuilder,
     this.transitionBuilder = defaultTreeTransitionBuilder,
     this.animationDuration = const Duration(milliseconds: 300),
     this.animationCurve = Curves.linear,
     this.maxNodesToShowWhenAnimating = 50,
     this.rootLevel = defaultTreeRootLevel,
-  }) : assert(maxNodesToShowWhenAnimating > 0);
+  })  : assert(maxNodesToShowWhenAnimating > 0),
+        assert(roots.length > 0, 'At least one root node must be provided.');
 
-  /// The controller responsible for providing the tree hierarchy and expansion
-  /// state of tree nodes.
-  final TreeController<T> controller;
+  /// The roots of the tree.
+  ///
+  /// When flattening the tree, each node in this iterable will become a root
+  /// of its subtree, which will be collected using [childrenProvider].
+  final Iterable<T> roots;
+
+  /// {@template flutter_fancy_tree_view.SliverTree.childrenProvider}
+  /// A callback used when building the flat representation of the tree to get
+  /// the direct children of the tree node passed to it.
+  ///
+  /// Avoid doing heavy computations in this callback since it is going to be
+  /// called a lot when traversing the tree.
+  ///
+  /// Do not attempt to load the children of a node in this callback as it would
+  /// significantly slow down tree traversal which might couse ui jank. Prefer
+  /// doing such operations on a user action (e.g. a button press).
+  ///
+  /// Example using nested objects:
+  /// ```dart
+  /// class Node {
+  ///   List<Node> children;
+  /// }
+  ///
+  /// Iterable<Node> childrenProvider(Node node) => node.children;
+  /// ```
+  ///
+  /// Example using a Map cache:
+  /// ```dart
+  /// class Data {
+  ///   final int id;
+  /// }
+  ///
+  /// final Map<int, List<Data>> childrenCache = <int, List<Data>>{};
+  ///
+  /// Iterable<Data> childrenProvider(Data parent) {
+  ///   return childrenCache[parent.id] ?? const Iterable.empty();
+  /// },
+  /// ```
+  /// {@endtemplate}
+  final ChildrenProvider<T> childrenProvider;
+
+  /// An object that can be used to control the state of the tree.
+  ///
+  /// Whenever this controller notifies its listeners, the internal flat
+  /// representation of the tree will be rebuilt.
+  final TreeController<T>? controller;
 
   /// Callback used to map tree nodes into widgets.
   ///
@@ -185,14 +284,36 @@ class SliverTree<T extends Object> extends StatefulWidget {
 /// This state object can be obtained by [SliverTree.of] and [SliverTree.maybeOf]
 /// to execute some actions on the current state of the tree (e.g. to toggle
 /// the expansion state of a node, etc.).
-class SliverTreeState<T extends Object> extends State<SliverTree<T>> {
+class SliverTreeState<T extends Object> extends State<SliverTree<T>>
+    with TreeFlattener<T> {
   /// The controller responsible for providing the tree hierarchy and expansion
   /// state of tree nodes.
-  TreeController<T> get controller => widget.controller;
+  TreeController<T> get controller => widget.controller ?? _fallbackController!;
+  TreeController<T>? _fallbackController;
+
+  void _rebuild({bool animate = true}) {
+    setState(() => _updateFlatTree(animate: animate));
+  }
+
+  void _disposeFallbackController() {
+    _fallbackController
+      ?..removeListener(_rebuild)
+      ..dispose();
+    _fallbackController = null;
+  }
+
+  @override
+  Iterable<T> get roots => widget.roots;
+
+  @override
+  ChildrenProvider<T> get childrenProvider => widget.childrenProvider;
+
+  @override
+  bool getExpansionState(T node) => controller.expansionState.get(node);
 
   /// The most recent tree flattened from [SliverTree.roots].
-  UnmodifiableListView<TreeEntry<T>> get flatTree => _flatTree;
-  UnmodifiableListView<TreeEntry<T>> _flatTree = UnmodifiableListView(const []);
+  Iterable<TreeEntry<T>> get flatTree => _flatTree;
+  List<TreeEntry<T>> _flatTree = const [];
 
   /// Returns the [TreeEntry] at the given [index] of the current [flatTree].
   TreeEntry<T> entryAt(int index) => _flatTree[index];
@@ -204,7 +325,7 @@ class SliverTreeState<T extends Object> extends State<SliverTree<T>> {
 
   void _onAnimationComplete(T node) {
     _animatingNodes.remove(node);
-    rebuild(animate: false);
+    _rebuild(animate: false);
   }
 
   void _updateFlatTree({bool animate = true}) {
@@ -229,7 +350,7 @@ class SliverTreeState<T extends Object> extends State<SliverTree<T>> {
 
     _entryByIdCache.clear();
 
-    final List<TreeEntry<T>> flatTree = controller.buildFlatTree(
+    final List<TreeEntry<T>> flatTree = buildFlatTree(
       rootLevel: widget.rootLevel,
       onTraverse: onTraverse,
       descendCondition: (TreeEntry<T> entry) {
@@ -243,52 +364,14 @@ class SliverTreeState<T extends Object> extends State<SliverTree<T>> {
       },
     );
 
-    _flatTree = UnmodifiableListView<TreeEntry<T>>(flatTree);
-  }
-
-  /// Rebuilds the current flat tree.
-  ///
-  /// Call this method whenever the tree nodes are updated (i.e. expansion
-  /// state changed, child added or removed, node reordered, etc.), so the
-  /// flat tree can be rebuilt to include the new changes.
-  ///
-  /// [animate] can be used to do an additional check when flattening to verify
-  /// if a node's expansion state changed, if it did, that node will be marked
-  /// to animate when the flattening finishes.
-  ///
-  /// Example:
-  /// ```dart
-  /// class Node {
-  ///   List<Node> children;
-  /// }
-  ///
-  /// final SliverTreeState<Node> treeState = SliverTree.of<Node>(context);
-  ///
-  /// // DO use rebuild when nodes are added/removed/reordered:
-  /// void addChild(Node parent, Node child) {
-  ///   parent.children.add(child)
-  ///   treeState.rebuild(animate: false);
-  /// }
-  ///
-  /// // Consider doing bulk updating before calling rebuild:
-  /// void addChildren(Node parent, List<Node> children) {
-  ///   for (final Node child in children) {
-  ///     parent.children.add(child);
-  ///     // treeState.rebuild(); DON'T rebuild after each child insertion
-  ///   }
-  ///   // DO rebuild after all nodes are processed
-  ///   treeState.rebuild(animate: false);
-  /// }
-  /// ```
-  void rebuild({bool animate = true}) {
-    setState(() => _updateFlatTree(animate: animate));
+    _flatTree = flatTree;
   }
 
   /// Updates [node]'s expansion state to the opposite state and rebuilds the
   /// tree.
   void toggleExpansion(T node, {bool animate = true}) {
-    controller.setExpansionState(node, !controller.getExpansionState(node));
-    rebuild(animate: animate);
+    controller.expansionState.set(node, !controller.expansionState.get(node));
+    _rebuild(animate: animate);
   }
 
   //* REORDERING ---------------------------------------------------------------
@@ -319,14 +402,14 @@ class SliverTreeState<T extends Object> extends State<SliverTree<T>> {
     _autoScrollRect = Rect.zero;
   }
 
-  /// An unordered set of tree node keys composed by the keys of every ancestor
-  /// of the node that is currently being dragged (if any).
-  /// If no node is currenlty being dragged, defaults to an empty set.
+  /// An unordered set of tree nodes composed by the node being dragged (if any)
+  /// and all its ancestor nodes. Returns an empty set if no node is currenlty
+  /// being dragged.
   ///
   /// Used by [TreeDragTarget] to avoid collapsing the ancestors of a dragging
   /// node.
-  UnmodifiableSetView<T> get draggingNodePath => _draggingNodePath;
-  UnmodifiableSetView<T> _draggingNodePath = UnmodifiableSetView(const {});
+  Iterable<T> get draggingNodePath => _draggingNodePath;
+  Set<T> _draggingNodePath = const {};
 
   /// Called by [TreeDraggable] when it starts dragging to make sure that the
   /// dragged node stays visible during the drag gesture by disabling auto
@@ -345,20 +428,24 @@ class SliverTreeState<T extends Object> extends State<SliverTree<T>> {
       current = current.parent;
     }
 
-    _draggingNodePath = UnmodifiableSetView<T>(path);
+    _draggingNodePath = path;
   }
 
   /// Called by [TreeDraggable] when it stops dragging to clear [draggingNodePath].
   ///
   /// This should not be used from outside of [TreeDraggable].
   void onNodeDragEnded() {
-    _draggingNodePath = UnmodifiableSetView(const {});
+    _draggingNodePath = const {};
   }
 
   @override
   void initState() {
     super.initState();
-    controller.addListener(rebuild);
+    if (widget.controller == null) {
+      _fallbackController = TreeController<T>();
+    }
+
+    controller.addListener(_rebuild);
     _updateFlatTree(animate: false);
   }
 
@@ -366,13 +453,24 @@ class SliverTreeState<T extends Object> extends State<SliverTree<T>> {
   void didUpdateWidget(covariant SliverTree<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (oldWidget.rootLevel != widget.rootLevel) {
-      _updateFlatTree();
+    if (oldWidget.controller != widget.controller) {
+      if (oldWidget.controller == null) {
+        assert(_fallbackController != null);
+        assert(widget.controller != null);
+        _disposeFallbackController();
+      } else {
+        oldWidget.controller?.removeListener(_rebuild);
+        if (widget.controller == null) {
+          _fallbackController = TreeController<T>();
+        }
+      }
+      controller.addListener(_rebuild);
     }
 
-    if (oldWidget.controller != controller) {
-      oldWidget.controller.removeListener(rebuild);
-      controller.addListener(rebuild);
+    if (oldWidget.roots != roots ||
+        oldWidget.childrenProvider != childrenProvider ||
+        oldWidget.rootLevel != widget.rootLevel) {
+      _updateFlatTree();
     }
   }
 
@@ -394,11 +492,12 @@ class SliverTreeState<T extends Object> extends State<SliverTree<T>> {
   @override
   void dispose() {
     stopAutoScroll();
-    controller.removeListener(rebuild);
+    widget.controller?.removeListener(_rebuild);
+    _disposeFallbackController();
     _autoScrollRect = Rect.zero;
     _entryByIdCache.clear();
-    _flatTree = UnmodifiableListView(const []);
-    _draggingNodePath = UnmodifiableSetView(const {});
+    _flatTree = const [];
+    _draggingNodePath = const {};
     super.dispose();
   }
 
@@ -427,7 +526,7 @@ class SliverTreeState<T extends Object> extends State<SliverTree<T>> {
     return _TreeEntry<T>(
       key: _SaltedTreeEntryKey(entry.node),
       entry: entry,
-      treeFlattener: controller,
+      treeFlattener: this,
       nodeBuilder: _wrapWithDetails,
       transitionBuilder: widget.transitionBuilder,
       onAnimationComplete: _onAnimationComplete,

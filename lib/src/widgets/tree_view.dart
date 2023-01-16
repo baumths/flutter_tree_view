@@ -1,4 +1,3 @@
-import 'package:flutter/gestures.dart' show DragStartBehavior;
 import 'package:flutter/material.dart';
 
 import '../foundation.dart';
@@ -6,38 +5,96 @@ import 'sliver_tree.dart';
 
 /// A highly customizable hierarchy visualization widget.
 ///
-/// See also:
+/// Usage:
+/// ```dart
+/// class Node {
+///   Node(this.title) : children = <Node>[];
+///   String title;
+///   List<Node> chilren;
+/// }
 ///
+/// class MyTreeView extends StatelessWidget {
+///   @override
+///   Widget build(BuildContext context) {
+///     return TreeView<Node>(
+///       roots: [Node('Root')],
+///       childrenProvider: (Node node) => node.children,
+///       nodeBuilder: (BuildContext context, TreeEntry<Node> entry) {
+///       return MyTreeTile(entry: entry);
+///     );
+///   }
+/// }
+///
+/// class MyTreeTile extends StatelessWidget {
+///   const MyTreeTile({super.key, required this.entry});
+///
+///   final TreeEntry<Node> entry;
+///
+///   @override
+///   Widget build(BuildContext context) {
+///     return TreeIndentation(
+///       child: Row(
+///         children: [
+///           ExpandIcon(
+///             key: ValueKey<Node>(entry.node),
+///             isExpanded: entry.isExpanded,
+///             onPressed: (_) {
+///               SliverTree.of<Node>(context).toggleExpansion(entry.node);
+///             },
+///           ),
+///           Flexible(
+///             child: Text(entry.node.title),
+///           ),
+///         ],
+///       ),
+///     );
+///   }
+/// }
+/// ```
+///
+/// See also:
 /// * [SliverTree], which is created internally by [TreeView]. It can be used to
 ///   create more sophisticated scrolling experiences.
-class TreeView<T extends Object> extends StatelessWidget {
+class TreeView<T extends Object> extends BoxScrollView {
   /// Creates a [TreeView].
   const TreeView({
     super.key,
-    required this.controller,
+    required this.roots,
+    required this.childrenProvider,
+    this.treeController,
     required this.nodeBuilder,
     this.transitionBuilder = defaultTreeTransitionBuilder,
     this.animationDuration = const Duration(milliseconds: 300),
     this.animationCurve = Curves.linear,
     this.maxNodesToShowWhenAnimating = 50,
     this.rootLevel = defaultTreeRootLevel,
-    this.padding,
-    this.scrollController,
-    this.primary,
-    this.physics,
-    this.scrollBehavior,
-    this.shrinkWrap = false,
-    this.cacheExtent,
-    this.semanticChildCount,
-    this.dragStartBehavior = DragStartBehavior.start,
-    this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.manual,
-    this.restorationId,
-    this.clipBehavior = Clip.hardEdge,
+    super.padding,
+    super.controller,
+    super.primary,
+    super.physics,
+    super.shrinkWrap,
+    super.cacheExtent,
+    super.semanticChildCount,
+    super.dragStartBehavior,
+    super.keyboardDismissBehavior,
+    super.restorationId,
+    super.clipBehavior,
   });
 
-  /// The controller responsible for providing the tree hierarchy and expansion
-  /// state of tree nodes.
-  final TreeController<T> controller;
+  /// The roots of the tree.
+  ///
+  /// These nodes are used as a starting point to build the flat representation
+  /// of the tree.
+  final Iterable<T> roots;
+
+  /// {@macro flutter_fancy_tree_view.SliverTree.childrenProvider}
+  final ChildrenProvider<T> childrenProvider;
+
+  /// An object that can be used to control the state of the tree.
+  ///
+  /// Whenever this controller notifies its listeners, the internal flat
+  /// representation of the tree will be rebuilt.
+  final TreeController<T>? treeController;
 
   /// Callback used to map your data into widgets.
   ///
@@ -70,97 +127,18 @@ class TreeView<T extends Object> extends StatelessWidget {
 
   /// {@macro flutter_fancy_tree_view.SliverTree.rootLevel}
   final int rootLevel;
-
-  /// The amount of space by which to inset the tree contents.
-  ///
-  /// It defaults to `EdgeInsets.zero`.
-  final EdgeInsetsGeometry? padding;
-
-  /// {@macro flutter.widgets.scroll_view.controller}
-  final ScrollController? scrollController;
-
-  /// {@macro flutter.widgets.scroll_view.primary}
-  final bool? primary;
-
-  /// {@macro flutter.widgets.scroll_view.physics}
-  final ScrollPhysics? physics;
-
-  /// {@macro flutter.widgets.shadow.scrollBehavior}
-  ///
-  /// [ScrollBehavior]s also provide [ScrollPhysics]. If an explicit
-  /// [ScrollPhysics] is provided in [physics], it will take precedence,
-  /// followed by [scrollBehavior], and then the inherited ancestor
-  /// [ScrollBehavior].
-  final ScrollBehavior? scrollBehavior;
-
-  /// {@macro flutter.widgets.scroll_view.shrinkWrap}
-  final bool shrinkWrap;
-
-  /// {@macro flutter.rendering.RenderViewportBase.cacheExtent}
-  final double? cacheExtent;
-
-  /// The number of children that will contribute semantic information.
-  ///
-  /// Some subtypes of [ScrollView] can infer this value automatically. For
-  /// example [ListView] will use the number of widgets in the child list,
-  /// while the [ListView.separated] constructor will use half that amount.
-  ///
-  /// For [CustomScrollView] and other types which do not receive a builder
-  /// or list of widgets, the child count must be explicitly provided. If the
-  /// number is unknown or unbounded this should be left unset or set to null.
-  ///
-  /// See also:
-  ///
-  ///  * [SemanticsConfiguration.scrollChildCount], the corresponding semantics
-  ///    property.
-  final int? semanticChildCount;
-
-  /// {@macro flutter.widgets.scrollable.dragStartBehavior}
-  final DragStartBehavior dragStartBehavior;
-
-  /// {@macro flutter.widgets.scroll_view.keyboardDismissBehavior}
-  ///
-  /// The default is [ScrollViewKeyboardDismissBehavior.manual]
-  final ScrollViewKeyboardDismissBehavior keyboardDismissBehavior;
-
-  /// {@macro flutter.widgets.scrollable.restorationId}
-  final String? restorationId;
-
-  /// {@macro flutter.material.Material.clipBehavior}
-  ///
-  /// Defaults to [Clip.hardEdge].
-  final Clip clipBehavior;
-
   @override
-  Widget build(BuildContext context) {
-    return CustomScrollView(
-      scrollDirection: Axis.vertical,
-      reverse: false,
-      controller: scrollController,
-      primary: primary,
-      physics: physics,
-      scrollBehavior: scrollBehavior,
-      shrinkWrap: shrinkWrap,
-      cacheExtent: cacheExtent,
-      semanticChildCount: semanticChildCount,
-      dragStartBehavior: dragStartBehavior,
-      keyboardDismissBehavior: keyboardDismissBehavior,
-      restorationId: restorationId,
-      clipBehavior: clipBehavior,
-      slivers: [
-        SliverPadding(
-          padding: padding ?? EdgeInsets.zero,
-          sliver: SliverTree<T>(
-            controller: controller,
-            nodeBuilder: nodeBuilder,
-            transitionBuilder: transitionBuilder,
-            animationDuration: animationDuration,
-            animationCurve: animationCurve,
-            maxNodesToShowWhenAnimating: maxNodesToShowWhenAnimating,
-            rootLevel: rootLevel,
-          ),
-        ),
-      ],
+  Widget buildChildLayout(BuildContext context) {
+    return SliverTree<T>(
+      roots: roots,
+      childrenProvider: childrenProvider,
+      controller: treeController,
+      nodeBuilder: nodeBuilder,
+      transitionBuilder: transitionBuilder,
+      animationDuration: animationDuration,
+      animationCurve: animationCurve,
+      maxNodesToShowWhenAnimating: maxNodesToShowWhenAnimating,
+      rootLevel: rootLevel,
     );
   }
 }

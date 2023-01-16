@@ -26,10 +26,10 @@ import 'sliver_tree.dart';
 /// collapsed). This can be toggled off in [collapseOnDragStart].
 ///
 /// This widget is also responsible for calling [SliverTreeState.onNodeDragStarted]
-/// which creates a set with all the dragging node ancestors ids and its own id
-/// to make sure it is not removed from the widget tree in the middle of the
-/// drag gesture. When hovering a [TreeDragTarget], the drag target will check
-/// if [SliverTreeState.draggingNodePath] contains the hovering node so it
+/// which creates a set with [node] and all the ancestors nodes to make sure it
+/// is not removed from the widget tree in the middle of the drag gesture.
+/// When hovering a [TreeDragTarget], the drag target will check if
+/// [SliverTreeState.draggingNodePath] contains the hovering node so it
 /// doesn't start the auto toggle expansion timer. When the drag gesture ends,
 /// [SliverTreeState.onNodeDragEnded] is called to clear the
 /// [SliverTreeState.draggingNodePath] set.
@@ -234,7 +234,7 @@ class _TreeDraggableState<T extends Object> extends State<TreeDraggable<T>>
 
   late SliverTreeState<T> _treeState;
 
-  bool get isExpanded => _treeState.controller.getExpansionState(node);
+  bool get isExpanded => _treeState.getExpansionState(node);
 
   @override
   bool get wantKeepAlive => _isDragging;
@@ -440,7 +440,7 @@ class TreeDragTarget<T extends Object> extends StatefulWidget {
 
   /// The callback that is going to be called when a dragging node was
   /// successfully dropped onto this drag target. It should then apply the
-  /// reordering to the tree view nodes and call [SliverTreeState.rebuild]
+  /// reordering to the tree view nodes and call [TreeController.rebuild]
   /// to show the newly reordered tree data.
   final TreeOnReorderCallback<T> onReorder;
 

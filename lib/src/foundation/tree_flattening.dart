@@ -12,20 +12,22 @@ const int defaultTreeRootLevel = 0;
 mixin TreeFlattener<T extends Object> {
   /// The roots of the tree.
   ///
-  /// This property is used by [buildFlatTree] when the "nodes" argument is
-  /// omitted.
+  /// These nodes are used as a starting point to build the flat representation
+  /// of the tree.
   Iterable<T> get roots;
 
-  /// A callback that must provide the children of the given node.
+  /// A callback that must provide the children of a given node.
   ///
-  /// Avoid doing heavy computations in this callback as it is going to be
-  /// called very frequently during flattening.
+  /// This callback will be used to build the flat representation of the tree.
+  ///
+  /// Avoid doing heavy computations in this callback since it is going to be
+  /// called a lot during tree flattening.
   ChildrenProvider<T> get childrenProvider;
 
-  /// Should provide the current expansion state of [node].
+  /// The current expansion state of [node].
   ///
-  /// This method is going to be used during flattening to collect the expansion
-  /// state of tree nodes and store it in [TreeEntry.isExpanded].
+  /// This method is used during flattening to collect the expansion state of
+  /// tree nodes and store it in [TreeEntry.isExpanded].
   bool getExpansionState(T node);
 
   /// Traverses the subtrees of [nodes] in depth first order creating and
@@ -39,8 +41,8 @@ mixin TreeFlattener<T extends Object> {
   /// to `(TreeEntry<T> entry) => entry.isExpanded` when not provided, wich
   /// makes sure only "visible" nodes get included in the flattened tree.
   ///
-  /// [onTraverse] is an optional function that is called after a
-  /// [MutableTreeEntry] is created but before descending into its subtree.
+  /// [onTraverse] is an optional function that is called after a [TreeEntry]
+  /// is created but before descending into its subtree.
   ///
   /// [rootLevel] the starting level to use for root nodes, usual values are
   /// `0` and `1`, defaults to [defaultTreeRootLevel].
@@ -54,7 +56,7 @@ mixin TreeFlattener<T extends Object> {
         descendCondition ?? (TreeEntry<T> entry) => entry.isExpanded;
 
     final List<TreeEntry<T>> flatTree = <TreeEntry<T>>[];
-    int globalIndex = 0;
+    int index = 0;
 
     void mapNodesToEntries({
       required TreeEntry<T>? parent,
@@ -66,7 +68,7 @@ mixin TreeFlattener<T extends Object> {
       for (final T node in nodes) {
         final TreeEntry<T> entry = TreeEntry<T>(
           node: node,
-          index: globalIndex++,
+          index: index++,
           isExpanded: getExpansionState(node),
           level: level,
           parent: parent,
