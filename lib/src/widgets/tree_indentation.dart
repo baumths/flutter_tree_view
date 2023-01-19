@@ -313,9 +313,11 @@ abstract class AbstractLineGuide extends BlankIndentGuide {
 
   @override
   Widget wrap(BuildContext context, Widget child, TreeIndentDetails details) {
-    return CustomPaint(
-      painter: createPainter(context, details),
-      child: super.wrap(context, child, details),
+    return RepaintBoundary(
+      child: CustomPaint(
+        painter: createPainter(context, details),
+        child: super.wrap(context, child, details),
+      ),
     );
   }
 }
