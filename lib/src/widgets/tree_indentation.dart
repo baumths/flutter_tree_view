@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 
 import '../foundation.dart' show TreeIndentDetails;
@@ -22,7 +21,8 @@ class TreeIndentDetailsScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(TreeIndentDetailsScope oldWidget) {
-    return oldWidget.details != details;
+    return oldWidget.details.level != details.level ||
+        oldWidget.details.hasNextSibling != details.hasNextSibling;
   }
 
   /// The [TreeIndentDetails] from the closest instance of this class that
@@ -442,9 +442,7 @@ class ConnectingLinesGuide extends AbstractLineGuide {
   CustomPainter createPainter(BuildContext context, TreeIndentDetails details) {
     return _ConnectingLinesPainter(
       guide: this,
-      nodeLevel: details.level,
-      hasNextSibling: details.hasNextSibling,
-      ancestorLevelsWithLines: details.ancestorLevelsWithVerticalLines,
+      details: details,
       textDirection: Directionality.maybeOf(context),
     );
   }
@@ -492,16 +490,12 @@ class ConnectingLinesGuide extends AbstractLineGuide {
 class _ConnectingLinesPainter extends CustomPainter {
   _ConnectingLinesPainter({
     required this.guide,
-    required this.nodeLevel,
-    required this.hasNextSibling,
-    required this.ancestorLevelsWithLines,
+    required this.details,
     this.textDirection,
-  }) : indentation = nodeLevel * guide.indent;
+  }) : indentation = details.level * guide.indent;
 
   final ConnectingLinesGuide guide;
-  final int nodeLevel;
-  final bool hasNextSibling;
-  final Set<int> ancestorLevelsWithLines;
+  final TreeIndentDetails details;
   final TextDirection? textDirection;
   final double indentation;
 
@@ -525,7 +519,7 @@ class _ConnectingLinesPainter extends CustomPainter {
 
     // Add vertical lines
 
-    for (final int level in ancestorLevelsWithLines) {
+    for (final int level in details.levelsWithVerticalLines) {
       final double x = calculateOffset(level);
       path
         ..moveTo(x, size.height)
@@ -545,7 +539,7 @@ class _ConnectingLinesPainter extends CustomPainter {
       // [nodeLevel] by [addVerticalLines] and we only need to move to the
       // start of the horizontal line, otherwise we must add half vertical line
       // to connect to the horizontal one.
-      if (hasNextSibling) {
+      if (details.hasNextSibling) {
         path.moveTo(connectionStart, y);
       } else {
         path.lineTo(connectionStart, y);
@@ -559,9 +553,8 @@ class _ConnectingLinesPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ConnectingLinesPainter oldDelegate) =>
-      oldDelegate.nodeLevel != nodeLevel ||
-      oldDelegate.hasNextSibling != hasNextSibling ||
+      oldDelegate.details.level != details.level ||
+      oldDelegate.details.hasNextSibling != details.hasNextSibling ||
       oldDelegate.textDirection != textDirection ||
-      oldDelegate.guide != guide ||
-      !setEquals(oldDelegate.ancestorLevelsWithLines, ancestorLevelsWithLines);
+      oldDelegate.guide != guide;
 }

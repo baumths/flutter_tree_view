@@ -46,11 +46,17 @@ mixin TreeFlattener<T extends Object> {
   ///
   /// [rootLevel] the starting level to use for root nodes, usual values are
   /// `0` and `1`, defaults to [defaultTreeRootLevel].
+  ///
+  /// [unreachableLevelsWithVerticalLines] aditional levels that should paint
+  /// vertical lines. Used by [SliverTree] when animating the expand/collapse
+  /// state changes of nodes to add the levels that cannot be reached by the
+  /// virtual subtree.
   List<TreeEntry<T>> buildFlatTree({
     Iterable<T>? nodes,
     Mapper<TreeEntry<T>, bool>? descendCondition,
     Visitor<TreeEntry<T>>? onTraverse,
     int rootLevel = 0,
+    Iterable<int>? unreachableLevelsWithVerticalLines,
   }) {
     final Mapper<TreeEntry<T>, bool> shouldDescend =
         descendCondition ?? (TreeEntry<T> entry) => entry.isExpanded;
@@ -72,6 +78,7 @@ mixin TreeFlattener<T extends Object> {
           isExpanded: getExpansionState(node),
           level: level,
           parent: parent,
+          unreachableLines: unreachableLevelsWithVerticalLines,
         );
 
         lastEntry = entry;
@@ -121,9 +128,9 @@ mixin TreeIndentDetails {
   /// ├─ B  ⋅  ⋅
   /// │  ├─ C  ⋅
   /// │  │  └─ D
-  /// │  └─ E  ⋅
-  /// F  ⋅  ⋅  ⋅
-  /// └─ G  ⋅  ⋅
+  /// │  └─ E
+  /// F  ⋅
+  /// └─ G
   int get level;
 
   /// Whether the node that owns this details has another node after it at the
@@ -131,7 +138,7 @@ mixin TreeIndentDetails {
   ///
   /// Used when painting lines to decide if a node should have a vertical line
   /// that connects it to its next sibling. If a node is the last child of its
-  /// parent, a half vertical line "└─" is drawn instead of full one "├─".
+  /// parent, a half vertical line "└─" is painted instead of a full one "├─".
   ///
   /// Example:
   ///
@@ -146,62 +153,49 @@ mixin TreeIndentDetails {
   /// Nodes at level 0 or less have no decoration nor indent by default.
   bool get skipIndentAndPaint => level <= 0;
 
-  /// Used to determine where to draw the vertical lines based on the path from
+  /// Aditional levels that should paint vertical lines.
+  ///
+  /// Used by [SliverTree] when animating the expand/collapse state changes of
+  /// nodes to add the levels that cannot be reached by the virtual subtree.
+  Iterable<int>? get _unreachableLines => null;
+
+  /// Used to determine where to paint the vertical lines based on the path from
   /// the root node to the node that owns this details.
   ///
   /// Should contain the levels of all ancestors that have sibling(s) after it
   /// at the same level. Example:
   ///
-  /// The "→" shows the level that must be added to the set.
-  /// The "{}" shows the levels of that row that have a vertical line.
+  /// In the below diagram:
+  /// - The "→" shows the level that must be added to the set.
+  /// - The "{}" shows the levels of that row that have a vertical line.
+  /// - The "__X" represents the space each "X" level occupies.
   ///
-  ///  0  1  2  3  4  5
-  ///  A  ⋅  ⋅  ⋅  ⋅  ⋅  {}
-  /// →├─ B  ⋅  ⋅  ⋅  ⋅  {1}
-  /// →│ →├─ C  ⋅  ⋅  ⋅  {1,2}
-  /// →│ →│  └─ D  ⋅  ⋅  {1,2}
-  /// →│ →│    →├─ E  ⋅  {1,2,4}
-  /// →│ →│    →│  └─ F  {1,2,4} *
-  /// →│ →│     └─ G  ⋅  {1,2}
-  /// →│  └─ H  ⋅  ⋅  ⋅  {1}
-  ///  I  ⋅  ⋅  ⋅  ⋅  ⋅  {}
-  ///  └─ J  ⋅  ⋅  ⋅  ⋅  {}
+  /// __0__1__2__3__4__5
+  ///   ⋅A ⋅  ⋅  ⋅  ⋅  ⋅  {}
+  ///   →├─⋅B ⋅  ⋅  ⋅  ⋅  {1}
+  ///   →│ →├─⋅C ⋅  ⋅  ⋅  {1,2}
+  ///   →│ →│ ⋅└─⋅D ⋅  ⋅  {1,2}
+  ///   →│ →│ ⋅  →├─⋅E ⋅  {1,2,4}
+  ///   →│ →│ ⋅  →│ ⋅└─⋅F {1,2,4} *
+  ///   →│ →│ ⋅  ⋅└─⋅G ⋅  {1,2}
+  ///   →│ ⋅└─ H ⋅  ⋅  ⋅  {1}
+  ///   →I ⋅  ⋅  ⋅  ⋅  ⋅  {}
+  ///   ⋅└─⋅J ⋅  ⋅  ⋅  ⋅  {}
   ///
   /// How to read (*):
-  /// The node "F" has vertical lines at levels {1,2,4}, a blank space at level
-  /// {3} and an "L" shaped line at level {5}.
+  /// The node "F" is sitting at level 5, has vertical lines at {1,2,4},
+  /// a blank space at {3} and an "L" shaped line at {5}.
   ///
-  /// The [ConnectingLinesGuide] will use this set to correctly paint lines and
-  /// its connections at each level.
-  Set<int> get ancestorLevelsWithVerticalLines {
-    return _ancestorLevelsWithVerticalLines ??= _findAncestorLevelsWithLines();
-  }
+  /// Used by [ConnectingLinesGuide] to correctly paint lines and its
+  /// connections at each level.
+  Iterable<int> get levelsWithVerticalLines sync* {
+    yield* _unreachableLines ?? const Iterable.empty();
 
-  Set<int>? _ancestorLevelsWithVerticalLines;
-
-  Set<int> _findAncestorLevelsWithLines() {
-    if (level == defaultTreeRootLevel) return const <int>{};
-    return <int>{
-      ...?_unreachableExtraLevels,
-      ...?parent?.ancestorLevelsWithVerticalLines,
-      if (hasNextSibling) level,
-    };
-  }
-
-  /// When animating the expansion state of a node, a subtree widget is shown
-  /// containing all descendents of the expanded node, to do that, a new flat
-  /// tree is built using the animating node as its "virtual root". When doing
-  /// so, all context up the tree is lost (i.e. the lines that connect to the
-  /// virtual root from its ancestors in the main tree).
-  Set<int>? _unreachableExtraLevels;
-
-  /// Add aditional levels that should draw vertical lines.
-  ///
-  /// Used when animating the expand/collapse state changes of nodes to add the
-  /// levels that cannot be reached by the virtual subtree.
-  void addVerticalLinesAtLevels(Set<int> levels) {
-    _unreachableExtraLevels = levels;
-    _ancestorLevelsWithVerticalLines = null;
+    TreeIndentDetails? current = this;
+    while (current != null && current.level > 0) {
+      if (current.hasNextSibling) yield current.level;
+      current = current.parent;
+    }
   }
 }
 
@@ -219,7 +213,8 @@ class TreeEntry<T extends Object> with TreeIndentDetails, Diagnosticable {
     required this.isExpanded,
     required this.level,
     required this.parent,
-  });
+    Iterable<int>? unreachableLines,
+  }) : _unreachableLines = unreachableLines;
 
   /// The tree node that originated this entry.
   final T node;
@@ -242,6 +237,9 @@ class TreeEntry<T extends Object> with TreeIndentDetails, Diagnosticable {
   /// The direct parent of [node] on the tree.
   @override
   final TreeEntry<T>? parent;
+
+  @override
+  final Iterable<int>? _unreachableLines;
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {

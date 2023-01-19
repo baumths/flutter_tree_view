@@ -23,7 +23,7 @@ typedef TreeTransitionBuilder = Widget Function(
 /// The default transition builder used by [SliverTree] to animate the expansion
 /// state changes of a tree node.
 ///
-/// Wraps [child] in [SizeTransition].
+/// By default, wraps [child] with a [SizeTransition].
 Widget defaultTreeTransitionBuilder(
   BuildContext context,
   Widget child,
@@ -318,8 +318,8 @@ class SliverTreeState<T extends Object> extends State<SliverTree<T>>
   /// Returns the [TreeEntry] at the given [index] of the current [flatTree].
   TreeEntry<T> entryAt(int index) => _flatTree[index];
 
-  TreeEntry<T>? _entryOf(T node) => _entryByIdCache[node];
-  final Map<T, TreeEntry<T>> _entryByIdCache = <T, TreeEntry<T>>{};
+  TreeEntry<T>? _entryOf(T node) => _entryByNodeCache[node];
+  final Map<T, TreeEntry<T>> _entryByNodeCache = <T, TreeEntry<T>>{};
 
   final Set<T> _animatingNodes = <T>{};
 
@@ -332,10 +332,10 @@ class SliverTreeState<T extends Object> extends State<SliverTree<T>>
     Visitor<TreeEntry<T>> onTraverse;
 
     if (animate && widget.animationDuration != Duration.zero) {
-      final Map<Object, TreeEntry<T>> oldEntries = Map.of(_entryByIdCache);
+      final Map<T, TreeEntry<T>> oldEntries = Map.of(_entryByNodeCache);
 
       onTraverse = (TreeEntry<T> entry) {
-        _entryByIdCache[entry.node] = entry;
+        _entryByNodeCache[entry.node] = entry;
         final TreeEntry<T>? oldEntry = oldEntries[entry.node];
 
         if (oldEntry != null && oldEntry.isExpanded != entry.isExpanded) {
@@ -344,11 +344,11 @@ class SliverTreeState<T extends Object> extends State<SliverTree<T>>
       };
     } else {
       onTraverse = (TreeEntry<T> entry) {
-        _entryByIdCache[entry.node] = entry;
+        _entryByNodeCache[entry.node] = entry;
       };
     }
 
-    _entryByIdCache.clear();
+    _entryByNodeCache.clear();
 
     final List<TreeEntry<T>> flatTree = buildFlatTree(
       rootLevel: widget.rootLevel,
@@ -495,7 +495,7 @@ class SliverTreeState<T extends Object> extends State<SliverTree<T>>
     widget.controller?.removeListener(_rebuild);
     _disposeFallbackController();
     _autoScrollRect = Rect.zero;
-    _entryByIdCache.clear();
+    _entryByNodeCache.clear();
     _flatTree = const [];
     _draggingNodePath = const {};
     super.dispose();
@@ -704,13 +704,9 @@ class _SubtreeState<T extends Object> extends State<_Subtree<T>> {
     final List<TreeEntry<T>> flatTree = widget.treeFlattener.buildFlatTree(
       nodes: widget.treeFlattener.childrenProvider(virtualRoot.node),
       rootLevel: virtualRoot.level + 1,
-      onTraverse: (TreeEntry<T> entry) {
-        // Apply the unreachable ancestor lines to make sure this subtree
-        // doesn't appear floating "contextless" in the line hierarchy.
-        entry.addVerticalLinesAtLevels(
-          virtualRoot.ancestorLevelsWithVerticalLines,
-        );
-      },
+      // Apply the unreachable levels with vertical lines to make sure this
+      // subtree doesn't appear floating "contextless" in the line hierarchy.
+      unreachableLevelsWithVerticalLines: virtualRoot.levelsWithVerticalLines,
     );
 
     nodeCount = math.min(flatTree.length, widget.maxNodesToShow);
