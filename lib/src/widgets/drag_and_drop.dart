@@ -1,26 +1,13 @@
 import 'dart:async' show Timer;
 
-import 'package:flutter/foundation.dart'
-    show
-        DiagnosticPropertiesBuilder,
-        Diagnosticable,
-        DiagnosticsProperty,
-        defaultTargetPlatform;
-import 'package:flutter/gestures.dart'
-    show
-        DelayedMultiDragGestureRecognizer,
-        Drag,
-        GestureMultiDragStartCallback,
-        ImmediateMultiDragGestureRecognizer,
-        MultiDragGestureRecognizer,
-        kLongPressTimeout;
-import 'package:flutter/services.dart' show HapticFeedback;
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/widgets.dart';
 
-import '../foundation.dart';
 import 'sliver_tree.dart';
 
-/// A widget that wraps [AdaptiveDraggable] providing auto scrolling capabilities.
+/// A widget that wraps either [Draggable] or [LongPressDraggable] depending on
+/// the value provided to [longPressDelay] providing additional capabilities.
 /// It is also responsible for automatically collapsing the node it holds
 /// when the drag starts and expanding it back when the drag ends (if it was
 /// collapsed). This can be toggled off in [collapseOnDragStart].
@@ -37,6 +24,9 @@ import 'sliver_tree.dart';
 /// Depends on an ancestor [SliverTree] to work.
 class TreeDraggable<T extends Object> extends StatefulWidget {
   /// Creates a [TreeDraggable].
+  ///
+  /// This widget wraps a [LongPressDraggable] by default, to change it to a
+  /// [Draggable], provide a [longPressDelay] of [Duration.zero].
   const TreeDraggable({
     super.key,
     required this.child,
@@ -49,8 +39,7 @@ class TreeDraggable<T extends Object> extends StatefulWidget {
     this.childWhenDragging,
     this.feedbackOffset = Offset.zero,
     this.dragAnchorStrategy = pointerDragAnchorStrategy,
-    this.requireLongPress = false,
-    this.longPressTimeout = kLongPressTimeout,
+    this.longPressDelay = kLongPressTimeout,
     this.longPressHapticFeedbackOnStart = true,
     this.onDragStarted,
     this.onDragUpdate,
@@ -149,22 +138,15 @@ class TreeDraggable<T extends Object> extends StatefulWidget {
   /// Defaults to [pointerDragAnchorStrategy].
   final DragAnchorStrategy? dragAnchorStrategy;
 
-  /// If set to `true` will always use a long press gesture, not depending on
-  /// the current platform.
-  ///
-  /// Defaults to `false`.
-  final bool requireLongPress;
-
-  /// Whether haptic feedback should be triggered on drag start when
-  /// [requireLongPress] is set to `true` or [defaultTargetPlatform] resolves to
-  /// [DelayedMultiDragGestureRecognizer].
+  /// Whether haptic feedback should be triggered on drag start when using a
+  /// [LongPressDraggable] (i.e. `longPressDelay != Duration.zero`).
   final bool longPressHapticFeedbackOnStart;
 
-  /// The duration that the user has to press down before a long press is
+  /// The [Duration] that the user has to press down before a long press is
   /// registered.
   ///
   /// Defaults to [kLongPressTimeout].
-  final Duration longPressTimeout;
+  final Duration longPressDelay;
 
   /// Called when the draggable starts being dragged.
   final VoidCallback? onDragStarted;
@@ -313,7 +295,25 @@ class _TreeDraggableState<T extends Object> extends State<TreeDraggable<T>>
   Widget build(BuildContext context) {
     super.build(context);
 
-    return AdaptiveDraggable<T>(
+    if (widget.longPressDelay == Duration.zero) {
+      return Draggable<T>(
+        data: node,
+        maxSimultaneousDrags: 1,
+        onDragStarted: onDragStarted,
+        onDragUpdate: onDragUpdate,
+        onDraggableCanceled: onDraggableCanceled,
+        onDragEnd: widget.onDragEnd,
+        onDragCompleted: onDragCompleted,
+        feedback: widget.feedback,
+        axis: widget.axis,
+        childWhenDragging: widget.childWhenDragging,
+        feedbackOffset: widget.feedbackOffset,
+        dragAnchorStrategy: widget.dragAnchorStrategy,
+        child: widget.child,
+      );
+    }
+
+    return LongPressDraggable<T>(
       data: node,
       maxSimultaneousDrags: 1,
       onDragStarted: onDragStarted,
@@ -326,9 +326,8 @@ class _TreeDraggableState<T extends Object> extends State<TreeDraggable<T>>
       childWhenDragging: widget.childWhenDragging,
       feedbackOffset: widget.feedbackOffset,
       dragAnchorStrategy: widget.dragAnchorStrategy,
-      requireLongPress: widget.requireLongPress,
-      longPressTimeout: widget.longPressTimeout,
-      longPressHapticFeedbackOnStart: widget.longPressHapticFeedbackOnStart,
+      delay: widget.longPressDelay,
+      hapticFeedbackOnStart: widget.longPressHapticFeedbackOnStart,
       child: widget.child,
     );
   }
@@ -660,93 +659,5 @@ class _TreeDragTargetState<T extends Object> extends State<TreeDragTarget<T>> {
         );
       },
     );
-  }
-}
-
-/// A [Draggable] subclass that adapts itself to the current platform.
-///
-/// Behaves like [Draggable] when [defaultTargetPlatform] is either
-/// [TargetPlatform.linux], [TargetPlatform.macOS] or [TargetPlatform.windows].
-///
-/// Behaves like [LongPressDraggable] when [defaultTargetPlatform] is either
-/// [TargetPlatform.android], [TargetPlatform.fuchsia] or [TargetPlatform.iOS].
-///
-/// Set [requireLongPress] to `true` to always use a [DelayedMultiDragGestureRecognizer]
-/// not depending on the platform.
-class AdaptiveDraggable<T extends Object> extends Draggable<T> {
-  /// Creates an [AdaptiveDraggable].
-  const AdaptiveDraggable({
-    super.key,
-    required super.child,
-    required super.feedback,
-    super.data,
-    super.axis,
-    super.childWhenDragging,
-    super.feedbackOffset,
-    super.dragAnchorStrategy,
-    super.maxSimultaneousDrags,
-    super.onDragStarted,
-    super.onDragUpdate,
-    super.onDraggableCanceled,
-    super.onDragEnd,
-    super.onDragCompleted,
-    super.affinity,
-    super.ignoringFeedbackSemantics,
-    super.ignoringFeedbackPointer,
-    super.rootOverlay,
-    super.hitTestBehavior,
-    this.requireLongPress = false,
-    this.longPressHapticFeedbackOnStart = true,
-    this.longPressTimeout = kLongPressTimeout,
-  });
-
-  /// If set to `true` will always use a long press gesture, not depending on
-  /// the current platform.
-  ///
-  /// Defaults to `false`.
-  final bool requireLongPress;
-
-  /// Whether haptic feedback should be triggered on drag start when
-  /// [requireLongPress] is set to `true` or [defaultTargetPlatform] resolves to
-  /// [DelayedMultiDragGestureRecognizer].
-  final bool longPressHapticFeedbackOnStart;
-
-  /// The duration that the user has to press down before a long press is
-  /// registered.
-  ///
-  /// Defaults to [kLongPressTimeout].
-  final Duration longPressTimeout;
-
-  MultiDragGestureRecognizer _createLongPressRecognizer(
-    GestureMultiDragStartCallback onStart,
-  ) {
-    return DelayedMultiDragGestureRecognizer(delay: longPressTimeout)
-      ..onStart = (Offset position) {
-        final Drag? result = onStart(position);
-        if (result != null && longPressHapticFeedbackOnStart) {
-          HapticFeedback.selectionClick();
-        }
-        return result;
-      };
-  }
-
-  @override
-  MultiDragGestureRecognizer createRecognizer(
-    GestureMultiDragStartCallback onStart,
-  ) {
-    if (requireLongPress) {
-      return _createLongPressRecognizer(onStart);
-    }
-
-    switch (defaultTargetPlatform) {
-      case TargetPlatform.android:
-      case TargetPlatform.fuchsia:
-      case TargetPlatform.iOS:
-        return _createLongPressRecognizer(onStart);
-      case TargetPlatform.linux:
-      case TargetPlatform.macOS:
-      case TargetPlatform.windows:
-        return ImmediateMultiDragGestureRecognizer()..onStart = onStart;
-    }
   }
 }
