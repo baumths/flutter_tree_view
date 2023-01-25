@@ -478,7 +478,7 @@ class SliverTreeState<T extends Object> extends State<SliverTree<T>>
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    final ScrollableState scrollable = Scrollable.of(context)!;
+    final ScrollableState scrollable = Scrollable.of(context);
 
     if (_autoScroller?.scrollable != scrollable) {
       _autoScroller?.stopAutoScroll();

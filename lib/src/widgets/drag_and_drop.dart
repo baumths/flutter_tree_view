@@ -136,7 +136,7 @@ class TreeDraggable<T extends Object> extends StatefulWidget {
   ///    position of the touch that started the drag.
   ///
   /// Defaults to [pointerDragAnchorStrategy].
-  final DragAnchorStrategy? dragAnchorStrategy;
+  final DragAnchorStrategy dragAnchorStrategy;
 
   /// Whether haptic feedback should be triggered on drag start when using a
   /// [LongPressDraggable] (i.e. `longPressDelay != Duration.zero`).
