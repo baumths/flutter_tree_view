@@ -1,13 +1,12 @@
 name: flutter_fancy_tree_view
 description: >
-  A highly customizable TreeView Widget for visualization of nested data in
-  Flutter.
+  A highly customizable hierarchy visualization widget (TreeView) for Flutter.
 version: 1.0.0-dev
-homepage: https://mbaumgartenbr.github.io/flutter_tree_view
-repository: https://github.com/mbaumgartenbr/flutter_tree_view
+homepage: https://baumths.github.io/flutter_tree_view
+repository: https://github.com/baumths/flutter_tree_view
 
 environment:
-  sdk: ">=2.18.0 <3.0.0"
+  sdk: ">=2.19.0 <3.0.0"
 
 dependencies:
   flutter:
