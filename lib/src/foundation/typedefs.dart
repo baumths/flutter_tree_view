@@ -13,4 +13,3 @@ typedef ChildrenProvider<T> = Mapper<T, Iterable<T>>;
 ///
 /// Used to get the parent of a node in a tree.
 typedef ParentProvider<T> = Mapper<T, T?>;
-
