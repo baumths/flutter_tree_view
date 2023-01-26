@@ -248,6 +248,18 @@ class BlankIndentGuide extends IndentGuide {
       child: child,
     );
   }
+
+  @override
+  int get hashCode => indent.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other.runtimeType == runtimeType &&
+        other is BlankIndentGuide &&
+        other.indent == indent;
+  }
 }
 
 /// An interface for configuring how to paint line guides in the indentation of
@@ -373,7 +385,8 @@ class ScopingLinesGuide extends AbstractLineGuide {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
 
-    return other is AbstractLineGuide &&
+    return other.runtimeType == runtimeType &&
+        other is ScopingLinesGuide &&
         other.indent == indent &&
         other.color == color &&
         other.thickness == thickness &&
@@ -480,7 +493,8 @@ class ConnectingLinesGuide extends AbstractLineGuide {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
 
-    return other is ConnectingLinesGuide &&
+    return other.runtimeType == runtimeType &&
+        other is ConnectingLinesGuide &&
         other.indent == indent &&
         other.color == color &&
         other.thickness == thickness &&
