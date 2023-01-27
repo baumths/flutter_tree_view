@@ -49,20 +49,18 @@ import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 * Rudimentary Drag and Drop support
 
 For a hands on experience with the features, visit the [live demo app].
-The source code for the demo app can be found [here][demo source code].
+The source code for the demo app can be found in the [example directory].
 
 ## Getting Started
 
-Head over to [example/lib/main.dart] for a simple and well commented example 
-of the basic usage of this package.
+Head over to [example/example.md] for a well commented example of the
+basic usage of this package.
+Also, check out the [example/lib/src/main/examples] folder which has some
+feature specific examples.
 
-Also, check out the [example/lib/src/samples] folder which has some feature 
-specific examples.
+[live demo app]: https://baumths.github.io/flutter_tree_view
+[example directory]: https://github.com/baumths/flutter_tree_view/tree/main/example
+[example/example.md]: https://github.com/baumths/flutter_tree_view/tree/main/example/example.md
+[example/lib/src/main/examples]: https://github.com/baumths/flutter_tree_view/tree/main/example/lib/src/main/examples
 
-
-[live demo app]: https://mbaumgartenbr.github.io/flutter_tree_view
-[demo source code]: https://github.com/mbaumgartenbr/flutter_tree_view/tree/main/demo
-[example/lib/main.dart]: https://github.com/mbaumgartenbr/flutter_tree_view/tree/main/example/lib/main.dart
-[example/lib/src/samples]: https://github.com/mbaumgartenbr/flutter_tree_view/tree/main/example/lib/src/samples
-
-[asset]: https://raw.githubusercontent.com/mbaumgartenbr/flutter_tree_view/main/.github/assets/<ASSET_FILE_NAME>
+[asset]: https://raw.githubusercontent.com/baumths/flutter_tree_view/main/.github/assets/<ASSET_FILE_NAME>
