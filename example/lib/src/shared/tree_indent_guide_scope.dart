@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 
 import '../settings/controller.dart';
 
-class TreeIndentGuideWrapper extends StatelessWidget {
-  const TreeIndentGuideWrapper({super.key, required this.child});
+class TreeIndentGuideScope extends StatelessWidget {
+  const TreeIndentGuideScope({super.key, required this.child});
 
   final Widget child;
 
