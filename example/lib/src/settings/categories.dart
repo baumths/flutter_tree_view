@@ -12,37 +12,32 @@ class SettingsCategories extends StatelessWidget {
       (controller) => controller.state.indentType,
     );
 
-    return ListView(
-      children: [
-        const ColorSelector(),
-        const Divider(height: 1),
-        const Direction(),
-        const Divider(height: 1),
-        const AnimateExpansions(),
-        const Divider(height: 1),
-        const RootLevel(),
-        const Divider(height: 1),
-        const Indent(),
-        const Divider(height: 1),
-        const IndentGuideType(),
-        const Divider(height: 1),
-        if (indentType != IndentType.blank) ...[
-          if (indentType == IndentType.connectingLines) ...[
-            const RoundedConnections(),
-            const Divider(height: 1),
-          ],
-          const LineThickness(),
-          const Divider(height: 1),
-          const LineOrigin(),
-          const Divider(height: 1),
+    final List<Widget> categories = [
+      const ColorSelector(),
+      const Direction(),
+      const AnimateExpansions(),
+      const RootLevel(),
+      const Indent(),
+      const IndentGuideType(),
+      if (indentType != IndentType.blank) ...[
+        if (indentType == IndentType.connectingLines) ...[
+          const RoundedConnections(),
         ],
-        const RestoreAllSettings(),
+        const LineThickness(),
+        const LineOrigin(),
       ],
+      const RestoreAllSettings(),
+    ];
+
+    return ListView.separated(
+      itemCount: categories.length,
+      itemBuilder: (_, int index) => categories[index],
+      separatorBuilder: (_, __) => const Divider(height: 1),
     );
   }
 }
 
-// Dark Mode -------------------------------------------------------------------
+//* Dark Mode ------------------------------------------------------------------
 
 class DarkModeButton extends StatelessWidget {
   const DarkModeButton({super.key});
@@ -69,33 +64,10 @@ class DarkModeButton extends StatelessWidget {
 
     return IconButton(
       icon: icon,
-      iconSize: 20,
       tooltip: tooltip,
       onPressed: () => context
           .read<SettingsController>()
           .updateBrightness(oppositeBrightness),
-    );
-  }
-}
-
-//* Animate Expand & Collapse --------------------------------------------------
-
-class AnimateExpansions extends StatelessWidget {
-  const AnimateExpansions({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final animatedExpansions = context.select<SettingsController, bool>(
-      (controller) => controller.state.animateExpansions,
-    );
-
-    return SwitchListTile(
-      title: const Text('Animate Expand & Collapse'),
-      value: animatedExpansions,
-      onChanged: (value) {
-        context.read<SettingsController>().updateAnimateExpansions(value);
-      },
-      contentPadding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
     );
   }
 }
@@ -158,6 +130,28 @@ class ColorOption extends StatelessWidget {
         onTap: canTap ? updateColor : null,
         child: const SizedBox.square(dimension: 20),
       ),
+    );
+  }
+}
+
+//* Animate Expand & Collapse --------------------------------------------------
+
+class AnimateExpansions extends StatelessWidget {
+  const AnimateExpansions({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final animatedExpansions = context.select<SettingsController, bool>(
+      (controller) => controller.state.animateExpansions,
+    );
+
+    return SwitchListTile(
+      title: const Text('Animate Expand & Collapse'),
+      value: animatedExpansions,
+      onChanged: (value) {
+        context.read<SettingsController>().updateAnimateExpansions(value);
+      },
+      contentPadding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
     );
   }
 }
@@ -382,7 +376,7 @@ class RestoreAllSettings extends StatelessWidget {
   }
 }
 
-// Other -----------------------------------------------------------------------
+//* Helpers --------------------------------------------------------------------
 
 class _SliderListTile extends StatelessWidget {
   const _SliderListTile({

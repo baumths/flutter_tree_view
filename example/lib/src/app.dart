@@ -30,7 +30,6 @@ class App extends StatelessWidget {
           ),
           child: child!,
         );
-        // return DirectionalityWrapper(child: child!);
       },
       home: const AppView(),
     );
@@ -57,7 +56,6 @@ class AppView extends StatelessWidget {
           child: IconButton(
             tooltip: 'Open settings drawer',
             icon: const Icon(Icons.menu),
-            color: Theme.of(context).colorScheme.onSurface,
             onPressed: () => smallDisplayScaffoldKey.currentState?.openDrawer(),
           ),
         ),
