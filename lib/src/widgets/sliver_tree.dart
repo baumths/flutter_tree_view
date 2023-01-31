@@ -31,7 +31,6 @@ Widget defaultTreeTransitionBuilder(
 ) {
   return SizeTransition(
     sizeFactor: animation,
-    axisAlignment: -1.0,
     child: child,
   );
 }
@@ -286,8 +285,7 @@ class SliverTree<T extends Object> extends StatefulWidget {
 /// the expansion state of a node, etc.).
 class SliverTreeState<T extends Object> extends State<SliverTree<T>>
     with TreeFlattener<T> {
-  /// The controller responsible for providing the tree hierarchy and expansion
-  /// state of tree nodes.
+  /// The controller responsible for providing expansion state of tree nodes.
   TreeController<T> get controller => widget.controller ?? _fallbackController!;
   TreeController<T>? _fallbackController;
 
