@@ -10,7 +10,7 @@ mixin TreeViewExample on Widget {
   String get title;
   Widget? get icon => null;
 
-  static int watchToRootLevelSetting(BuildContext context) {
+  static int watchRootLevelSetting(BuildContext context) {
     return context.select<SettingsController, int>(
       (controller) => controller.state.rootLevel,
     );

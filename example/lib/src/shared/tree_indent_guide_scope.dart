@@ -19,7 +19,7 @@ class TreeIndentGuideScope extends StatelessWidget {
       case IndentType.connectingLines:
         guide = IndentGuide.connectingLines(
           indent: state.indent,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(.3),
+          color: Theme.of(context).colorScheme.outline,
           thickness: state.lineThickness,
           origin: state.lineOrigin,
           roundCorners: state.roundedCorners,
@@ -28,7 +28,7 @@ class TreeIndentGuideScope extends StatelessWidget {
       case IndentType.scopingLines:
         guide = IndentGuide.scopingLines(
           indent: state.indent,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(.3),
+          color: Theme.of(context).colorScheme.outline,
           thickness: state.lineThickness,
           origin: state.lineOrigin,
         );

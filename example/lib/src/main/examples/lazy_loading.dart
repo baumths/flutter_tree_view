@@ -130,7 +130,7 @@ class _LazyLoadingTreeViewState extends State<LazyLoadingTreeView> {
         );
       },
       padding: const EdgeInsets.all(8),
-      rootLevel: TreeViewExample.watchToRootLevelSetting(context),
+      rootLevel: TreeViewExample.watchRootLevelSetting(context),
       animationDuration: TreeViewExample.watchAnimationDurationSetting(context),
     );
   }
