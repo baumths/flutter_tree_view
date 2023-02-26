@@ -104,7 +104,7 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// Do not attempt to load the children of a node in this callback as it
   /// would significantly slow down tree traversal which might couse the ui to
   /// hang. Prefer doing such operations on a user interaction (e.g., a button
-  /// press, keyboard shortcut, etc.). When lazy loading, temporarely return
+  /// press, keyboard shortcut, etc.). When lazy loading, temporarily return
   /// an empty iterable so tree traversal can continue. Once the loading is
   /// done, set the expansion state of the parent node to `true` and call
   /// [rebuild] to reveal the loaded nodes.
@@ -132,7 +132,7 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// state changed, child added or removed, node reordered, etc...), so that
   /// listeners may handle the updated values.
   /// Most methods of this controller (like expand, collapse, etc.) already
-  /// call [rebuild] inplicitly.
+  /// call [rebuild] implicitly.
   ///
   /// Example:
   /// ```dart
