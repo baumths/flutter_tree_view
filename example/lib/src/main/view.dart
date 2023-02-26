@@ -12,7 +12,7 @@ class MainView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const List<TreeViewExample> examples = [
-      DragAndDropTreeView(),
+      BasicTreeView(),
       LazyLoadingTreeView(),
     ];
 

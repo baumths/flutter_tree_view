@@ -6,7 +6,11 @@ import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 import '_example.dart';
 
 class Data {
-  static const int rootId = 0;
+  static const Data root = Data._root();
+
+  const Data._root()
+      : id = 0,
+        title = '/';
 
   static int _uniqueId = 1;
   Data(this.title) : id = _uniqueId++;
@@ -32,14 +36,12 @@ class _LazyLoadingTreeViewState extends State<LazyLoadingTreeView> {
   late final Random rng = Random();
   late final TreeController<Data> treeController;
 
-  Iterable<Data> get roots => childrenMap[Data.rootId]!;
-
   Iterable<Data> childrenProvider(Data data) {
     return childrenMap[data.id] ?? const Iterable.empty();
   }
 
   final Map<int, List<Data>> childrenMap = {
-    Data.rootId: [Data('Root'), Data('Root'), Data('Root')],
+    Data.root.id: [Data('Root'), Data('Root'), Data('Root')],
   };
 
   final Set<int> loadingIds = {};
@@ -101,7 +103,10 @@ class _LazyLoadingTreeViewState extends State<LazyLoadingTreeView> {
   @override
   void initState() {
     super.initState();
-    treeController = TreeController();
+    treeController = TreeController<Data>(
+      roots: childrenProvider(Data.root),
+      childrenProvider: childrenProvider,
+    );
   }
 
   @override
@@ -112,12 +117,11 @@ class _LazyLoadingTreeViewState extends State<LazyLoadingTreeView> {
 
   @override
   Widget build(BuildContext context) {
-    return TreeView<Data>(
-      roots: roots,
-      childrenProvider: childrenProvider,
+    return AnimatedTreeView<Data>(
       treeController: treeController,
       nodeBuilder: (_, TreeEntry<Data> entry) {
         return TreeIndentation(
+          entry: entry,
           child: Row(
             children: [
               SizedBox.square(
@@ -130,8 +134,7 @@ class _LazyLoadingTreeViewState extends State<LazyLoadingTreeView> {
         );
       },
       padding: const EdgeInsets.all(8),
-      rootLevel: TreeViewExample.watchRootLevelSetting(context),
-      animationDuration: TreeViewExample.watchAnimationDurationSetting(context),
+      duration: TreeViewExample.watchAnimationDurationSetting(context),
     );
   }
 }

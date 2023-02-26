@@ -1,75 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../foundation.dart' show TreeIndentDetails;
-
-/// An [InheritedWidget] that provides a [TreeIndentDetails] to its widget
-/// subtree.
-///
-/// This widget is created internally by [SliverTree] for each node of the tree.
-/// Used by [TreeIndentation] to correctly calculate the indentation based on
-/// [TreeIndentDetails.level] (and paint lines, if enabled).
-class TreeIndentDetailsScope extends InheritedWidget {
-  /// Creates a [TreeIndentDetailsScope].
-  const TreeIndentDetailsScope({
-    super.key,
-    required this.details,
-    required super.child,
-  });
-
-  /// The [TreeIndentDetails] provided to the subtree of this widget.
-  final TreeIndentDetails details;
-
-  @override
-  bool updateShouldNotify(TreeIndentDetailsScope oldWidget) {
-    return oldWidget.details.level != details.level ||
-        oldWidget.details.hasNextSibling != details.hasNextSibling;
-  }
-
-  /// The [TreeIndentDetails] from the closest instance of this class that
-  /// encloses the given context.
-  ///
-  /// If there is no [TreeIndentDetails] ancestor in the widget tree at the
-  /// given context, then this will throw in debug mode.
-  ///
-  /// Typical usage is as follows:
-  ///
-  /// ```dart
-  /// TreeIndentDetails details = TreeIndentDetailsScope.of(context);
-  /// ```
-  static TreeIndentDetails of(BuildContext context) {
-    final TreeIndentDetails? details = context
-        .dependOnInheritedWidgetOfExactType<TreeIndentDetailsScope>()
-        ?.details;
-
-    assert(() {
-      if (details == null) {
-        throw FlutterError.fromParts(<DiagnosticsNode>[
-          ErrorSummary(
-            'TreeIndentDetailsScope.of() called with a context that does not '
-            'contain a TreeIndentDetailsScope.',
-          ),
-          ErrorDescription(
-            'No TreeIndentDetailsScope ancestor could be found starting from '
-            'the context that was passed to TreeIndentDetailsScope.of().',
-          ),
-          ErrorHint(
-            'This can happen when the context provided is from the same '
-            'StatefulWidget that built the TreeIndentDetailsScope.',
-          ),
-          context.describeElement('The context used was'),
-        ]);
-      }
-      return true;
-    }());
-
-    return details!;
-  }
-}
+import '../foundation/tree_controller.dart';
 
 /// Widget responsible for indenting tree nodes and painting lines (if enabled).
-///
-/// Requires an ancestor [TreeIndentDetailsScope] to work, which is provided
-/// by [SliverTree].
 ///
 /// Check out the factory constructors of [IndentGuide] to discover the
 /// available indent guide decorations.
@@ -77,24 +10,19 @@ class TreeIndentation extends StatelessWidget {
   /// Creates a [TreeIndentation].
   ///
   /// If [guide] is not provided, defaults to a constant [ConnectingLinesGuide].
-  ///
-  /// Requires an ancestor [TreeIndentDetailsScope] to work, which is provided
-  /// by [SliverTree].
   const TreeIndentation({
     super.key,
     required this.child,
-    this.details,
+    required this.entry,
     this.guide,
   });
 
-  /// The widget that is going to be displayed to the side of indentation.
+  /// The widget that is going to be displayed to the side of the indentation.
   final Widget child;
 
-  /// Optional [TreeIndentDetails] that provides the relevant details (i.e.,
-  /// level, line offsets, etc.) when indenting and/or painting indent guides.
-  ///
-  /// When not provided, [TreeIndentDetailsScope.of] will be used instead.
-  final TreeIndentDetails? details;
+  /// The [TreeEntry] that will provide the relevant details (i.e., level,
+  /// line offsets, etc.) when indenting and/or painting indent guides.
+  final TreeEntry<Object> entry;
 
   /// The configuration used to indent and paint lines (if enabled).
   ///
@@ -106,15 +34,12 @@ class TreeIndentation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final TreeIndentDetails effectiveDetails =
-        details ?? TreeIndentDetailsScope.of(context);
-
-    if (effectiveDetails.skipIndentAndPaint) {
+    if (entry.skipIndentAndPaint) {
       return child;
     }
 
     final IndentGuide effectiveGuide = guide ?? DefaultIndentGuide.of(context);
-    return effectiveGuide.wrap(context, child, effectiveDetails);
+    return effectiveGuide.wrap(context, child, entry);
   }
 }
 
@@ -207,9 +132,9 @@ abstract class IndentGuide {
   /// Example:
   ///
   /// ```dart
-  /// final TreeIndentDetails details;
+  /// final TreeEntry entry;
   /// final IndentGuide guide;
-  /// final double indentation = details.level * guide.indent;
+  /// final double indentation = entry.level * guide.indent;
   /// ```
   final double indent;
 
@@ -221,7 +146,7 @@ abstract class IndentGuide {
   /// See also:
   ///
   ///   * [AbstractLineGuide], an interface for working with line painting;
-  Widget wrap(BuildContext context, Widget child, TreeIndentDetails details);
+  Widget wrap(BuildContext context, Widget child, TreeEntry<Object> entry);
 
   @override
   int get hashCode => indent.hashCode;
@@ -242,9 +167,9 @@ class BlankIndentGuide extends IndentGuide {
   const BlankIndentGuide({super.indent});
 
   @override
-  Widget wrap(BuildContext context, Widget child, TreeIndentDetails details) {
+  Widget wrap(BuildContext context, Widget child, TreeEntry<Object> entry) {
     return Padding(
-      padding: EdgeInsetsDirectional.only(start: details.level * indent),
+      padding: EdgeInsetsDirectional.only(start: entry.level * indent),
       child: child,
     );
   }
@@ -312,7 +237,7 @@ abstract class AbstractLineGuide extends BlankIndentGuide {
 
   /// Subclasses must override this method to provide the [CustomPainter] that
   /// will handle painting.
-  CustomPainter createPainter(BuildContext context, TreeIndentDetails details);
+  CustomPainter createPainter(BuildContext context, TreeEntry<Object> entry);
 
   /// Creates the [Paint] object that will be used to paint lines.
   Paint createPaint() => Paint()
@@ -324,11 +249,11 @@ abstract class AbstractLineGuide extends BlankIndentGuide {
   double offsetOfLevel(int level) => (level * indent) - originOffset;
 
   @override
-  Widget wrap(BuildContext context, Widget child, TreeIndentDetails details) {
+  Widget wrap(BuildContext context, Widget child, TreeEntry<Object> entry) {
     return RepaintBoundary(
       child: CustomPaint(
-        painter: createPainter(context, details),
-        child: super.wrap(context, child, details),
+        painter: createPainter(context, entry),
+        child: super.wrap(context, child, entry),
       ),
     );
   }
@@ -349,10 +274,10 @@ class ScopingLinesGuide extends AbstractLineGuide {
   });
 
   @override
-  CustomPainter createPainter(BuildContext context, TreeIndentDetails details) {
+  CustomPainter createPainter(BuildContext context, TreeEntry<Object> entry) {
     return _ScopingLinesPainter(
       guide: this,
-      nodeLevel: details.level,
+      nodeLevel: entry.level,
       textDirection: Directionality.maybeOf(context),
     );
   }
@@ -454,10 +379,10 @@ class ConnectingLinesGuide extends AbstractLineGuide {
   final bool roundCorners;
 
   @override
-  CustomPainter createPainter(BuildContext context, TreeIndentDetails details) {
+  CustomPainter createPainter(BuildContext context, TreeEntry<Object> entry) {
     return _ConnectingLinesPainter(
       guide: this,
-      details: details,
+      entry: entry,
       textDirection: Directionality.maybeOf(context),
     );
   }
@@ -506,14 +431,28 @@ class ConnectingLinesGuide extends AbstractLineGuide {
 class _ConnectingLinesPainter extends CustomPainter {
   _ConnectingLinesPainter({
     required this.guide,
-    required this.details,
+    required this.entry,
     this.textDirection,
-  }) : indentation = details.level * guide.indent;
+  }) : indentation = entry.level * guide.indent;
 
   final ConnectingLinesGuide guide;
-  final TreeIndentDetails details;
+  final TreeEntry<Object> entry;
   final TextDirection? textDirection;
   final double indentation;
+
+  void runForEachAncestorLevelThatHasNextSibling(
+    void Function(int level) action,
+  ) {
+    entry.unreachableAncestorLevelsWithVerticalLines?.forEach(action);
+
+    TreeEntry<Object>? current = entry;
+    while (current != null && current.level > 0) {
+      if (current.hasNextSibling) {
+        action(current.level);
+      }
+      current = current.parent;
+    }
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -534,13 +473,12 @@ class _ConnectingLinesPainter extends CustomPainter {
     final Path path = Path();
 
     // Add vertical lines
-
-    for (final int level in details.levelsWithVerticalLines) {
+    runForEachAncestorLevelThatHasNextSibling((int level) {
       final double x = calculateOffset(level);
       path
         ..moveTo(x, size.height)
         ..lineTo(x, 0);
-    }
+    });
 
     // Add connection
 
@@ -551,11 +489,11 @@ class _ConnectingLinesPainter extends CustomPainter {
     if (guide.roundCorners) {
       path.quadraticBezierTo(connectionStart, y, connectionEnd, y);
     } else {
-      // if the node has a sibling after it, a full vertical line was drawn at
-      // [nodeLevel] by [addVerticalLines] and we only need to move to the
-      // start of the horizontal line, otherwise we must add half vertical line
+      // if [entry] has a sibling after it, a full vertical line was
+      // painted at [entry.level] and we only need to move to the start
+      // of the horizontal line, otherwise add half of a vertical line
       // to connect to the horizontal one.
-      if (details.hasNextSibling) {
+      if (entry.hasNextSibling) {
         path.moveTo(connectionStart, y);
       } else {
         path.lineTo(connectionStart, y);
@@ -569,8 +507,8 @@ class _ConnectingLinesPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ConnectingLinesPainter oldDelegate) =>
-      oldDelegate.details.level != details.level ||
-      oldDelegate.details.hasNextSibling != details.hasNextSibling ||
+      oldDelegate.entry.level != entry.level ||
+      oldDelegate.entry.hasNextSibling != entry.hasNextSibling ||
       oldDelegate.textDirection != textDirection ||
       oldDelegate.guide != guide;
 }

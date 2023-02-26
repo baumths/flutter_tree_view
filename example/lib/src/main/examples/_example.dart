@@ -3,18 +3,12 @@ import 'package:provider/provider.dart';
 
 import '../../settings/controller.dart';
 
-export 'drag_and_drop.dart' show DragAndDropTreeView;
+export 'basic.dart' show BasicTreeView;
 export 'lazy_loading.dart' show LazyLoadingTreeView;
 
 mixin TreeViewExample on Widget {
   String get title;
   Widget? get icon => null;
-
-  static int watchRootLevelSetting(BuildContext context) {
-    return context.select<SettingsController, int>(
-      (controller) => controller.state.rootLevel,
-    );
-  }
 
   static Duration watchAnimationDurationSetting(BuildContext context) {
     final animateExpansions = context.select<SettingsController, bool>(

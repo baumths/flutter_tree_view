@@ -16,7 +16,6 @@ class SettingsCategories extends StatelessWidget {
       const ColorSelector(),
       const Direction(),
       const AnimateExpansions(),
-      const RootLevel(),
       const Indent(),
       const IndentGuideType(),
       if (indentType != IndentType.blank) ...[
@@ -259,35 +258,6 @@ class LineOrigin extends StatelessWidget {
       onChanged: (value) {
         context.read<SettingsController>().updateLineOrigin(value);
       },
-    );
-  }
-}
-
-//* Root level -----------------------------------------------------------------
-
-class RootLevel extends StatelessWidget {
-  const RootLevel({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final rootLevel = context.select<SettingsController, int>(
-      (controller) => controller.state.rootLevel,
-    );
-
-    return ListTile(
-      title: const Text('Root Level'),
-      trailing: Text(
-        '$rootLevel',
-        style: DefaultTextStyle.of(context).style.apply(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeightDelta: 1,
-              fontSizeDelta: 4,
-            ),
-      ),
-      onTap: () => context
-          .read<SettingsController>()
-          .updateRootLevel(rootLevel == 0 ? 1 : 0),
-      contentPadding: const EdgeInsetsDirectional.only(start: 16, end: 24),
     );
   }
 }

@@ -23,7 +23,6 @@ class SettingsState {
     this.indentType = IndentType.connectingLines,
     this.lineOrigin = 0.5,
     this.lineThickness = 2.0,
-    this.rootLevel = 0,
     this.roundedCorners = false,
     this.textDirection = TextDirection.ltr,
   });
@@ -35,7 +34,6 @@ class SettingsState {
   final IndentType indentType;
   final double lineOrigin;
   final double lineThickness;
-  final int rootLevel;
   final bool roundedCorners;
   final TextDirection textDirection;
 
@@ -47,7 +45,6 @@ class SettingsState {
     IndentType? indentType,
     double? lineOrigin,
     double? lineThickness,
-    int? rootLevel,
     bool? roundedCorners,
     TextDirection? textDirection,
   }) {
@@ -59,7 +56,6 @@ class SettingsState {
       indentType: indentType ?? this.indentType,
       lineOrigin: lineOrigin ?? this.lineOrigin,
       lineThickness: lineThickness ?? this.lineThickness,
-      rootLevel: rootLevel ?? this.rootLevel,
       roundedCorners: roundedCorners ?? this.roundedCorners,
       textDirection: textDirection ?? this.textDirection,
     );
@@ -116,11 +112,6 @@ class SettingsController with ChangeNotifier {
   void updateLineThickness(double value) {
     if (state.lineThickness == value) return;
     state = state.copyWith(lineThickness: value);
-  }
-
-  void updateRootLevel(int value) {
-    if (state.rootLevel == value) return;
-    state = state.copyWith(rootLevel: value);
   }
 
   void updateRoundedCorners(bool value) {
