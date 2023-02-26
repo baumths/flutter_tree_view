@@ -75,7 +75,7 @@ class _BasicTreeViewState extends State<BasicTreeView> {
   }
 }
 
-int _uniqueId = 1;
+int _uniqueId = 0;
 void populateExampleTree(Node node, [int level = 0]) {
   if (level >= 7) return;
   node.children.addAll([

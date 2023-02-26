@@ -443,8 +443,6 @@ class _ConnectingLinesPainter extends CustomPainter {
   void runForEachAncestorLevelThatHasNextSibling(
     void Function(int level) action,
   ) {
-    entry.unreachableAncestorLevelsWithVerticalLines?.forEach(action);
-
     TreeEntry<Object>? current = entry;
     while (current != null && current.level > 0) {
       if (current.hasNextSibling) {

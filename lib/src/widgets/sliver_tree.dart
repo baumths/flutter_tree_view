@@ -10,15 +10,16 @@ typedef TreeNodeBuilder<T extends Object> = Widget Function(
 
 // Examples can assume:
 //
-// class MyNode {
-//   MyNode(this.title) : children = <MyNode>[];
-//   String title;
-//   List<MyNode> children;
+// class Node {
+//   Node(this.children);
+//   List<Node> children;
 // }
 //
-// final TreeController<MyNode> treeController = TreeController<MyNode>(
-//   root: MyNode('Root'),
-//   childrenProvider: (MyNode node) => node.children,
+// final TreeController<Node> treeController = TreeController<Node>(
+//   root: <Node>[
+//     Node(<Node>[]),
+//   ],
+//   childrenProvider: (Node node) => node.children,
 // );
 
 /// A wrapper around [SliverList] that adds basic tree viewing capabilities.
@@ -29,9 +30,9 @@ typedef TreeNodeBuilder<T extends Object> = Widget Function(
 /// Widget build(BuildContext context) {
 ///   return CustomScrollView(
 ///     slivers: [
-///       SliverTree<MyNode>(
+///       SliverTree<Node>(
 ///         controller: treeController,
-///         nodeBuilder: (BuildContext context, TreeEntry<MyNode> entry) {
+///         nodeBuilder: (BuildContext context, TreeEntry<Node> entry) {
 ///           ...
 ///         },
 ///       ),

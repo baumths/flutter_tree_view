@@ -6,15 +6,16 @@ import 'sliver_tree.dart';
 
 // Examples can assume:
 //
-// class MyNode {
-//   MyNode(this.title) : children = <MyNode>[];
-//   String title;
-//   List<MyNode> children;
+// class Node {
+//   Node(this.children);
+//   List<Node> children;
 // }
 //
-// final TreeController<MyNode> treeController = TreeController<MyNode>(
-//   root: MyNode('Root'),
-//   childrenProvider: (MyNode node) => node.children,
+// final TreeController<Node> treeController = TreeController<Node>(
+//   root: <Node>[
+//     Node(<Node>[]),
+//   ],
+//   childrenProvider: (Node node) => node.children,
 // );
 
 /// A widget used to visualize tree hierarchies.
@@ -23,9 +24,9 @@ import 'sliver_tree.dart';
 /// ```dart
 /// @override
 /// Widget build(BuildContext context) {
-///   return TreeView<MyNode>(
+///   return TreeView<Node>(
 ///     treeController: treeController,
-///     nodeBuilder: (BuildContext context, TreeEntry<MyNode> entry) {
+///     nodeBuilder: (BuildContext context, TreeEntry<Node> entry) {
 ///       ...
 ///     },
 ///   );
@@ -77,7 +78,7 @@ class TreeView<T extends Object> extends BoxScrollView {
 /// ```dart
 /// @override
 /// Widget build(BuildContext context) {
-///   return AnimatedTreeView<MyNode>(
+///   return AnimatedTreeView<Node>(
 ///     treeController: treeController,
 ///     duration: const Duration(milliseconds, 300),
 ///     curve: Curves.linear,
@@ -91,7 +92,7 @@ class TreeView<T extends Object> extends BoxScrollView {
 ///         ),
 ///       );
 ///     },
-///     nodeBuilder: (BuildContext context, TreeEntry<MyNode> entry) {
+///     nodeBuilder: (BuildContext context, TreeEntry<Node> entry) {
 ///       ...
 ///     },
 ///   );

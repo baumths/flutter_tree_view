@@ -5,15 +5,16 @@ import 'sliver_tree.dart';
 
 // Examples can assume:
 //
-// class MyNode {
-//   MyNode(this.title) : children = <MyNode>[];
-//   String title;
-//   List<MyNode> children;
+// class Node {
+//   Node(this.children);
+//   List<Node> children;
 // }
 //
-// final TreeController<MyNode> treeController = TreeController<MyNode>(
-//   root: MyNode('Root'),
-//   childrenProvider: (MyNode node) => node.children,
+// final TreeController<Node> treeController = TreeController<Node>(
+//   root: <Node>[
+//     Node(<Node>[]),
+//   ],
+//   childrenProvider: (Node node) => node.children,
 // );
 
 /// Signature for a function that takes a widget and an animation to apply
@@ -48,12 +49,12 @@ Widget defaultTreeTransitionBuilder(
 /// Widget build(BuildContext context) {
 ///   return CustomScrollView(
 ///     slivers: [
-///       SliverAnimatedTree<MyNode>(
+///       SliverAnimatedTree<Node>(
 ///         controller: treeController,
 ///         duration: const Duration(milliseconds, 300),
 ///         curve: Curves.linear,
 ///         maxNodesToShowWhenAnimating: 50,
-///         nodeBuilder: (BuildContext context, TreeEntry<MyNode> entry) {
+///         nodeBuilder: (BuildContext context, TreeEntry<Node> entry) {
 ///           ...
 ///         },
 ///       ),
