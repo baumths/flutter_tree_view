@@ -59,6 +59,63 @@ basic usage of this package.
 Also, check out the [example/lib/src/main/examples] folder which has some
 feature specific examples.
 
+### Usage
+
+1. Create a "Tree Node" model to store your data
+
+```dart
+class MyTreeNode {
+  const MyTreeNode({
+    required this.title,
+    this.children = const <MyTreeNode>[],
+  });
+
+  final String title;
+  final List<MyTreeNode> children;
+}
+```
+
+2. Create/Fetch your hierarchical data
+
+```dart
+final List<MyNode> roots = [
+  const MyNode(title: 'My static root node'),
+  ...fetchOtherRootNodes(),
+];
+```
+
+3. Instantiate a [TreeController](https://pub.dev/documentation/flutter_fancy_tree_view/latest/flutter_fancy_tree_view/TreeController-class.html).
+
+```dart
+final treeController = TreeController<MyTreeNode>(
+  roots: roots,
+  childrenProvider: (MyTreeNode node) => node.children,
+);
+```
+
+4. Pass the controller to a [TreeView](https://pub.dev/documentation/flutter_fancy_tree_view/latest/flutter_fancy_tree_view/TreeView-class.html)
+and provide a widget builder to map your data into widgets. Make sure to include
+a way to toggle the tree nodes' expansion state and a [TreeIndentation](https://pub.dev/documentation/flutter_fancy_tree_view/latest/flutter_fancy_tree_view/TreeIndentation-class.html)
+widget to properly indent them.
+
+```dart
+@override
+Widget build(BuildContext context) {
+  return AnimatedTreeView<MyTreeNode>(
+    treeController: treeController,
+    nodeBuilder: (BuildContext context, TreeEntry<MyTreeNode> entry) {
+      return InkWell(
+        onTap: () => treeController.toggleExpansion(entry.node),
+        child: TreeIndentation(
+          entry: entry,
+          child: Text(entry.node.title),
+        ),
+      );
+    },
+  );
+}
+```
+
 ## API Documentation
 
 Head over to the [api docs] on [pub.dev].
