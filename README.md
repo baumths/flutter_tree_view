@@ -2,10 +2,12 @@
 
 # flutter_fancy_tree_view [![pub package](https://img.shields.io/pub/v/flutter_fancy_tree_view.svg)](https://pub.dev/packages/flutter_fancy_tree_view)
 
-A TreeView widget for [Flutter](https://flutter.dev).
-
-This package provides a collection of widgets that help you bring life to your
+A [Flutter] collection of widgets and slivers that helps you bring life to your
 hierarchical data.
+
+This package builds a flat representation of tree structures and lazily renders
+tree nodes to the screen on scroll using callbacks. This allows for tree nodes
+to be provided in any data structure capable of representing hierarchical data.
 
 ```diff
 @@ TODO: create gif and include it here @@
@@ -14,7 +16,7 @@ hierarchical data.
 <details>
 <summary>
 
-### Installation
+## Installation
 
 </summary>
 
@@ -46,9 +48,8 @@ import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 * Works with any Widget
 * Indentation Guides
 * Expand/Collapse Animations
-* Rudimentary Drag and Drop support
 
-For a hands on experience with the features, visit the [live demo app].
+For a hands on experience of the features, visit the [live demo app].
 The source code for the demo app can be found in the [example directory].
 
 ## Getting Started
@@ -58,9 +59,16 @@ basic usage of this package.
 Also, check out the [example/lib/src/main/examples] folder which has some
 feature specific examples.
 
+## API Documentation
+
+Head over to the [api docs] on [pub.dev].
+
+[pub.dev]: https://pub.dev
+[Flutter]: https://flutter.dev
 [live demo app]: https://baumths.github.io/flutter_tree_view
 [example directory]: https://github.com/baumths/flutter_tree_view/tree/main/example
 [example/example.md]: https://github.com/baumths/flutter_tree_view/tree/main/example/example.md
 [example/lib/src/main/examples]: https://github.com/baumths/flutter_tree_view/tree/main/example/lib/src/main/examples
+[api docs]: https://pub.dev/documentation/flutter_fancy_tree_view/latest/flutter_fancy_tree_view/flutter_fancy_tree_view-library.html
 
 [asset]: https://raw.githubusercontent.com/baumths/flutter_tree_view/main/.github/assets/<ASSET_FILE_NAME>
