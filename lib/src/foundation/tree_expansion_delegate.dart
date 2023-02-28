@@ -1,29 +1,31 @@
-/// An interface used to define the contract to store the expansion state of
-/// tree nodes.
+/// An interface used to delegate the operations of getting and setting the
+/// expansion state of tree nodes.
 ///
-/// Example using a property on a object:
+/// Example using a property on a node object:
 /// ```dart
 /// class Node {
 ///   bool isExpanded = false;
 /// }
 ///
-/// class TreeNodeExpansionState implements TreeExpansionState<Node> {
-///   const TreeNodeExpansionState();
+/// class TreeNodeExpansionDelegate implements TreeExpansionDelegate<Node> {
+///   const TreeNodeExpansionDelegate();
 ///
 ///   @override
 ///   bool get(Node node) => node.isExpanded;
 ///
 ///   @override
-///   void set(Node node, bool expanded) => node.isExpanded = expanded;
+///   void set(Node node, bool expanded) {
+///     node.isExpanded = expanded;
+///   }
 /// }
 /// ```
 ///
 /// See also:
-/// * [TreeExpansionStateSet], which uses a [Set] to store the expansion state
+/// * [TreeExpansionSet], which uses a [Set] to store the expansion state
 ///   of tree nodes.
-abstract class TreeExpansionState<T extends Object> {
+abstract class TreeExpansionDelegate<T extends Object> {
   /// Abstract constant constructor.
-  const TreeExpansionState();
+  const TreeExpansionDelegate();
 
   /// The current expansion state of [node].
   ///
@@ -35,24 +37,23 @@ abstract class TreeExpansionState<T extends Object> {
   void set(T node, bool expanded);
 }
 
-/// A [TreeExpansionState] implementation that  uses a [Set] to store the
+/// A [TreeExpansionDelegate] implementation that  uses a [Set] to store the
 /// expansion state of tree nodes.
 ///
 /// Usage:
 /// ```dart
-/// const int id = 1;
-/// final TreeExpansionState<int> expandedIds = TreeExpansionStateSet<int>();
+/// final TreeExpansionDelegate<int> expandedIds = TreeExpansionSet<int>();
 ///
-/// expandedIds.get(id); // false
-/// expandedIds.set(id, true);
-/// expandedIds.get(id); // true
+/// expandedIds.get(1); // false
+/// expandedIds.set(1, true);
+/// expandedIds.get(1); // true
 /// ```
-class TreeExpansionStateSet<T extends Object> implements TreeExpansionState<T> {
-  /// Creates a [TreeExpansionStateSet].
+class TreeExpansionSet<T extends Object> implements TreeExpansionDelegate<T> {
+  /// Creates a [TreeExpansionSet].
   ///
   /// [initiallyExpandedNodes] can be used to have some tree nodes already
   /// expanded by default.
-  TreeExpansionStateSet({
+  TreeExpansionSet({
     Iterable<T>? initiallyExpandedNodes,
   }) : expandedNodes = <T>{...?initiallyExpandedNodes};
 
@@ -66,4 +67,7 @@ class TreeExpansionStateSet<T extends Object> implements TreeExpansionState<T> {
   void set(T node, bool expanded) {
     expanded ? expandedNodes.add(node) : expandedNodes.remove(node);
   }
+
+  /// Removes all nodes from the expanded nodes [Set].
+  void clear() => expandedNodes.clear();
 }

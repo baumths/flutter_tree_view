@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-import 'tree_expansion_state.dart';
+import 'tree_expansion_delegate.dart';
 
 /// The default level used for root nodes when flattening the tree.
 const int treeRootLevel = 0;
@@ -52,15 +52,15 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// of the tree, these nodes are going to be used as a starting point when
   /// traversing the tree and building tree views.
   ///
-  /// [expansionState], the tree nodes expansion state cache, when absent,
-  /// defaults to [TreeExpansionStateSet] which will store expanded nodes in
+  /// [expansionDelegate], the tree nodes expansion state cache, when absent,
+  /// defaults to [TreeExpansionSet] which will store expanded nodes in
   /// a [Set] and call [Set.contains] to check if a node is expanded.
   TreeController({
     required Iterable<T> roots,
     required this.childrenProvider,
-    TreeExpansionState<T>? expansionState,
+    TreeExpansionDelegate<T>? expansionDelegate,
   })  : _roots = roots,
-        _expansionState = expansionState ?? TreeExpansionStateSet<T>();
+        _expansionDelegate = expansionDelegate ?? TreeExpansionSet<T>();
 
   /// The roots of the tree.
   ///
@@ -112,19 +112,19 @@ class TreeController<T extends Object> with ChangeNotifier {
 
   /// The tree nodes expansion state cache.
   ///
-  /// When not provided, defaults to [TreeExpansionStateSet].
-  TreeExpansionState<T> get expansionState => _expansionState;
-  TreeExpansionState<T> _expansionState;
-  set expansionState(TreeExpansionState<T> state) {
-    if (_expansionState == state) return;
-    _expansionState = state;
+  /// When not provided, defaults to [TreeExpansionSet].
+  TreeExpansionDelegate<T> get expansionDelegate => _expansionDelegate;
+  TreeExpansionDelegate<T> _expansionDelegate;
+  set expansionDelegate(TreeExpansionDelegate<T> delegate) {
+    if (delegate == _expansionDelegate) return;
+    _expansionDelegate = delegate;
     rebuild();
   }
 
-  /// The current expansion state of [node] gotten from [expansionState].
+  /// The current expansion state of [node] gotten from [expansionDelegate].
   ///
-  /// This method delegates its call to [TreeExpansionState.get].
-  bool isExpanded(T node) => expansionState.get(node);
+  /// This method delegates its call to [TreeExpansionDelegate.get].
+  bool isExpanded(T node) => expansionDelegate.get(node);
 
   /// Notify listeners that the tree structure changed in some way.
   ///
@@ -149,13 +149,13 @@ class TreeController<T extends Object> with ChangeNotifier {
   ///```
   void rebuild() => notifyListeners();
 
-  void _collapse(T node) => expansionState.set(node, false);
-  void _expand(T node) => expansionState.set(node, true);
+  void _collapse(T node) => expansionDelegate.set(node, false);
+  void _expand(T node) => expansionDelegate.set(node, true);
 
   /// Updates the expansion state of [node] to the opposite state, then calls
   /// [rebuild].
   void toggleExpansion(T node) {
-    expansionState.set(node, !isExpanded(node));
+    expansionDelegate.set(node, !isExpanded(node));
     rebuild();
   }
 
@@ -255,7 +255,7 @@ class TreeController<T extends Object> with ChangeNotifier {
         entry = TreeEntry<T>(
           node: node,
           index: treeIndex++,
-          isExpanded: expansionState.get(node),
+          isExpanded: expansionDelegate.get(node),
           level: level,
           parent: parent,
         );
