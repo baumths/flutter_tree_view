@@ -67,9 +67,9 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// These nodes are used as a starting point when traversing the tree.
   Iterable<T> get roots => _roots;
   Iterable<T> _roots;
-  set roots(Iterable<T> node) {
-    if (node == _roots) return;
-    _roots = node;
+  set roots(Iterable<T> nodes) {
+    if (nodes == _roots) return;
+    _roots = nodes;
     rebuild();
   }
 
@@ -187,6 +187,7 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// Traverses the subtrees of [nodes] in depth first order expanding every
   /// visited node, then calls [rebuild].
   void expandCascading(Iterable<T> nodes) {
+    if (nodes.isEmpty) return;
     _applyCascadingAction(nodes, _expand);
     rebuild();
   }
@@ -194,6 +195,7 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// Traverses the subtrees of [nodes] in depth first order collapsing every
   /// visited node, then calls [rebuild].
   void collapseCascading(Iterable<T> nodes) {
+    if (nodes.isEmpty) return;
     _applyCascadingAction(nodes, _collapse);
     rebuild();
   }
@@ -209,6 +211,8 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// ancestors of [node].
   void expandPath(T node, ParentProvider<T> parentProvider) {
     T? current = parentProvider(node);
+
+    if (current == null) return;
 
     while (current != null) {
       _expand(current);
