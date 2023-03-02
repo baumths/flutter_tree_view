@@ -89,7 +89,7 @@ class _LazyLoadingTreeViewState extends State<LazyLoadingTreeView> {
       isOpen = null;
       onPressed = null;
     } else {
-      isOpen = treeController.expansionDelegate.get(data);
+      isOpen = treeController.getExpansionState(data);
       onPressed = () => treeController.toggleExpansion(data);
     }
 
