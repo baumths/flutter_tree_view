@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../foundation/tree_controller.dart';
+import 'tree_controller.dart' show TreeEntry;
 
 /// Widget responsible for indenting tree nodes and painting lines (if enabled).
 ///

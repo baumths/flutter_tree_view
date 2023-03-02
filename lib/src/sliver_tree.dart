@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../foundation/tree_controller.dart';
+import 'tree_controller.dart';
 
 /// Signature of a widget builder function for tree views.
 typedef TreeNodeBuilder<T extends Object> = Widget Function(
