@@ -264,7 +264,7 @@ class TreeController<T extends Object> with ChangeNotifier {
     TreeEntry<T>? rootEntry,
   }) {
     final DescendCondition<TreeEntry<T>> shouldDescend =
-        descendCondition ?? (TreeEntry<T> entry) => entry.isExpanded;
+        descendCondition ?? defaultDescendCondition;
 
     int treeIndex = 0;
 
@@ -315,6 +315,10 @@ class TreeController<T extends Object> with ChangeNotifier {
       );
     }
   }
+
+  /// The default [DescendCondition] used by [depthFirstTraversal].
+  @visibleForTesting
+  bool defaultDescendCondition(TreeEntry<T> entry) => entry.isExpanded;
 
   @override
   void dispose() {
@@ -373,7 +377,12 @@ class TreeEntry<T extends Object> with Diagnosticable {
   /// └─ G
   final int level;
 
-  /// Whether this node has any child nodes.
+  /// Whether this node has child nodes currently visible on the tree.
+  ///
+  /// This is only `true` if the descendants of [node] have been traversed
+  /// (i.e., `descendCondition` of [TreeController.depthFirstTraversal]
+  /// returned `true` for [node]) **and** the iterable gotten from
+  /// [TreeController.childrenProvider] for [node] is not empty.
   ///
   /// This value may have changed since this entry was created.
   bool get hasChildren => _hasChildren;
