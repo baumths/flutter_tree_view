@@ -506,21 +506,15 @@ void main() {
         });
 
         test('receives the correct value for hasChildren', () {
-          final flatTree = <TreeEntry<String>>[];
-
-          // We do not run the `expect` calls in `onTraverse` because the value
-          // of `TreeEntry.hasChildren` is only set after `onTraverse` is called
           controller.depthFirstTraversal(
             descendCondition: visitAllNodes,
-            onTraverse: flatTree.add,
+            onTraverse: (TreeEntry<String> entry) {
+              expect(
+                entry.hasChildren,
+                equals(tree.childrenProvider(entry.node).isNotEmpty),
+              );
+            },
           );
-
-          for (final entry in flatTree) {
-            expect(
-              entry.hasChildren,
-              equals(tree.childrenProvider(entry.node).isNotEmpty),
-            );
-          }
         });
 
         test('receives the correct value for hasNextSibling', () {

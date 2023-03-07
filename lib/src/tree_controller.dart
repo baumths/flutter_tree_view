@@ -276,20 +276,19 @@ class TreeController<T extends Object> with ChangeNotifier {
       TreeEntry<T>? entry;
 
       for (final T node in nodes) {
+        final Iterable<T> children = childrenProvider(node);
         entry = TreeEntry<T>(
+          parent: parent,
           node: node,
           index: treeIndex++,
           isExpanded: getExpansionState(node),
           level: level,
-          parent: parent,
+          hasChildren: children.isNotEmpty,
         );
 
         onTraverse(entry);
 
-        late final Iterable<T> children = childrenProvider(node);
-
-        if (shouldDescend(entry) && children.isNotEmpty) {
-          entry._hasChildren = true;
+        if (shouldDescend(entry) && entry.hasChildren) {
           createTreeEntriesRecursively(
             parent: entry,
             nodes: children,
@@ -343,12 +342,11 @@ class TreeEntry<T extends Object> with Diagnosticable {
     required this.parent,
     required this.node,
     required this.index,
-    required this.isExpanded,
     required this.level,
-    bool hasChildren = false,
+    required this.isExpanded,
+    required this.hasChildren,
     bool hasNextSibling = true,
-  })  : _hasChildren = hasChildren,
-        _hasNextSibling = hasNextSibling;
+  }) : _hasNextSibling = hasNextSibling;
 
   /// The direct parent of [node] on the tree, which was collected during
   /// traversal.
@@ -359,11 +357,6 @@ class TreeEntry<T extends Object> with Diagnosticable {
 
   /// The index of [node] in the flat tree list that originated this entry.
   final int index;
-
-  /// The expansion state of [node].
-  ///
-  /// This value may have changed since this entry was created.
-  final bool isExpanded;
 
   /// The level of the node that owns this entry on the tree. Example:
   ///
@@ -377,16 +370,18 @@ class TreeEntry<T extends Object> with Diagnosticable {
   /// └─ G
   final int level;
 
-  /// Whether this node has child nodes currently visible on the tree.
-  ///
-  /// This is only `true` if the descendants of [node] have been traversed
-  /// (i.e., `descendCondition` of [TreeController.depthFirstTraversal]
-  /// returned `true` for [node]) **and** the iterable gotten from
-  /// [TreeController.childrenProvider] for [node] is not empty.
+  /// The expansion state of [node].
   ///
   /// This value may have changed since this entry was created.
-  bool get hasChildren => _hasChildren;
-  bool _hasChildren;
+  final bool isExpanded;
+
+  /// Whether [node] has any child nodes.
+  ///
+  /// This value is gotten from calling [TreeController.childrenProvider] with
+  /// [node] an checking if the returned iterable is not empty.
+  ///
+  /// This value may have changed since this entry was created.
+  final bool hasChildren;
 
   /// Whether the node that owns this entry has another node after it at the
   /// same level.
