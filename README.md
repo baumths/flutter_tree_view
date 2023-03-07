@@ -78,8 +78,8 @@ class MyTreeNode {
 2. Create/Fetch your hierarchical data
 
 ```dart
-final List<MyNode> roots = [
-  const MyNode(title: 'My static root node'),
+final List<MyTreeNode> roots = [
+  const MyTreeNode(title: 'My static root node'),
   ...fetchOtherRootNodes(),
 ];
 ```
