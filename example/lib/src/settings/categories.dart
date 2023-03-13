@@ -146,16 +146,17 @@ class ExampleSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final notifier = context.watch<SelectedExampleNotifier>();
     final selectedExample = notifier.value;
 
     return ListTile(
       contentPadding: const EdgeInsetsDirectional.only(start: 16, end: 8),
-      iconColor: Theme.of(context).colorScheme.onSurface,
+      iconColor: colorScheme.onSurface,
       title: const Text('Selected Example'),
       subtitle: Text(
         selectedExample.title,
-        style: TextStyle(color: Theme.of(context).colorScheme.primary),
+        style: TextStyle(color: colorScheme.primary),
       ),
       trailing: ExamplesCatalog(
         selectedExample: selectedExample,
