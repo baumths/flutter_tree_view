@@ -28,16 +28,13 @@ typedef TreeTransitionBuilder = Widget Function(
 /// The default transition builder used by [SliverTree] to animate the expansion
 /// state changes of a tree node.
 ///
-/// By default, wraps [child] with a [SizeTransition].
+/// Wraps [child] in a [SizeTransition].
 Widget defaultTreeTransitionBuilder(
   BuildContext context,
   Widget child,
   Animation<double> animation,
 ) {
-  return SizeTransition(
-    sizeFactor: animation,
-    child: child,
-  );
+  return SizeTransition(sizeFactor: animation, child: child);
 }
 
 /// A wrapper around [SliverList] that adds tree viewing capabilities with
@@ -63,7 +60,7 @@ Widget defaultTreeTransitionBuilder(
 /// }
 /// ```
 ///
-/// This widget will listen to a [TreeController] and rebuild the inner flat
+/// This widget will listen to [controller] and rebuild the inner flat
 /// representation of the tree keeping a map of the expansion state of tree
 /// nodes to then check if the cached value is different from the current
 /// node expansion state when visiting that node during flattening and will

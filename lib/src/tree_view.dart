@@ -34,10 +34,10 @@ import 'tree_controller.dart';
 /// ```
 ///
 /// See also:
-/// * [SliverTree], which is created internally by [TreeView]. It can
-///   be used to create more sophisticated scrolling experiences.
-/// * [AnimatedTreeView], a version of this widget that animates the expand and
-///   collapse tree operations.
+/// * [SliverTree], which is created internally by [TreeView]. It can be used
+///   to create more sophisticated scrolling experiences.
+/// * [AnimatedTreeView], a version of this widget that animates the expansion
+///   state changes of tree nodes.
 class TreeView<T extends Object> extends BoxScrollView {
   /// Creates a [TreeView].
   const TreeView({

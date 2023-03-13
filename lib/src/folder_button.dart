@@ -2,27 +2,29 @@ import 'package:flutter/material.dart';
 
 /// The default transition builder used by [FolderButton].
 ///
-/// By default, wraps [child] with a [ScaleTransition].
+/// Wraps [child] in a [ScaleTransition].
 Widget defaultFolderButtonTransitionBuilder(
   Widget child,
   Animation<double> animation,
 ) {
-  return ScaleTransition(
-    scale: animation,
-    child: child,
-  );
+  return ScaleTransition(scale: animation, child: child);
 }
 
 /// A wrapper around [IconButton] and [AnimatedSwitcher] that animates between
-/// [openedIcon] and [closedIcon] depending on the value of [isOpen].
+/// [icon], [openedIcon] and [closedIcon] depending on the value of [isOpen].
+///
+/// The value of [isOpen] is mapped as follows:
+/// `null`  -> [icon]       -> [Icons.article]
+/// `true`  -> [openedIcon] -> [Icons.folder_open]
+/// `false` -> [closedIcon] -> [Icons.folder]
 class FolderButton extends StatelessWidget {
   /// Creates a [FolderButton].
   const FolderButton({
     super.key,
     this.isOpen = true,
+    this.icon = const Icon(Icons.article),
     this.openedIcon = const Icon(Icons.folder_open),
     this.closedIcon = const Icon(Icons.folder),
-    this.icon = const Icon(Icons.article),
     this.iconSize,
     this.visualDensity,
     this.padding = const EdgeInsets.all(8.0),
@@ -47,8 +49,13 @@ class FolderButton extends StatelessWidget {
     this.transitionBuilder = defaultFolderButtonTransitionBuilder,
   });
 
-  /// Defines which of [openedIcon], [closedIcon] and [icon] is currently shown.
+  /// Defines which of [icon], [openedIcon] and [closedIcon] is currently shown.
   final bool? isOpen;
+
+  /// The icon to show when [isOpen] is set to `null`.
+  ///
+  /// Defaults to `Icon(Icons.article)`.
+  final Widget icon;
 
   /// The icon to show when [isOpen] is set to `true`.
   ///
@@ -59,11 +66,6 @@ class FolderButton extends StatelessWidget {
   ///
   /// Defaults to `Icon(Icons.folder)`.
   final Widget closedIcon;
-
-  /// The icon to show when [isOpen] is set to `null`.
-  ///
-  /// Defaults to `Icon(Icons.article)`.
-  final Widget icon;
 
   /// The size of the icon inside the button.
   ///
@@ -331,7 +333,7 @@ class FolderButton extends StatelessWidget {
         switchOutCurve: curve,
         transitionBuilder: transitionBuilder,
         child: KeyedSubtree(
-          key: Key('$isOpen'),
+          key: Key('FolderButton#$isOpen'),
           child: _effectiveIcon,
         ),
       ),

@@ -2,8 +2,8 @@
 
 # flutter_fancy_tree_view [![pub package](https://img.shields.io/pub/v/flutter_fancy_tree_view.svg)](https://pub.dev/packages/flutter_fancy_tree_view)
 
-A [Flutter] collection of widgets and slivers that helps you bring life to your
-hierarchical data.
+A [Flutter] collection of widgets and slivers that helps bringing your
+hierarchical data to life.
 
 This package builds a flat representation of tree structures and lazily renders
 tree nodes to the screen on scroll using callbacks. This allows for tree nodes

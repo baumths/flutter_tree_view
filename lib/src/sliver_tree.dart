@@ -2,12 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'tree_controller.dart';
 
-/// Signature of a widget builder function for tree views.
-typedef TreeNodeBuilder<T extends Object> = Widget Function(
-  BuildContext context,
-  TreeEntry<T> entry,
-);
-
 // Examples can assume:
 //
 // class Node {
@@ -21,6 +15,12 @@ typedef TreeNodeBuilder<T extends Object> = Widget Function(
 //   ],
 //   childrenProvider: (Node node) => node.children,
 // );
+
+/// Signature of a widget builder function for tree views.
+typedef TreeNodeBuilder<T extends Object> = Widget Function(
+  BuildContext context,
+  TreeEntry<T> entry,
+);
 
 /// A wrapper around [SliverList] that adds basic tree viewing capabilities.
 ///
@@ -42,8 +42,9 @@ typedef TreeNodeBuilder<T extends Object> = Widget Function(
 /// ```
 ///
 /// See also:
-/// * [AnimatedTreeView], which covers the [CustomScrollView] boilerplate.
-/// * [SliverTree], a tree sliver with no custom behaviors.
+/// * [TreeView], which covers the [CustomScrollView] boilerplate.
+/// * [AnimatedTreeView], a [TreeView] that animates the expansion state changes
+///   of tree nodes.
 class SliverTree<T extends Object> extends StatefulWidget {
   /// Creates a [SliverTree].
   const SliverTree({
