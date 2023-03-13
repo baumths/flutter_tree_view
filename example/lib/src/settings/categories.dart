@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../examples.dart';
 import 'controller.dart';
 
 class SettingsCategories extends StatelessWidget {
@@ -14,6 +15,7 @@ class SettingsCategories extends StatelessWidget {
 
     final List<Widget> categories = [
       const ColorSelector(),
+      const ExampleSelector(),
       const Direction(),
       const AnimateExpansions(),
       const Indent(),
@@ -87,11 +89,15 @@ class ColorSelector extends StatelessWidget {
       trailing: ColorOption(color: selectedColor, canTap: false),
       shape: const RoundedRectangleBorder(side: BorderSide.none),
       tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-      childrenPadding: const EdgeInsets.all(16),
+      childrenPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
+        GridView.extent(
+          shrinkWrap: true,
+          maxCrossAxisExtent: 24,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          padding: EdgeInsets.zero,
+          physics: const NeverScrollableScrollPhysics(),
           children: const <Color>[Colors.black, Colors.white]
               .followedBy(Colors.primaries.reversed)
               .followedBy(Colors.accents)
@@ -127,8 +133,74 @@ class ColorOption extends StatelessWidget {
       child: InkWell(
         borderRadius: borderRadius,
         onTap: canTap ? updateColor : null,
-        child: const SizedBox.square(dimension: 20),
+        child: const SizedBox.square(dimension: 24),
       ),
+    );
+  }
+}
+
+//* Example Selector =----------------------------------------------------------
+
+class ExampleSelector extends StatelessWidget {
+  const ExampleSelector({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final notifier = context.watch<SelectedExampleNotifier>();
+    final selectedExample = notifier.value;
+
+    return ListTile(
+      contentPadding: const EdgeInsetsDirectional.only(start: 16, end: 8),
+      iconColor: Theme.of(context).colorScheme.onSurface,
+      title: const Text('Selected Example'),
+      subtitle: Text(
+        selectedExample.title,
+        style: TextStyle(color: Theme.of(context).colorScheme.primary),
+      ),
+      trailing: ExamplesCatalog(
+        selectedExample: selectedExample,
+        onExampleSelected: notifier.select,
+      ),
+      onTap: ExamplesCatalog.showPopup,
+    );
+  }
+}
+
+class ExamplesCatalog extends StatelessWidget {
+  const ExamplesCatalog({
+    super.key,
+    required this.onExampleSelected,
+    required this.selectedExample,
+  });
+
+  final ValueChanged<Example?> onExampleSelected;
+  final Example selectedExample;
+
+  static final GlobalKey<PopupMenuButtonState> popupMenuKey = GlobalKey();
+  static void showPopup() => popupMenuKey.currentState?.showButtonMenu();
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<Example>(
+      key: popupMenuKey,
+      initialValue: selectedExample,
+      onSelected: onExampleSelected,
+      itemBuilder: (_) => <PopupMenuEntry<Example>>[
+        for (final example in Example.values)
+          PopupMenuItem(
+            value: example,
+            enabled: example != selectedExample,
+            child: Row(
+              children: [
+                example.icon,
+                const SizedBox(width: 16),
+                Text(example.title),
+              ],
+            ),
+          ),
+      ],
+      tooltip: 'Open Examples Popup',
+      icon: const Icon(Icons.more_vert),
     );
   }
 }
@@ -195,8 +267,6 @@ class IndentGuideType extends StatelessWidget {
         indentType.title,
         style: TextStyle(
           color: Theme.of(context).colorScheme.primary,
-          fontWeight: FontWeight.w600,
-          fontSize: 12,
         ),
       ),
       shape: const RoundedRectangleBorder(side: BorderSide.none),
@@ -335,13 +405,18 @@ class RestoreAllSettings extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return ListTile(
-      title: const Text('Restore All Settings'),
-      onTap: () => context.read<SettingsController>().restoreAll(),
-      trailing: const Icon(Icons.restore),
-      tileColor: colorScheme.errorContainer,
-      textColor: colorScheme.onErrorContainer,
-      iconColor: colorScheme.onErrorContainer,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: ElevatedButton.icon(
+        icon: const Icon(Icons.restore),
+        label: const Text('Restore Settings'),
+        onPressed: () => context.read<SettingsController>().restoreAll(),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+        ),
+      ),
     );
   }
 }

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'src/app.dart';
-import 'src/main/controller.dart';
-import 'src/settings/controller.dart';
+import 'src/app.dart' show App;
+import 'src/examples.dart' show SelectedExampleNotifier;
+import 'src/settings/controller.dart' show SettingsController;
 
 void main() {
   runApp(

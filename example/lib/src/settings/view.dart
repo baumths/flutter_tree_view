@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
 
-import '../shared/utils.dart' show checkIsSmallDisplay;
 import 'categories.dart';
 
 class SettingsView extends StatelessWidget {
-  const SettingsView({super.key});
+  const SettingsView({super.key, this.isDrawer = false});
+
+  final bool isDrawer;
 
   @override
   Widget build(BuildContext context) {
     late final Widget child = Column(
-      children: const [
-        Header(),
-        Divider(height: 1),
-        Expanded(child: SettingsCategories()),
+      children: [
+        Header(showCloseButton: isDrawer),
+        const Divider(height: 1),
+        const Expanded(child: SettingsCategories()),
       ],
     );
 
-    if (checkIsSmallDisplay(context)) {
+    if (isDrawer) {
       return Drawer(child: child);
     }
 
@@ -33,14 +34,16 @@ class SettingsView extends StatelessWidget {
 }
 
 class Header extends StatelessWidget {
-  const Header({super.key});
+  const Header({super.key, this.showCloseButton = false});
+
+  final bool showCloseButton;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: kToolbarHeight,
       child: Padding(
-        padding: const EdgeInsetsDirectional.only(start: 16, end: 6),
+        padding: const EdgeInsetsDirectional.only(start: 16, end: 8),
         child: Row(
           children: [
             Expanded(
@@ -50,7 +53,7 @@ class Header extends StatelessWidget {
               ),
             ),
             const DarkModeButton(),
-            if (checkIsSmallDisplay(context))
+            if (showCloseButton)
               IconButton(
                 tooltip: 'Close settings',
                 icon: const Icon(Icons.close),

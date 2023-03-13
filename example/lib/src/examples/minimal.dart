@@ -1,35 +1,24 @@
-import 'dart:math' as math show pi;
 import 'package:flutter/material.dart';
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
-import '_example.dart';
-
 class Node {
-  Node({required this.title, Iterable<Node>? children})
-      : children = <Node>[...?children];
+  Node({
+    required this.title,
+    Iterable<Node>? children,
+  }) : children = <Node>[...?children];
 
   final String title;
   final List<Node> children;
 }
 
-class BasicTreeView extends StatefulWidget with TreeViewExample {
-  const BasicTreeView({super.key});
+class MinimalTreeView extends StatefulWidget {
+  const MinimalTreeView({super.key});
 
   @override
-  String get title => 'Basic';
-
-  @override
-  Widget? get icon => Transform(
-        alignment: Alignment.center,
-        transform: Matrix4.rotationY(math.pi),
-        child: const Icon(Icons.clear_all),
-      );
-
-  @override
-  State<BasicTreeView> createState() => _BasicTreeViewState();
+  State<MinimalTreeView> createState() => _MinimalTreeViewState();
 }
 
-class _BasicTreeViewState extends State<BasicTreeView> {
+class _MinimalTreeViewState extends State<MinimalTreeView> {
   late final TreeController<Node> treeController;
   late final Node root = Node(title: '/');
 

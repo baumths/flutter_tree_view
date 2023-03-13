@@ -3,7 +3,7 @@ import 'dart:math' show Random;
 import 'package:flutter/material.dart';
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
-import '_example.dart';
+import '../shared.dart' show watchAnimationDurationSetting;
 
 class Data {
   static const Data root = Data._root();
@@ -19,17 +19,11 @@ class Data {
   final String title;
 }
 
-class LazyLoadingTreeView extends StatefulWidget with TreeViewExample {
+class LazyLoadingTreeView extends StatefulWidget {
   const LazyLoadingTreeView({super.key});
 
   @override
   State<LazyLoadingTreeView> createState() => _LazyLoadingTreeViewState();
-
-  @override
-  String get title => 'Lazy Loading';
-
-  @override
-  Widget? get icon => const Icon(Icons.hourglass_top_rounded);
 }
 
 class _LazyLoadingTreeViewState extends State<LazyLoadingTreeView> {
@@ -134,7 +128,7 @@ class _LazyLoadingTreeViewState extends State<LazyLoadingTreeView> {
         );
       },
       padding: const EdgeInsets.all(8),
-      duration: TreeViewExample.watchAnimationDurationSetting(context),
+      duration: watchAnimationDurationSetting(context),
     );
   }
 }

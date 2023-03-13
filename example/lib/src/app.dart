@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'main/view.dart';
 import 'settings/controller.dart';
 import 'settings/view.dart';
-import 'shared/utils.dart' show checkIsSmallDisplay;
+import 'examples.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -39,39 +38,42 @@ class App extends StatelessWidget {
 class AppView extends StatelessWidget {
   const AppView({super.key});
 
-  static final smallDisplayScaffoldKey = GlobalKey<ScaffoldState>();
-
   /// Necessary when resizing the app so the tree view example inside the
   /// main view doesn't loose its tree states.
-  static const mainViewKey = GlobalObjectKey('<MainViewGlobalObjectKey>');
+  static const examplesViewKey = GlobalObjectKey('<ExamplesViewKey>');
 
   @override
   Widget build(BuildContext context) {
-    if (checkIsSmallDisplay(context)) {
-      return Scaffold(
-        key: smallDisplayScaffoldKey,
-        floatingActionButtonLocation: FloatingActionButtonLocation.startTop,
-        floatingActionButton: Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: IconButton(
-            tooltip: 'Open settings drawer',
-            icon: const Icon(Icons.menu),
-            onPressed: () => smallDisplayScaffoldKey.currentState?.openDrawer(),
-          ),
-        ),
-        drawer: const SettingsView(),
-        body: const MainView(
-          key: mainViewKey,
+    PreferredSizeWidget? appBar;
+    Widget? body;
+    Widget? drawer;
+
+    if (MediaQuery.of(context).size.width > 720) {
+      body = Row(
+        children: const [
+          SettingsView(),
+          VerticalDivider(width: 1),
+          Expanded(child: ExamplesView(key: examplesViewKey)),
+        ],
+      );
+    } else {
+      appBar = AppBar(
+        title: const Text('TreeView Examples'),
+        notificationPredicate: (_) => false,
+        titleSpacing: 0,
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1),
         ),
       );
+      body = const ExamplesView(key: examplesViewKey);
+      drawer = const SettingsView(isDrawer: true);
     }
 
-    return Row(
-      children: const [
-        SettingsView(),
-        VerticalDivider(width: 1),
-        Expanded(child: MainView(key: mainViewKey)),
-      ],
+    return Scaffold(
+      appBar: appBar,
+      body: body,
+      drawer: drawer,
     );
   }
 }

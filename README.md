@@ -56,7 +56,7 @@ The source code for the demo app can be found in the [example directory].
 
 Head over to [example/example.md] for a well commented example of the
 basic usage of this package.
-Also, check out the [example/lib/src/main/examples] folder which has some
+Also, check out the [example/lib/src/examples] folder which has some
 feature specific examples.
 
 ### Usage
@@ -125,7 +125,7 @@ Head over to the [api docs] on [pub.dev].
 [live demo app]: https://baumths.github.io/flutter_tree_view
 [example directory]: https://github.com/baumths/flutter_tree_view/tree/main/example
 [example/example.md]: https://github.com/baumths/flutter_tree_view/tree/main/example/example.md
-[example/lib/src/main/examples]: https://github.com/baumths/flutter_tree_view/tree/main/example/lib/src/main/examples
+[example/lib/src/examples]: https://github.com/baumths/flutter_tree_view/tree/main/example/lib/src/examples
 [api docs]: https://pub.dev/documentation/flutter_fancy_tree_view/latest/flutter_fancy_tree_view/flutter_fancy_tree_view-library.html
 
 [asset]: https://raw.githubusercontent.com/baumths/flutter_tree_view/main/.github/assets/<ASSET_FILE_NAME>
