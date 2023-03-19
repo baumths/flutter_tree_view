@@ -9,16 +9,19 @@ This package builds a flat representation of tree structures and lazily renders
 tree nodes to the screen on scroll using callbacks. This allows for tree nodes
 to be provided in any data structure capable of representing hierarchical data.
 
-```diff
-@@ TODO: create gif and include it here @@
-```
+<details>
+<summary><h2>Screenshots</h2></summary>
+
+|   |   |
+| - | - |
+| Connecting Lines  | ![connecting_lines]  |
+| Scoping Lines     | ![scoping_lines]     |
+| Blank Indentation | ![blank_indentation] |
+
+</details>
 
 <details>
-<summary>
-
-## Installation
-
-</summary>
+<summary><h2>Installation</h2></summary>
 
 Run this command:
 
@@ -48,6 +51,7 @@ import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 * Works with any Widget
 * Indentation Guides
 * Expand/Collapse Animations
+* Sliver tree variants
 
 For a hands on experience of the features, visit the [live demo app].
 The source code for the demo app can be found in the [example directory].
@@ -118,14 +122,15 @@ Widget build(BuildContext context) {
 
 ## API Documentation
 
-Head over to the [api docs] on [pub.dev].
+Head over to the [pub.dev api docs].
 
-[pub.dev]: https://pub.dev
 [Flutter]: https://flutter.dev
 [live demo app]: https://baumths.github.io/flutter_tree_view
-[example directory]: https://github.com/baumths/flutter_tree_view/tree/main/example
-[example/example.md]: https://github.com/baumths/flutter_tree_view/tree/main/example/example.md
-[example/lib/src/examples]: https://github.com/baumths/flutter_tree_view/tree/main/example/lib/src/examples
-[api docs]: https://pub.dev/documentation/flutter_fancy_tree_view/latest/flutter_fancy_tree_view/flutter_fancy_tree_view-library.html
+[example directory]: https://github.com/baumths/flutter_tree_view/tree/dev/1.0/example
+[example/example.md]: https://github.com/baumths/flutter_tree_view/tree/dev/1.0/example/example.md
+[example/lib/src/examples]: https://github.com/baumths/flutter_tree_view/tree/dev/1.0/example/lib/src/examples
+[pub.dev api docs]: https://pub.dev/documentation/flutter_fancy_tree_view/latest/flutter_fancy_tree_view/flutter_fancy_tree_view-library.html
 
-[asset]: https://raw.githubusercontent.com/baumths/flutter_tree_view/main/.github/assets/<ASSET_FILE_NAME>
+[connecting_lines]: https://raw.githubusercontent.com/baumths/flutter_tree_view/dev/1.0/screenshots/connecting_lines.png
+[scoping_lines]: https://raw.githubusercontent.com/baumths/flutter_tree_view/dev/1.0/screenshots/scoping_lines.png
+[blank_indentation]: https://raw.githubusercontent.com/baumths/flutter_tree_view/dev/1.0/screenshots/blank_indentation.png
