@@ -143,6 +143,7 @@ class AnimatedTreeView<T extends Object> extends TreeView<T> {
     return SliverAnimatedTree<T>(
       controller: treeController,
       nodeBuilder: nodeBuilder,
+      transitionBuilder: transitionBuilder,
       duration: duration,
       curve: curve,
       maxNodesToShowWhenAnimating: maxNodesToShowWhenAnimating,
