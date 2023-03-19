@@ -6,10 +6,32 @@ import 'tree_controller.dart' show TreeEntry;
 ///
 /// Check out the factory constructors of [IndentGuide] to discover the
 /// available indent guide decorations.
+///
+/// Example:
+/// ```dart
+/// final TreeEntry entry;
+///
+/// @override
+/// Widget build(BuildContext context) {
+///   return TreeIndentation(
+///     entry: entry,
+///     guide: IndentGuide.connectingLines(
+///       indent: 40,
+///       color: Colors.grey,
+///       thickness: 1.0,
+///       origin: 0.5,
+///       roundCorners: true,
+///     ),
+///     child: ...
+///   );
+/// }
+/// ```
+///
+/// If [guide] is not provided, [DefaultIndentGuide.of] will be used instead.
 class TreeIndentation extends StatelessWidget {
   /// Creates a [TreeIndentation].
   ///
-  /// If [guide] is not provided, defaults to a constant [ConnectingLinesGuide].
+  /// If [guide] is not provided, [DefaultIndentGuide.of] will be used instead.
   const TreeIndentation({
     super.key,
     required this.child,
@@ -97,18 +119,16 @@ class DefaultIndentGuide extends InheritedTheme {
   }
 }
 
-/// An interface to configure tree node indentation and painting.
+/// The configuration used to indent and paint optional guides for tree nodes.
 ///
-/// Check out the factory constructors of this class to discover the
-/// available indent guide decorations.
-abstract class IndentGuide {
-  /// Allows subclasses to have constant constructors.
+/// This indent guide only indents tree nodes without decorations. Check out the
+/// factory constructors of this class to discover the available indent guide
+/// decorations.
+class IndentGuide {
+  /// Creates an [IndentGuide].
   const IndentGuide({
     this.indent = 40.0,
   }) : assert(indent >= 0.0);
-
-  /// Convenient constructor to create a [BlankIndentGuide].
-  const factory IndentGuide.blank({double indent}) = BlankIndentGuide;
 
   /// Convenient constructor to create a [ConnectingLinesGuide].
   const factory IndentGuide.connectingLines({
@@ -129,8 +149,7 @@ abstract class IndentGuide {
 
   /// The amount of indent to apply for each level of the tree.
   ///
-  /// Example:
-  ///
+  /// The indentation of tree nodes is calculated as follows:
   /// ```dart
   /// final TreeEntry entry;
   /// final IndentGuide guide;
@@ -144,29 +163,7 @@ abstract class IndentGuide {
   /// [TreeIndentation].
   ///
   /// See also:
-  ///
-  ///   * [AbstractLineGuide], an interface for working with line painting;
-  Widget wrap(BuildContext context, Widget child, TreeEntry<Object> entry);
-
-  @override
-  int get hashCode => indent.hashCode;
-
-  @override
-  operator ==(Object other) {
-    if (identical(other, this)) return true;
-    return other is IndentGuide && other.indent == indent;
-  }
-}
-
-/// An [IndentGuide] that only indents tree nodes, with no painting.
-///
-/// Check out the factory constructors of [IndentGuide] to discover the
-/// available indent guide decorations.
-class BlankIndentGuide extends IndentGuide {
-  /// Creates a [BlankIndentGuide].
-  const BlankIndentGuide({super.indent});
-
-  @override
+  /// * [AbstractLineGuide], an interface for working with line painting;
   Widget wrap(BuildContext context, Widget child, TreeEntry<Object> entry) {
     return Padding(
       padding: EdgeInsetsDirectional.only(start: entry.level * indent),
@@ -178,11 +175,11 @@ class BlankIndentGuide extends IndentGuide {
   int get hashCode => indent.hashCode;
 
   @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
+  operator ==(Object other) {
+    if (identical(other, this)) return true;
 
     return other.runtimeType == runtimeType &&
-        other is BlankIndentGuide &&
+        other is IndentGuide &&
         other.indent == indent;
   }
 }
@@ -192,7 +189,7 @@ class BlankIndentGuide extends IndentGuide {
 ///
 /// Check out the factory constructors of [IndentGuide] to discover the
 /// available indent guide decorations.
-abstract class AbstractLineGuide extends BlankIndentGuide {
+abstract class AbstractLineGuide extends IndentGuide {
   /// Constructor with requried parameters for building the indent line guides.
   const AbstractLineGuide({
     super.indent,
@@ -236,7 +233,7 @@ abstract class AbstractLineGuide extends BlankIndentGuide {
   final double originOffset;
 
   /// Subclasses must override this method to provide the [CustomPainter] that
-  /// will handle painting.
+  /// will handle line painting.
   CustomPainter createPainter(BuildContext context, TreeEntry<Object> entry);
 
   /// Creates the [Paint] object that will be used to paint lines.

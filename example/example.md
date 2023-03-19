@@ -160,15 +160,9 @@ class MyTreeTile extends StatelessWidget {
             children: [
               // Add a widget to indicate the expansion state of this node.
               // See also: ExpandIcon.
-              //
-              // FolderButton will show three different icons depending on the 
-              // value of isOpen:
-              // - true: openedIcon, defaults to Icons.folder_open
-              // - false: closedIcon, defaults to Icons.folder
-              // - null: icon, defaults to Icons.article
               FolderButton(
-                isOpen: entry.isExpanded,
-                onPressed: onTap,
+                isOpen: entry.hasChildren ? entry.isExpanded : null,
+                onPressed: entry.hasChildren ? onTap : null,
               ),
               Text(entry.node.title),
             ],

@@ -17,6 +17,35 @@ Widget defaultFolderButtonTransitionBuilder(
 /// `null`  -> [icon]       -> [Icons.article]
 /// `true`  -> [openedIcon] -> [Icons.folder_open]
 /// `false` -> [closedIcon] -> [Icons.folder]
+///
+/// Example:
+/// ```dart
+/// final TreeEntry entry;
+/// final TreeController controller;
+///
+/// @override
+/// Widget build(BuildContext context) {
+///   bool? isOpen;
+///   VoidCallback? onPressed;
+///
+///   if (entry.hasChildren) {
+///     isOpen = entry.isExpanded;
+///     onPressed = () => controller.toggleExpansion(entry.node);
+///   }
+///
+///   return FolderButton(
+///     isOpen: isOpen,
+///     onPressed: onPressed,
+///   );
+/// }
+/// ```
+///
+/// In the above example, the [isOpen] property is composed depending on the
+/// context of a [TreeEntry]. This widget will show [icon] when the entry is a
+/// leaf (i.e., has no children), [openedIcon] when the expansion state is set
+/// to `true` and [closedIcon] if the expansion state is set to `false`. The
+/// [onPressed] callback is set to `null` when the entry is a leaf disabling
+/// the button.
 class FolderButton extends StatelessWidget {
   /// Creates a [FolderButton].
   const FolderButton({

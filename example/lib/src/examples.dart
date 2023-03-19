@@ -81,7 +81,7 @@ class TreeIndentGuideScope extends StatelessWidget {
         );
         break;
       case IndentType.blank:
-        guide = IndentGuide.blank(indent: state.indent);
+        guide = IndentGuide(indent: state.indent);
         break;
     }
 
