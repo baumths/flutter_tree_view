@@ -5,18 +5,19 @@
 A [Flutter] collection of widgets and slivers that helps bringing your
 hierarchical data to life.
 
-This package builds a flat representation of tree structures and lazily renders
-tree nodes to the screen on scroll using callbacks. This allows for tree nodes
-to be provided in any data structure capable of representing hierarchical data.
+This package uses a set of callbacks to traverse your hierarchical data in
+depth first order, collecting the needed information in a simple dart list
+(the flat representation of the tree) to then lazily render the tree nodes
+to the screen using slivers.
 
 <details>
 <summary><h2>Screenshots</h2></summary>
 
 |   |   |
 | - | - |
-| Connecting Lines  | ![connecting_lines]  |
-| Scoping Lines     | ![scoping_lines]     |
-| Blank Indentation | ![blank_indentation] |
+| Blank Indentation | ![IndentGuide](https://raw.githubusercontent.com/baumths/flutter_tree_view/dev/1.0/screenshots/blank_indentation.png) |
+| Connecting Lines  | ![IndentGuide.connectingLines](https://raw.githubusercontent.com/baumths/flutter_tree_view/dev/1.0/screenshots/connecting_lines.png) |
+| Scoping Lines     | ![IndentGuide.scopingLines](https://raw.githubusercontent.com/baumths/flutter_tree_view/dev/1.0/screenshots/scoping_lines.png) |
 
 </details>
 
@@ -130,7 +131,3 @@ Head over to the [pub.dev api docs].
 [example/example.md]: https://github.com/baumths/flutter_tree_view/tree/dev/1.0/example/example.md
 [example/lib/src/examples]: https://github.com/baumths/flutter_tree_view/tree/dev/1.0/example/lib/src/examples
 [pub.dev api docs]: https://pub.dev/documentation/flutter_fancy_tree_view/latest/flutter_fancy_tree_view/flutter_fancy_tree_view-library.html
-
-[connecting_lines]: https://raw.githubusercontent.com/baumths/flutter_tree_view/dev/1.0/screenshots/connecting_lines.png
-[scoping_lines]: https://raw.githubusercontent.com/baumths/flutter_tree_view/dev/1.0/screenshots/scoping_lines.png
-[blank_indentation]: https://raw.githubusercontent.com/baumths/flutter_tree_view/dev/1.0/screenshots/blank_indentation.png

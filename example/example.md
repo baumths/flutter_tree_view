@@ -7,7 +7,7 @@ import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
 void main() => runApp(const MaterialApp(home: Scaffold(body: MyTreeView())));
 
-// Create an object to hold your hierarchical data (optional, could be a Map or
+// Create a class to hold your hierarchical data (optional, could be a Map or
 // any other data structure that's capable of representing hierarchical data).
 class MyNode {
   const MyNode({
@@ -34,25 +34,25 @@ class _MyTreeViewState extends State<MyTreeView> {
       title: 'Root 1',
       children: <MyNode>[
         MyNode(
-          title: 'Node 1.A',
+          title: 'Node 1.1',
           children: <MyNode>[
-            MyNode(title: 'Node 1.A.1'),
-            MyNode(title: 'Node 1.A.2'),
+            MyNode(title: 'Node 1.1.1'),
+            MyNode(title: 'Node 1.1.2'),
           ],
         ),
-        MyNode(title: 'Node 1.B'),
+        MyNode(title: 'Node 1.2'),
       ],
     ),
     MyNode(
       title: 'Root 2',
       children: <MyNode>[
         MyNode(
-          title: 'Node 2.A',
+          title: 'Node 2.1',
           children: <MyNode>[
-            MyNode(title: 'Node 2.A.1'),
+            MyNode(title: 'Node 2.1.1'),
           ],
         ),
-        MyNode(title: 'Node 2.B')
+        MyNode(title: 'Node 2.2')
       ],
     ),
   ];
@@ -90,9 +90,9 @@ class _MyTreeViewState extends State<MyTreeView> {
     // tree nodes to animate in and out when the parent node is expanded
     // and collapsed, the AnimatedTreeView could be used instead.
     //
-    // The tree view widgets also have a Sliver variant to make it easy to
-    // incorporate your hierarchical data in more sophisticated scrolling
-    // experiences for your users.
+    // The tree view widgets also have a Sliver variant to make it easy
+    // to incorporate your hierarchical data in sophisticated scrolling
+    // experiences.
     return TreeView<MyNode>(
       // This controller is used by tree views to build a flat representation
       // of a tree structure so it can be lazy rendered by a SliverList.
@@ -100,20 +100,21 @@ class _MyTreeViewState extends State<MyTreeView> {
       // tree nodes.
       treeController: treeController,
       // Provide a widget builder callback to map your tree nodes into widgets.
-      //
-      // Your tree nodes are wrapped in TreeEntry instances when traversing 
-      // the tree, these objects hold important details about its node relative 
-      // to the tree, like: expansion state, level, parent, etc.
-      //
-      // TreeEntry instances are short lived, each time TreeController.rebuild
-      // is called, a new TreeEntry is created for each node so the details it
-      // holds are always up to date.
       nodeBuilder: (BuildContext context, TreeEntry<MyNode> entry) {
         // Provide a widget to display your tree nodes in the tree view.
         //
         // Can be any widget, just make sure to include a [TreeIndentation]
         // within its widget subtree to properly indent your tree nodes.
         return MyTreeTile(
+          // Add a key to your tiles to avoid syncing descendant animations.
+          key: ValueKey(entry.node),
+          // Your tree nodes are wrapped in TreeEntry instances when traversing
+          // the tree, these objects hold important details about its node
+          // relative to the tree, like: expansion state, level, parent, etc.
+          //
+          // TreeEntrys are short lived, each time TreeController.rebuild is
+          // called, a new TreeEntry is created for each node so its properties
+          // are always up to date.
           entry: entry,
           // Add a callback to toggle the expansion state of this node.
           onTap: () => treeController.toggleExpansion(entry.node),
