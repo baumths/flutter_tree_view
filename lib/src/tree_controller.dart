@@ -229,7 +229,7 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// [parentProvider] should return the direct parent of the given node or
   /// `null` if the root node is reached, this callback is used to traverse the
   /// ancestors of [node].
-  void expandPath(T node, ParentProvider<T> parentProvider) {
+  void expandAncestors(T node, ParentProvider<T> parentProvider) {
     T? current = parentProvider(node);
 
     if (current == null) return;

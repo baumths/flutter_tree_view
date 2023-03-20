@@ -290,7 +290,7 @@ void main() {
       });
     });
 
-    group('expandPath()', () {
+    group('expandAncestors()', () {
       const root = 1;
       const target = 7;
       const ancestors = [1, 2, 3, 4, 5, 6];
@@ -307,7 +307,7 @@ void main() {
           expect(controller.getExpansionState(node), isFalse);
         }
 
-        controller.expandPath(target, (int node) => parentOf[node]);
+        controller.expandAncestors(target, (int node) => parentOf[node]);
 
         for (final node in ancestors) {
           expect(controller.getExpansionState(node), isTrue);
@@ -317,7 +317,7 @@ void main() {
       test('does not expand the node passed to it', () {
         expect(controller.getExpansionState(target), isFalse);
 
-        controller.expandPath(target, (int node) => parentOf[node]);
+        controller.expandAncestors(target, (int node) => parentOf[node]);
         for (final node in ancestors) {
           expect(controller.getExpansionState(node), isTrue);
         }
@@ -326,10 +326,10 @@ void main() {
       });
 
       test('properly calls notifyListeners()', () {
-        controller.expandPath(root, (_) => null);
+        controller.expandAncestors(root, (_) => null);
         expect(controller.notifyListenersCallCount, equals(0));
 
-        controller.expandPath(target, (int node) => parentOf[node]);
+        controller.expandAncestors(target, (int node) => parentOf[node]);
         expect(controller.notifyListenersCallCount, equals(1));
       });
     });
