@@ -1,5 +1,5 @@
-## [1.0.0] WIP
-### Complete API rework
+## [1.0.0] 20-03-2023
+### Major API rework
 Main new features:
 - Dynamic "TreeNode" modeling
 - Expand/Collapse animations

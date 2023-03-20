@@ -1,5 +1,3 @@
-🚧 WIP
-
 # flutter_fancy_tree_view [![pub package](https://img.shields.io/pub/v/flutter_fancy_tree_view.svg)](https://pub.dev/packages/flutter_fancy_tree_view)
 
 A [Flutter] collection of widgets and slivers that helps bringing your
@@ -15,9 +13,9 @@ to the screen using slivers.
 
 |   |   |
 | - | - |
-| Blank Indentation | ![IndentGuide](https://raw.githubusercontent.com/baumths/flutter_tree_view/dev/1.0/screenshots/blank_indentation.png) |
-| Connecting Lines  | ![IndentGuide.connectingLines](https://raw.githubusercontent.com/baumths/flutter_tree_view/dev/1.0/screenshots/connecting_lines.png) |
-| Scoping Lines     | ![IndentGuide.scopingLines](https://raw.githubusercontent.com/baumths/flutter_tree_view/dev/1.0/screenshots/scoping_lines.png) |
+| Blank Indentation | ![IndentGuide](https://raw.githubusercontent.com/baumths/flutter_tree_view/main/screenshots/blank_indentation.png) |
+| Connecting Lines  | ![IndentGuide.connectingLines](https://raw.githubusercontent.com/baumths/flutter_tree_view/main/screenshots/connecting_lines.png) |
+| Scoping Lines     | ![IndentGuide.scopingLines](https://raw.githubusercontent.com/baumths/flutter_tree_view/main/screenshots/scoping_lines.png) |
 
 </details>
 
@@ -127,7 +125,7 @@ Head over to the [pub.dev api docs].
 
 [Flutter]: https://flutter.dev
 [live demo app]: https://baumths.github.io/flutter_tree_view
-[example directory]: https://github.com/baumths/flutter_tree_view/tree/dev/1.0/example
-[example/example.md]: https://github.com/baumths/flutter_tree_view/tree/dev/1.0/example/example.md
-[example/lib/src/examples]: https://github.com/baumths/flutter_tree_view/tree/dev/1.0/example/lib/src/examples
+[example directory]: https://github.com/baumths/flutter_tree_view/tree/main/example
+[example/example.md]: https://github.com/baumths/flutter_tree_view/tree/main/example/example.md
+[example/lib/src/examples]: https://github.com/baumths/flutter_tree_view/tree/main/example/lib/src/examples
 [pub.dev api docs]: https://pub.dev/documentation/flutter_fancy_tree_view/latest/flutter_fancy_tree_view/flutter_fancy_tree_view-library.html
