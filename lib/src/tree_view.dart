@@ -80,7 +80,7 @@ class TreeView<T extends Object> extends BoxScrollView {
 /// Widget build(BuildContext context) {
 ///   return AnimatedTreeView<Node>(
 ///     treeController: treeController,
-///     duration: const Duration(milliseconds, 300),
+///     duration: const Duration(milliseconds: 300),
 ///     curve: Curves.linear,
 ///     maxNodesToShowWhenAnimating: 50,
 ///     transitionBuilder: (BuildContext context, Widget child, Animation<double> animation) {
