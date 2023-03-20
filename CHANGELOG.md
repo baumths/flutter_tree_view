@@ -1,3 +1,19 @@
+## [1.0.0] WIP
+### Complete API rework
+Main new features:
+- Dynamic "TreeNode" modeling
+- Expand/Collapse animations
+- Sliver tree variants
+
+Changes:
+- Indent guides overhaul
+- New `AnimatedTreeView`
+- New Sliver support: `SliverTree` and `SliverAnimatedTree`
+- Simplified `TreeViewController` and renamed to `TreeController`
+- `NodeWidgetLeadingIcon` was rewritten as `FolderButton`
+- `LinesWidget` was improved and rewritten as `TreeIndentation`
+- Removed `NodeWidget` since it was just a wrapper around `InkWell` + `Row`
+
 ## [0.5.3+2] 01-10-2022
 - Update [NodeWidgetLeadingIcon] icon types from [Icon] to [Widget]
   - Author: @naory159 (https://github.com/naory159)

@@ -1,11 +1,10 @@
+/// A collection of widgets and slivers that helps bringing hierarchical data
+/// to life.
 library flutter_fancy_tree_view;
 
-export 'src/expand_node_icon.dart';
-export 'src/lines_widget.dart';
-export 'src/node_widget_leading_icon.dart';
-export 'src/node_widget.dart';
-export 'src/tree_node_scope.dart';
-export 'src/tree_node.dart' hide TreeNodeX;
-export 'src/tree_view_controller.dart' show TreeViewController;
-export 'src/tree_view_theme.dart';
+export 'src/folder_button.dart';
+export 'src/sliver_animated_tree.dart';
+export 'src/sliver_tree.dart';
+export 'src/tree_controller.dart';
+export 'src/tree_indentation.dart';
 export 'src/tree_view.dart';
