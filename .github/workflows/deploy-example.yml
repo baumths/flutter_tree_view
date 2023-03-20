@@ -12,5 +12,5 @@ jobs:
       - uses: subosito/flutter-action@v1
       - uses: bluefireteam/flutter-gh-pages@v7
         with:
-          workingDir: demo
+          workingDir: example
           baseHref: /flutter_tree_view/
