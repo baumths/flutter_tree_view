@@ -99,6 +99,7 @@ class _SliverTreeState<T extends Object> extends State<SliverTree<T>> {
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller.removeListener(_rebuild);
       widget.controller.addListener(_rebuild);
+      _updateFlatTree();
     }
   }
 
