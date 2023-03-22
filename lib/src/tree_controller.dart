@@ -22,6 +22,12 @@ typedef Visitor<T> = void Function(T node);
 /// traversed or skipped.
 typedef DescendCondition<T> = bool Function(T node);
 
+/// Signature of a function that takes a `T` node and returns a `bool`.
+///
+/// Used when traversing the tree in breadth first order to decide whether the
+/// traversal should stop.
+typedef ReturnCondition<T> = bool Function(T node);
+
 /// A controller used to dynamically manage the state of a tree.
 ///
 /// Whenever this controller notifies its listeners any attached tree views
@@ -290,6 +296,49 @@ class TreeController<T extends Object> with ChangeNotifier {
     rebuild();
   }
 
+  /// Traverses the subtrees of [startingNodes] in breadth first order. If
+  /// [startingNodes] is not provided, [roots] will be used instead.
+  ///
+  /// [descendCondition] is used to determine if the descendants of the node
+  /// passed to it should be traversed. When not provided, defaults to
+  /// [alwaysReturnsTrue], a function that always returns `true` which leads
+  /// to every node on the tree being visited by this traversal.
+  ///
+  /// [returnCondition] is used as a predicate to decide if the iteration should
+  /// be stopped. If this callback returns `true` the node that was passed to
+  /// it is returned from this method. When not provided, defaults to
+  /// [alwaysReturnsFalse], a function that always returns `false` which leads
+  /// to every node on the tree being visited by this traversal.
+  ///
+  /// An optional [onTraverse] callback can be provided to apply an action to
+  /// each visited node. This callback is called prior to [returnCondition] and
+  /// [descendCondition] making it possible to update a node before checking
+  /// its properties.
+  T? breadthFirstSearch({
+    Iterable<T>? startingNodes,
+    DescendCondition<T> descendCondition = alwaysReturnsTrue,
+    ReturnCondition<T> returnCondition = alwaysReturnsFalse,
+    Visitor<T>? onTraverse,
+  }) {
+    final List<T> nodes = List<T>.of(startingNodes ?? roots);
+
+    while (nodes.isNotEmpty) {
+      final T node = nodes.removeAt(0);
+
+      onTraverse?.call(node);
+
+      if (returnCondition(node)) {
+        return node;
+      }
+
+      if (descendCondition(node)) {
+        nodes.addAll(childrenProvider(node));
+      }
+    }
+
+    return null;
+  }
+
   /// Traverses the subtrees of [roots] creating [TreeEntry] instances for
   /// each visited node.
   ///
@@ -374,6 +423,16 @@ class TreeController<T extends Object> with ChangeNotifier {
     super.dispose();
   }
 }
+
+/// A function that can take a nullable [Object] and will always return `true`.
+///
+/// Used in other funciton definitions as a constant default predicate.
+bool alwaysReturnsTrue([Object? _]) => true;
+
+/// A function that can take a nullable [Object] and will always return `false`.
+///
+/// Used in other funciton definitions as a constant default predicate.
+bool alwaysReturnsFalse([Object? _]) => false;
 
 /// Used to store useful information about [node] in a tree.
 ///
