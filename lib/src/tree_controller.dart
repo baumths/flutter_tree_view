@@ -136,7 +136,7 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// If this method returns `true`, the children of [node] should be visible
   /// in tree views.
   bool getExpansionState(T node) {
-    return _expandedNodesCache?.contains(node) ?? false;
+    return _expandedNodes.contains(node);
   }
 
   /// Updates the expansion state of [node] to the value of [expanded].
@@ -196,6 +196,26 @@ class TreeController<T extends Object> with ChangeNotifier {
     _collapse(node);
     rebuild();
   }
+
+  /// Expands all nodes of this tree consequently.
+  void expandAll() => expandCascading(roots);
+
+  /// Collapses all nodes of this tree consequently.
+  void collapseAll() => collapseCascading(roots);
+
+  /// Whether this tree is completely expanded.
+  ///
+  /// To know this it is required to know if root nodes contained in
+  /// the cache of expanded nodes.
+  bool get isTreeExpanded =>
+      roots.every((node) => _expandedNodes.contains(node));
+
+  /// Whether this tree is completely collapsed.
+  ///
+  /// To know this it is required to know if root nodes does not contained in
+  /// the cache of expanded nodes.
+  bool get isTreeCollapsed =>
+      roots.every((node) => !_expandedNodes.contains(node));
 
   void _applyCascadingAction(Iterable<T> nodes, Visitor<T> action) {
     for (final T node in nodes) {
