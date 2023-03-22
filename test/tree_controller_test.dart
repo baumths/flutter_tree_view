@@ -354,6 +354,49 @@ void main() {
       });
     });
 
+    test('areAllRootsExpanded', () {
+      final controller = TestTreeController<int>.create(roots: const [1, 2, 3]);
+      expect(controller.areAllRootsExpanded, isFalse);
+
+      for (final root in controller.roots) {
+        expect(controller.areAllRootsExpanded, isFalse);
+        controller.setExpansionState(root, true);
+      }
+
+      expect(controller.areAllRootsExpanded, isTrue);
+
+      for (final root in controller.roots) {
+        controller.setExpansionState(root, false);
+      }
+
+      expect(controller.areAllRootsExpanded, isFalse);
+    });
+
+    test('areAllRootsCollapsed', () {
+      final controller = TestTreeController<int>.create(roots: const [1, 2, 3]);
+      expect(controller.areAllRootsCollapsed, isTrue);
+
+      controller.setExpansionState(2, true);
+      expect(controller.areAllRootsCollapsed, isFalse);
+
+      controller.setExpansionState(2, false);
+      expect(controller.areAllRootsCollapsed, isTrue);
+
+      for (final root in controller.roots) {
+        controller.setExpansionState(root, true);
+      }
+
+      expect(controller.areAllRootsCollapsed, isFalse);
+    });
+
+    group('isTreeExpanded', skip: true, () {
+      // TODO:
+    });
+
+    group('isTreeCollapsed', skip: true, () {
+      // TODO:
+    });
+
     group('breadthFirstSearch()', () {
       late TestTree tree;
       late TestTreeController<String> controller;

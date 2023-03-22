@@ -203,54 +203,6 @@ class TreeController<T extends Object> with ChangeNotifier {
     rebuild();
   }
 
-  /// Expands all nodes of this tree consequently.
-  void expandAll() => expandCascading(roots);
-
-  /// Collapses all nodes of this tree consequently.
-  void collapseAll() => collapseCascading(roots);
-
-  /// Whether all root nodes of this tree are expanded.
-  ///
-  /// To know this it is required to know if root nodes contained in
-  /// the cache of expanded nodes.
-  bool get areAllRootsExpanded => roots.every(getExpansionState);
-
-  /// Whether all root nodes of this tree are collapsed.
-  ///
-  /// To know this it is required to know if root nodes does not contained in
-  /// the cache of expanded nodes.
-  bool get areAllRootsCollapsed => !roots.any(getExpansionState);
-
-  /// Whether all nodes of this tree are expanded.
-  bool get isTreeExpanded {
-    final totalNodes = [], expandedNodes = [];
-    depthFirstTraversal(
-      onTraverse: (entry) {
-        totalNodes.add(entry);
-        if (entry.isExpanded) {
-          expandedNodes.add(entry);
-        }
-      },
-      descendCondition: (node) => true,
-    );
-    return totalNodes.length == expandedNodes.length;
-  }
-
-  /// Whether all nodes of this tree are collapsed.
-  bool get isTreeCollapsed {
-    final totalNodes = [], collapsedNodes = [];
-    depthFirstTraversal(
-      onTraverse: (entry) {
-        totalNodes.add(entry);
-        if (!entry.isExpanded) {
-          collapsedNodes.add(entry);
-        }
-      },
-      descendCondition: (node) => true,
-    );
-    return totalNodes.length == collapsedNodes.length;
-  }
-
   void _applyCascadingAction(Iterable<T> nodes, Visitor<T> action) {
     for (final T node in nodes) {
       action(node);
@@ -274,6 +226,12 @@ class TreeController<T extends Object> with ChangeNotifier {
     rebuild();
   }
 
+  /// Expands all nodes of this tree recursively.
+  void expandAll() => expandCascading(roots);
+
+  /// Collapses all nodes of this tree recursively.
+  void collapseAll() => collapseCascading(roots);
+
   /// Walks up the ancestors of [node] setting their expansion state to `true`.
   /// Note: [node] is not expanded by this method.
   ///
@@ -294,6 +252,44 @@ class TreeController<T extends Object> with ChangeNotifier {
     }
 
     rebuild();
+  }
+
+  /// Whether all root nodes of this tree are expanded.
+  bool get areAllRootsExpanded => roots.every(getExpansionState);
+
+  /// Whether all root nodes of this tree are collapsed.
+  bool get areAllRootsCollapsed => !roots.any(getExpansionState);
+
+  /// Whether **all** nodes of this tree are expanded.
+  bool get isTreeExpanded {
+    if (roots.isEmpty) return false;
+
+    bool anyCollapsedNodes = true;
+
+    breadthFirstSearch(
+      returnCondition: (T node) {
+        anyCollapsedNodes = !getExpansionState(node);
+        return anyCollapsedNodes;
+      },
+    );
+
+    return anyCollapsedNodes;
+  }
+
+  /// Whether **all** nodes of this tree are collapsed.
+  bool get isTreeCollapsed {
+    if (roots.isEmpty) return true;
+
+    bool anyExpandedNodes = false;
+
+    breadthFirstSearch(
+      returnCondition: (T node) {
+        anyExpandedNodes = getExpansionState(node);
+        return anyExpandedNodes;
+      },
+    );
+
+    return anyExpandedNodes;
   }
 
   /// Traverses the subtrees of [startingNodes] in breadth first order. If
