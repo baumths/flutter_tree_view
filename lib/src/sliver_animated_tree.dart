@@ -217,6 +217,7 @@ class _SliverAnimatedTreeState<T extends Object>
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller.removeListener(_rebuild);
       widget.controller.addListener(_rebuild);
+      _updateFlatTree();
     }
   }
 
