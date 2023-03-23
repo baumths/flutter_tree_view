@@ -430,12 +430,12 @@ class TreeController<T extends Object> with ChangeNotifier {
 
 /// A function that can take a nullable [Object] and will always return `true`.
 ///
-/// Used in other funciton definitions as a constant default predicate.
+/// Used in other function declarations as a constant default parameter.
 bool alwaysReturnsTrue([Object? _]) => true;
 
 /// A function that can take a nullable [Object] and will always return `false`.
 ///
-/// Used in other funciton definitions as a constant default predicate.
+/// Used in other function declarations as a constant default parameter.
 bool alwaysReturnsFalse([Object? _]) => false;
 
 /// Used to store useful information about [node] in a tree.
