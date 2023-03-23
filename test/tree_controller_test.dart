@@ -389,12 +389,74 @@ void main() {
       expect(controller.areAllRootsCollapsed, isFalse);
     });
 
-    group('isTreeExpanded', skip: true, () {
-      // TODO:
+    group('isTreeExpanded', () {
+      late TestTree tree;
+      late TestTreeController<String> controller;
+
+      setUp(() {
+        tree = TestTree.breadthFirst();
+        controller = TestTreeController(
+          roots: tree.roots,
+          childrenProvider: tree.childrenProvider,
+        );
+      });
+
+      test('only returns true when all tree nodes are expanded', () {
+        controller.collapseAll();
+        expect(controller.isTreeExpanded, isFalse);
+
+        controller.expand('3');
+        expect(controller.isTreeExpanded, isFalse);
+
+        controller.expandCascading(const ['2']);
+        expect(controller.isTreeExpanded, isFalse);
+
+        controller.expand('1');
+        expect(
+          controller.isTreeExpanded,
+          isFalse,
+          reason: 'All root nodes have been expanded, but there are still '
+              'some collapsed nodes in the subtree of node "1"',
+        );
+
+        controller.expandAll();
+        expect(controller.isTreeExpanded, isTrue);
+      });
     });
 
-    group('isTreeCollapsed', skip: true, () {
-      // TODO:
+    group('isTreeCollapsed', () {
+      late TestTree tree;
+      late TestTreeController<String> controller;
+
+      setUp(() {
+        tree = TestTree.breadthFirst();
+        controller = TestTreeController(
+          roots: tree.roots,
+          childrenProvider: tree.childrenProvider,
+        );
+      });
+
+      test('only returns true when all tree nodes are collapsed', () {
+        controller.expandAll();
+        expect(controller.isTreeCollapsed, isFalse);
+
+        controller.collapse('3');
+        expect(controller.isTreeCollapsed, isFalse);
+
+        controller.collapseCascading(const ['2']);
+        expect(controller.isTreeCollapsed, isFalse);
+
+        controller.collapse('1');
+        expect(
+          controller.isTreeCollapsed,
+          isFalse,
+          reason: 'All root nodes have been collapsed, but there are still '
+              'some expanded nodes in the subtree of node "1"',
+        );
+
+        controller.collapseAll();
+        expect(controller.isTreeCollapsed, isTrue);
+      });
     });
 
     group('breadthFirstSearch()', () {
@@ -417,7 +479,7 @@ void main() {
           onTraverse: visitedNodes.add,
         );
 
-        expect(visitedNodes, containsAll(const ['1', '2', '3']));
+        expect(visitedNodes, containsAll(controller.roots));
       });
 
       test('uses startingNodes when provided', () {
@@ -537,7 +599,7 @@ void main() {
         );
 
         expect(visitedNodes.length, equals(3));
-        expect(visitedNodes, equals(const ['1', '2', '3']));
+        expect(visitedNodes, equals(controller.roots));
       });
 
       test('onTraverse is called for the node matched in returnCondition', () {
@@ -593,7 +655,7 @@ void main() {
 
         expect(nodeCount, equals(amountOfNodesToTraverse));
         expect(visitedNodes.length, equals(amountOfNodesToTraverse));
-        expect(visitedNodes, equals(const ['1', '2', '3']));
+        expect(visitedNodes, equals(controller.roots));
       });
     });
 

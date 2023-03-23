@@ -261,35 +261,43 @@ class TreeController<T extends Object> with ChangeNotifier {
   bool get areAllRootsCollapsed => !roots.any(getExpansionState);
 
   /// Whether **all** nodes of this tree are expanded.
+  ///
+  /// Traverses the tree in breadth first order checking the expansion state of
+  /// each visited node. The traversal will return early if it finds a collapsed
+  /// node.
   bool get isTreeExpanded {
-    if (roots.isEmpty) return false;
-
-    bool anyCollapsedNodes = true;
+    bool allNodesExpanded = false;
 
     breadthFirstSearch(
       returnCondition: (T node) {
-        anyCollapsedNodes = !getExpansionState(node);
-        return anyCollapsedNodes;
+        final bool isExpanded = getExpansionState(node);
+        allNodesExpanded = isExpanded;
+        // Stop the traversal if [node] is not expanded
+        return !isExpanded;
       },
     );
 
-    return anyCollapsedNodes;
+    return allNodesExpanded;
   }
 
   /// Whether **all** nodes of this tree are collapsed.
+  ///
+  /// Traverses the tree in breadth first order checking the expansion state of
+  /// each visited node. The traversal will return early if it finds an expanded
+  /// node.
   bool get isTreeCollapsed {
-    if (roots.isEmpty) return true;
-
-    bool anyExpandedNodes = false;
+    bool allNodesCollapsed = true;
 
     breadthFirstSearch(
       returnCondition: (T node) {
-        anyExpandedNodes = getExpansionState(node);
-        return anyExpandedNodes;
+        final bool isExpanded = getExpansionState(node);
+        allNodesCollapsed = !isExpanded;
+        // Stop the traversal if [node] is expanded
+        return isExpanded;
       },
     );
 
-    return anyExpandedNodes;
+    return allNodesCollapsed;
   }
 
   /// Traverses the subtrees of [startingNodes] in breadth first order. If
