@@ -310,6 +310,42 @@ void main() {
       });
     });
 
+    test('expandAll() properly expands every node', () {
+      final tree = TestTree.breadthFirst();
+      final controller = TreeController<String>(
+        roots: tree.roots,
+        childrenProvider: tree.childrenProvider,
+      );
+
+      controller.breadthFirstSearch(onTraverse: (String node) {
+        expect(controller.getExpansionState(node), isFalse);
+      });
+
+      controller.expandAll();
+
+      controller.breadthFirstSearch(onTraverse: (String node) {
+        expect(controller.getExpansionState(node), isTrue);
+      });
+    });
+
+    test('collapseAll() properly collapses every node', () {
+      final tree = TestTree.breadthFirst();
+      final controller = TreeController<String>(
+        roots: tree.roots,
+        childrenProvider: tree.childrenProvider,
+      )..expandAll();
+
+      controller.breadthFirstSearch(onTraverse: (String node) {
+        expect(controller.getExpansionState(node), isTrue);
+      });
+
+      controller.collapseAll();
+
+      controller.breadthFirstSearch(onTraverse: (String node) {
+        expect(controller.getExpansionState(node), isFalse);
+      });
+    });
+
     group('expandAncestors()', () {
       const root = 1;
       const target = 7;
