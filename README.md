@@ -1,4 +1,5 @@
-# flutter_fancy_tree_view [![pub package](https://img.shields.io/pub/v/flutter_fancy_tree_view.svg)](https://pub.dev/packages/flutter_fancy_tree_view)
+# flutter_fancy_tree_view
+[![pub package](https://img.shields.io/pub/v/flutter_fancy_tree_view.svg)](https://pub.dev/packages/flutter_fancy_tree_view)
 
 A [Flutter] collection of widgets and slivers that helps bringing your
 hierarchical data to life.
@@ -9,7 +10,7 @@ depth first order, collecting the needed information in a simple dart list
 to the screen using slivers.
 
 <details>
-<summary><h2>Screenshots</h2></summary>
+<summary><h3>Screenshots</h3></summary>
 
 |   |   |
 | - | - |
@@ -20,7 +21,7 @@ to the screen using slivers.
 </details>
 
 <details>
-<summary><h2>Installation</h2></summary>
+<summary><h3>Installation</h3></summary>
 
 Run this command:
 
@@ -44,6 +45,11 @@ import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
 </details>
 
+### ⚠️ Warning
+Please, treat version `1.0` as a whole new package. Migrating from previous
+versions is discouraged as the package went through a major rewrite and has
+many breaking changes.
+
 ## Features
 
 * Dynamic "Tree Node" Modeling
@@ -64,7 +70,7 @@ feature specific examples.
 
 ### Usage
 
-1. Create a "Tree Node" model to store your data
+1. Create a "TreeNode" model to store your data
 
 ```dart
 class MyTreeNode {
