@@ -227,9 +227,15 @@ class TreeController<T extends Object> with ChangeNotifier {
   }
 
   /// Expands all nodes of this tree recursively.
+  ///
+  /// This method delegates its call to [expandCascading] passing in [roots]
+  /// as the nodes to be expanded.
   void expandAll() => expandCascading(roots);
 
   /// Collapses all nodes of this tree recursively.
+  ///
+  /// This method delegates its call to [collapseCascading] passing in [roots]
+  /// as the nodes to be collapsed.
   void collapseAll() => collapseCascading(roots);
 
   /// Walks up the ancestors of [node] setting their expansion state to `true`.
