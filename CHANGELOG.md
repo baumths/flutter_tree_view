@@ -1,18 +1,46 @@
 ## [1.0.0] 20-03-2023
-### Major API rework
-Main new features:
-- Dynamic "TreeNode" modeling
-- Expand/Collapse animations
-- Sliver tree variants
+### ⚠️ Warning: Major Rewrite
+Please, treat this version as a whole new package. Migrating from previous
+versions is discouraged as the package went through a major rewrite and has
+many breaking changes.
 
-Changes:
-- Indent guides overhaul
-- New `AnimatedTreeView`
-- New Sliver support: `SliverTree` and `SliverAnimatedTree`
-- Simplified `TreeViewController` and renamed to `TreeController`
+---
+
+#### Additions:
+- Dynamic "TreeNode" modeling through callbacks
+- `IndentGuides` indentation decorations API
+- `SliverTree` and `SliverAnimatedTree` slivers
+- `AnimatedTreeView` widget
+- `TreeEntry` tree node details object
+
+#### Changes:
+- Renamed `TreeViewController` to `TreeController`
+  - Removed: `find()`, `shouldRefresh()`, `nodeRefreshed()`, `refreshNode()`,
+    `reset()`, `nodeAt()`, `isVisible()`, `indexOf()`, `expandAll()`,
+    `collapseAll()`, `useBinarySearch`, `rootNode`, `visibleNodes`,
+    `expandedNodes`
+  - Renamed methods:
+    | Old               | New                 |
+    | :---------------- | :------------------ |
+    | `expandNode`      | `expand`            |
+    | `collapseNode`    | `collapse`          |
+    | `toggleExpanded`  | `toggleExpansion`   |
+    | `expandSubtree`   | `expandCascading`   |
+    | `collapseSubtree` | `collapseCascading` |
+    | `expandUntil`     | `expandAncestors`   |
+    | `isExpanded`      | `getExpansionState` |
+  - Added: `roots`, `childrenProvider()`, `setExpansionState()`, `rebuild()`,
+    `depthFirstTraversal()`
 - `NodeWidgetLeadingIcon` was rewritten as `FolderButton`
-- `LinesWidget` was improved and rewritten as `TreeIndentation`
-- Removed `NodeWidget` since it was just a wrapper around `InkWell` + `Row`
+
+#### Removals:
+- Removed `nodeHeight` from `TreeView` (fixed height not required anymore)
+- Removed `TreeViewControllerBase`
+- Removed `TreeNode` and `TreeNodeScope`
+- Removed `NodeWidget` as it was just a wrapper around `InkWell` + `Row`
+- Removed `ExpandNodeIcon` as it was just a wrapper around `ExpandIcon`
+- Removed `TreeViewTheme`, `LinesWidget`, `LinesPainter` and `TreeLine`
+  in favor of the new `IndentGuide` + `TreeIndentation` API.
 
 ## [0.5.3+2] 01-10-2022
 - Update [NodeWidgetLeadingIcon] icon types from [Icon] to [Widget]
