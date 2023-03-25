@@ -32,6 +32,40 @@ bool visitAllNodes(TreeEntry<String> entry) => true;
 class TestTree {
   static const String root = '0';
 
+  TestTree.depthFirst()
+      : flatTree = List<String>.unmodifiable([
+          '1',
+          '1.1',
+          '1.1.1',
+          '1.1.2',
+          '1.2',
+          '1.2.1',
+          '1.2.2',
+          '2',
+          '2.1',
+          '2.1.1',
+          '2.1.1.1',
+          '2.1.1.1.1',
+          '3',
+        ]);
+
+  TestTree.breadthFirst()
+      : flatTree = List<String>.unmodifiable([
+          '1',
+          '2',
+          '3',
+          '1.1',
+          '1.2',
+          '2.1',
+          '1.1.1',
+          '1.1.2',
+          '1.2.1',
+          '1.2.2',
+          '2.1.1',
+          '2.1.1.1',
+          '2.1.1.1.1',
+        ]);
+
   final childrenOf = Map<String, List<String>>.unmodifiable({
     root: ['1', '2', '3'],
     '1': ['1.1', '1.2'],
@@ -56,21 +90,7 @@ class TestTree {
     '2.1.1.1.1': '2.1.1.1',
   });
 
-  final flatTree = List<String>.unmodifiable([
-    '1',
-    '1.1',
-    '1.1.1',
-    '1.1.2',
-    '1.2',
-    '1.2.1',
-    '1.2.2',
-    '2',
-    '2.1',
-    '2.1.1',
-    '2.1.1.1',
-    '2.1.1.1.1',
-    '3',
-  ]);
+  final List<String> flatTree;
 
   int get totalNodeCount => flatTree.length;
 
@@ -290,6 +310,42 @@ void main() {
       });
     });
 
+    test('expandAll() properly expands every node', () {
+      final tree = TestTree.breadthFirst();
+      final controller = TreeController<String>(
+        roots: tree.roots,
+        childrenProvider: tree.childrenProvider,
+      );
+
+      controller.breadthFirstSearch(onTraverse: (String node) {
+        expect(controller.getExpansionState(node), isFalse);
+      });
+
+      controller.expandAll();
+
+      controller.breadthFirstSearch(onTraverse: (String node) {
+        expect(controller.getExpansionState(node), isTrue);
+      });
+    });
+
+    test('collapseAll() properly collapses every node', () {
+      final tree = TestTree.breadthFirst();
+      final controller = TreeController<String>(
+        roots: tree.roots,
+        childrenProvider: tree.childrenProvider,
+      )..expandAll();
+
+      controller.breadthFirstSearch(onTraverse: (String node) {
+        expect(controller.getExpansionState(node), isTrue);
+      });
+
+      controller.collapseAll();
+
+      controller.breadthFirstSearch(onTraverse: (String node) {
+        expect(controller.getExpansionState(node), isFalse);
+      });
+    });
+
     group('expandAncestors()', () {
       const root = 1;
       const target = 7;
@@ -334,12 +390,317 @@ void main() {
       });
     });
 
+    test('areAllRootsExpanded', () {
+      final controller = TestTreeController<int>.create(roots: const [1, 2, 3]);
+      expect(controller.areAllRootsExpanded, isFalse);
+
+      for (final root in controller.roots) {
+        expect(controller.areAllRootsExpanded, isFalse);
+        controller.setExpansionState(root, true);
+      }
+
+      expect(controller.areAllRootsExpanded, isTrue);
+
+      for (final root in controller.roots) {
+        controller.setExpansionState(root, false);
+      }
+
+      expect(controller.areAllRootsExpanded, isFalse);
+    });
+
+    test('areAllRootsCollapsed', () {
+      final controller = TestTreeController<int>.create(roots: const [1, 2, 3]);
+      expect(controller.areAllRootsCollapsed, isTrue);
+
+      controller.setExpansionState(2, true);
+      expect(controller.areAllRootsCollapsed, isFalse);
+
+      controller.setExpansionState(2, false);
+      expect(controller.areAllRootsCollapsed, isTrue);
+
+      for (final root in controller.roots) {
+        controller.setExpansionState(root, true);
+      }
+
+      expect(controller.areAllRootsCollapsed, isFalse);
+    });
+
+    group('isTreeExpanded', () {
+      late TestTree tree;
+      late TestTreeController<String> controller;
+
+      setUp(() {
+        tree = TestTree.breadthFirst();
+        controller = TestTreeController(
+          roots: tree.roots,
+          childrenProvider: tree.childrenProvider,
+        );
+      });
+
+      test('only returns true when all tree nodes are expanded', () {
+        controller.collapseAll();
+        expect(controller.isTreeExpanded, isFalse);
+
+        controller.expand('3');
+        expect(controller.isTreeExpanded, isFalse);
+
+        controller.expandCascading(const ['2']);
+        expect(controller.isTreeExpanded, isFalse);
+
+        controller.expand('1');
+        expect(
+          controller.isTreeExpanded,
+          isFalse,
+          reason: 'All root nodes have been expanded, but there are still '
+              'some collapsed nodes in the subtree of node "1"',
+        );
+
+        controller.expandAll();
+        expect(controller.isTreeExpanded, isTrue);
+      });
+    });
+
+    group('isTreeCollapsed', () {
+      late TestTree tree;
+      late TestTreeController<String> controller;
+
+      setUp(() {
+        tree = TestTree.breadthFirst();
+        controller = TestTreeController(
+          roots: tree.roots,
+          childrenProvider: tree.childrenProvider,
+        );
+      });
+
+      test('only returns true when all tree nodes are collapsed', () {
+        controller.expandAll();
+        expect(controller.isTreeCollapsed, isFalse);
+
+        controller.collapse('3');
+        expect(controller.isTreeCollapsed, isFalse);
+
+        controller.collapseCascading(const ['2']);
+        expect(controller.isTreeCollapsed, isFalse);
+
+        controller.collapse('1');
+        expect(
+          controller.isTreeCollapsed,
+          isFalse,
+          reason: 'All root nodes have been collapsed, but there are still '
+              'some expanded nodes in the subtree of node "1"',
+        );
+
+        controller.collapseAll();
+        expect(controller.isTreeCollapsed, isTrue);
+      });
+    });
+
+    group('breadthFirstSearch()', () {
+      late TestTree tree;
+      late TestTreeController<String> controller;
+
+      setUp(() {
+        tree = TestTree.breadthFirst();
+        controller = TestTreeController(
+          roots: tree.roots,
+          childrenProvider: tree.childrenProvider,
+        );
+      });
+
+      test('uses roots when startingNodes is not provided', () {
+        final visitedNodes = <String>[];
+
+        controller.breadthFirstSearch(
+          startingNodes: null,
+          onTraverse: visitedNodes.add,
+        );
+
+        expect(visitedNodes, containsAll(controller.roots));
+      });
+
+      test('uses startingNodes when provided', () {
+        const flatSubtree = <String>[
+          '1',
+          '1.1',
+          '1.2',
+          '1.1.1',
+          '1.1.2',
+          '1.2.1',
+          '1.2.2',
+        ];
+        final visitedNodes = <String>[];
+
+        controller.breadthFirstSearch(
+          startingNodes: ['1'],
+          onTraverse: (String node) {
+            expect(node, startsWith('1'));
+            visitedNodes.add(node);
+          },
+        );
+
+        expect(visitedNodes, isNot(containsAll(const ['2', '3'])));
+
+        expect(visitedNodes.length, equals(flatSubtree.length));
+        expect(visitedNodes, equals(flatSubtree));
+      });
+
+      test('traverses the tree in the right order', () {
+        final flatTree = List.of(tree.flatTree);
+
+        controller.breadthFirstSearch(
+          onTraverse: (String node) {
+            expect(node, equals(flatTree.removeAt(0)));
+          },
+        );
+
+        expect(flatTree, isEmpty);
+      });
+
+      test('calls onTraverse for every visited node', () {
+        // Traverse all nodes
+        int index = 0;
+        controller.breadthFirstSearch(
+          onTraverse: (String node) {
+            expect(node, equals(tree.flatTree[index]));
+            index++;
+          },
+        );
+
+        // Traverse expanded nodes only
+        for (final root in tree.roots) {
+          controller.setExpansionState(root, true);
+        }
+
+        const flatTree = ['1', '2', '3', '1.1', '1.2', '2.1'];
+        final visitedNodes = <String>[];
+
+        controller.breadthFirstSearch(
+          descendCondition: controller.getExpansionState,
+          onTraverse: visitedNodes.add,
+        );
+
+        expect(visitedNodes.length, equals(flatTree.length));
+        for (int index = 0; index < flatTree.length; ++index) {
+          expect(visitedNodes[index], equals(flatTree[index]));
+        }
+      });
+
+      test('calls descendCondition for every visited node', () {
+        int visitedNodesCount = 0;
+
+        controller.breadthFirstSearch(
+          descendCondition: (_) {
+            visitedNodesCount++;
+            return true; // visit all nodes
+          },
+        );
+
+        expect(visitedNodesCount, equals(tree.totalNodeCount));
+      });
+
+      test('respects descendCondition', () {
+        final result = ['1', '2', '3', '2.1', '2.1.1', '2.1.1.1', '2.1.1.1.1'];
+
+        controller.breadthFirstSearch(
+          descendCondition: (String node) => node.startsWith('2'),
+          onTraverse: (String node) {
+            expect(node, equals(result.removeAt(0)));
+          },
+        );
+
+        expect(result, isEmpty);
+      });
+
+      test(
+        'does not call descendCondition for the node matched by returnCondition',
+        () {
+          const target = '2.1';
+
+          controller.breadthFirstSearch(
+            returnCondition: (String node) => node == target,
+            descendCondition: (String node) {
+              expect(node, isNot(equals(target)));
+              return true;
+            },
+          );
+        },
+      );
+
+      test('respects returnCondition', () {
+        final visitedNodes = <String>[];
+
+        controller.breadthFirstSearch(
+          returnCondition: (String node) => node == '3',
+          onTraverse: visitedNodes.add,
+        );
+
+        expect(visitedNodes.length, equals(3));
+        expect(visitedNodes, equals(controller.roots));
+      });
+
+      test('onTraverse is called for the node matched in returnCondition', () {
+        const target = '1';
+        final visitedNodes = <String>[];
+
+        controller.breadthFirstSearch(
+          onTraverse: visitedNodes.add,
+          returnCondition: (String node) => node == target,
+        );
+
+        expect(visitedNodes, contains(target));
+      });
+
+      test('returns the node that matches the returnCondition', () {
+        const target = '2.1.1.1';
+
+        final String? result = controller.breadthFirstSearch(
+          returnCondition: (String node) => node == target,
+        );
+
+        expect(result, isNotNull);
+        expect(result, equals(target));
+      });
+
+      test('returns null if the returnCondition is never met', () {
+        final String? result = controller.breadthFirstSearch(
+          returnCondition: (String node) => node == 'not a node',
+        );
+
+        expect(result, isNull);
+      });
+
+      test('completes the traversal if returnCondition is not provided', () {
+        int visitedNodesCount = 0;
+        controller.breadthFirstSearch(onTraverse: (_) => visitedNodesCount++);
+        expect(visitedNodesCount, equals(tree.totalNodeCount));
+      });
+
+      test('stops the traversal when returnCondition is met', () {
+        const amountOfNodesToTraverse = 3;
+
+        int nodeCount = 0;
+        final visitedNodes = <String>[];
+
+        controller.breadthFirstSearch(
+          returnCondition: (_) => nodeCount == amountOfNodesToTraverse,
+          onTraverse: (String node) {
+            nodeCount++;
+            visitedNodes.add(node);
+          },
+        );
+
+        expect(nodeCount, equals(amountOfNodesToTraverse));
+        expect(visitedNodes.length, equals(amountOfNodesToTraverse));
+        expect(visitedNodes, equals(controller.roots));
+      });
+    });
+
     group('depthFirstTraversal()', () {
       late TestTree tree;
       late TestTreeController<String> controller;
 
       setUp(() {
-        tree = TestTree();
+        tree = TestTree.depthFirst();
         controller = TestTreeController(
           roots: tree.roots,
           childrenProvider: tree.childrenProvider,
@@ -365,7 +726,7 @@ void main() {
         }
 
         const flatTree = ['1', '1.1', '1.2', '2', '2.1', '3'];
-        final visitedNodes = [];
+        final visitedNodes = <String>[];
 
         controller.depthFirstTraversal(
           onTraverse: (TreeEntry<String> entry) {
@@ -571,7 +932,7 @@ void main() {
             '1.2.2',
             '3'
           ];
-          int visitedNodeCount = 0;
+          int visitedNodesCount = 0;
 
           controller.depthFirstTraversal(
             rootEntry: rootEntry,
@@ -580,10 +941,10 @@ void main() {
               expect(entry.node, startsWith('2.1.1'));
               expect(subtree.contains(entry.node), isTrue);
               expect(unreachable.contains(entry.node), isFalse);
-              ++visitedNodeCount;
+              ++visitedNodesCount;
             },
           );
-          expect(visitedNodeCount, equals(subtree.length));
+          expect(visitedNodesCount, equals(subtree.length));
         });
 
         test('is used as the parent of root nodes', () {

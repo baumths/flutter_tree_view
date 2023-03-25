@@ -22,6 +22,12 @@ typedef Visitor<T> = void Function(T node);
 /// traversed or skipped.
 typedef DescendCondition<T> = bool Function(T node);
 
+/// Signature of a function that takes a `T` node and returns a `bool`.
+///
+/// Used when traversing the tree in breadth first order to decide whether the
+/// traversal should stop.
+typedef ReturnCondition<T> = bool Function(T node);
+
 /// A controller used to dynamically manage the state of a tree.
 ///
 /// Whenever this controller notifies its listeners any attached tree views
@@ -197,54 +203,6 @@ class TreeController<T extends Object> with ChangeNotifier {
     rebuild();
   }
 
-  /// Expands all nodes of this tree consequently.
-  void expandAll() => expandCascading(roots);
-
-  /// Collapses all nodes of this tree consequently.
-  void collapseAll() => collapseCascading(roots);
-
-  /// Whether all root nodes of this tree are expanded.
-  ///
-  /// To know this it is required to know if root nodes contained in
-  /// the cache of expanded nodes.
-  bool get areAllRootsExpanded => roots.every(getExpansionState);
-
-  /// Whether all root nodes of this tree are collapsed.
-  ///
-  /// To know this it is required to know if root nodes does not contained in
-  /// the cache of expanded nodes.
-  bool get areAllRootsCollapsed => !roots.any(getExpansionState);
-
-  /// Whether all nodes of this tree are expanded.
-  bool get isTreeExpanded {
-    final totalNodes = [], expandedNodes = [];
-    depthFirstTraversal(
-      onTraverse: (entry) {
-        totalNodes.add(entry);
-        if (entry.isExpanded) {
-          expandedNodes.add(entry);
-        }
-      },
-      descendCondition: (node) => true,
-    );
-    return totalNodes.length == expandedNodes.length;
-  }
-
-  /// Whether all nodes of this tree are collapsed.
-  bool get isTreeCollapsed {
-    final totalNodes = [], collapsedNodes = [];
-    depthFirstTraversal(
-      onTraverse: (entry) {
-        totalNodes.add(entry);
-        if (!entry.isExpanded) {
-          collapsedNodes.add(entry);
-        }
-      },
-      descendCondition: (node) => true,
-    );
-    return totalNodes.length == collapsedNodes.length;
-  }
-
   void _applyCascadingAction(Iterable<T> nodes, Visitor<T> action) {
     for (final T node in nodes) {
       action(node);
@@ -268,6 +226,18 @@ class TreeController<T extends Object> with ChangeNotifier {
     rebuild();
   }
 
+  /// Expands all nodes of this tree recursively.
+  ///
+  /// This method delegates its call to [expandCascading] passing in [roots]
+  /// as the nodes to be expanded.
+  void expandAll() => expandCascading(roots);
+
+  /// Collapses all nodes of this tree recursively.
+  ///
+  /// This method delegates its call to [collapseCascading] passing in [roots]
+  /// as the nodes to be collapsed.
+  void collapseAll() => collapseCascading(roots);
+
   /// Walks up the ancestors of [node] setting their expansion state to `true`.
   /// Note: [node] is not expanded by this method.
   ///
@@ -288,6 +258,95 @@ class TreeController<T extends Object> with ChangeNotifier {
     }
 
     rebuild();
+  }
+
+  /// Whether all root nodes of this tree are expanded.
+  bool get areAllRootsExpanded => roots.every(getExpansionState);
+
+  /// Whether all root nodes of this tree are collapsed.
+  bool get areAllRootsCollapsed => !roots.any(getExpansionState);
+
+  /// Whether **all** nodes of this tree are expanded.
+  ///
+  /// Traverses the tree in breadth first order checking the expansion state of
+  /// each visited node. The traversal will return early if it finds a collapsed
+  /// node.
+  bool get isTreeExpanded {
+    bool allNodesExpanded = false;
+
+    breadthFirstSearch(
+      returnCondition: (T node) {
+        final bool isExpanded = getExpansionState(node);
+        allNodesExpanded = isExpanded;
+        // Stop the traversal if [node] is not expanded
+        return !isExpanded;
+      },
+    );
+
+    return allNodesExpanded;
+  }
+
+  /// Whether **all** nodes of this tree are collapsed.
+  ///
+  /// Traverses the tree in breadth first order checking the expansion state of
+  /// each visited node. The traversal will return early if it finds an expanded
+  /// node.
+  bool get isTreeCollapsed {
+    bool allNodesCollapsed = true;
+
+    breadthFirstSearch(
+      returnCondition: (T node) {
+        final bool isExpanded = getExpansionState(node);
+        allNodesCollapsed = !isExpanded;
+        // Stop the traversal if [node] is expanded
+        return isExpanded;
+      },
+    );
+
+    return allNodesCollapsed;
+  }
+
+  /// Traverses the subtrees of [startingNodes] in breadth first order. If
+  /// [startingNodes] is not provided, [roots] will be used instead.
+  ///
+  /// [descendCondition] is used to determine if the descendants of the node
+  /// passed to it should be traversed. When not provided, defaults to
+  /// [alwaysReturnsTrue], a function that always returns `true` which leads
+  /// to every node on the tree being visited by this traversal.
+  ///
+  /// [returnCondition] is used as a predicate to decide if the iteration should
+  /// be stopped. If this callback returns `true` the node that was passed to
+  /// it is returned from this method. When not provided, defaults to
+  /// [alwaysReturnsFalse], a function that always returns `false` which leads
+  /// to every node on the tree being visited by this traversal.
+  ///
+  /// An optional [onTraverse] callback can be provided to apply an action to
+  /// each visited node. This callback is called prior to [returnCondition] and
+  /// [descendCondition] making it possible to update a node before checking
+  /// its properties.
+  T? breadthFirstSearch({
+    Iterable<T>? startingNodes,
+    DescendCondition<T> descendCondition = alwaysReturnsTrue,
+    ReturnCondition<T> returnCondition = alwaysReturnsFalse,
+    Visitor<T>? onTraverse,
+  }) {
+    final List<T> nodes = List<T>.of(startingNodes ?? roots);
+
+    while (nodes.isNotEmpty) {
+      final T node = nodes.removeAt(0);
+
+      onTraverse?.call(node);
+
+      if (returnCondition(node)) {
+        return node;
+      }
+
+      if (descendCondition(node)) {
+        nodes.addAll(childrenProvider(node));
+      }
+    }
+
+    return null;
   }
 
   /// Traverses the subtrees of [roots] creating [TreeEntry] instances for
@@ -374,6 +433,16 @@ class TreeController<T extends Object> with ChangeNotifier {
     super.dispose();
   }
 }
+
+/// A function that can take a nullable [Object] and will always return `true`.
+///
+/// Used in other function declarations as a constant default parameter.
+bool alwaysReturnsTrue([Object? _]) => true;
+
+/// A function that can take a nullable [Object] and will always return `false`.
+///
+/// Used in other function declarations as a constant default parameter.
+bool alwaysReturnsFalse([Object? _]) => false;
 
 /// Used to store useful information about [node] in a tree.
 ///
