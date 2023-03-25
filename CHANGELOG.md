@@ -1,3 +1,12 @@
+## [1.1.0] 24-03-2023
+- Fix refresh issue on controller change
+  - Author: @bambinoua (https://github.com/bambinoua)
+- `TreeController` improvements
+  - Added: `breadthFirstSearch()`
+  - Added: `expandAll()`, `collapseAll()`, `isTreeExpanded`, `isTreeCollapsed`,
+    `areAllRootsExpanded`, `areAllRootsCollapsed`
+    - Co-Author: @bambinoua (https://github.com/bambinoua)
+
 ## [1.0.0] 20-03-2023
 ### ⚠️ Warning: Major Rewrite
 Please, treat this version as a whole new package. Migrating from previous
