@@ -29,15 +29,13 @@ many breaking changes.
     `collapseAll()`, `useBinarySearch`, `rootNode`, `visibleNodes`,
     `expandedNodes`
   - Renamed methods:
-    | Old               | New                 |
-    | :---------------- | :------------------ |
-    | `expandNode`      | `expand`            |
-    | `collapseNode`    | `collapse`          |
-    | `toggleExpanded`  | `toggleExpansion`   |
-    | `expandSubtree`   | `expandCascading`   |
-    | `collapseSubtree` | `collapseCascading` |
-    | `expandUntil`     | `expandAncestors`   |
-    | `isExpanded`      | `getExpansionState` |
+    - `expandNode`      -> `expand`
+    - `collapseNode`    -> `collapse`
+    - `toggleExpanded`  -> `toggleExpansion`
+    - `expandSubtree`   -> `expandCascading`
+    - `collapseSubtree` -> `collapseCascading`
+    - `expandUntil`     -> `expandAncestors`
+    - `isExpanded`      -> `getExpansionState`
   - Added: `roots`, `childrenProvider()`, `setExpansionState()`, `rebuild()`,
     `depthFirstTraversal()`
 - `NodeWidgetLeadingIcon` was rewritten as `FolderButton`
