@@ -502,8 +502,7 @@ class _ConnectingLinesPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ConnectingLinesPainter oldDelegate) =>
-      oldDelegate.entry.level != entry.level ||
-      oldDelegate.entry.hasNextSibling != entry.hasNextSibling ||
+      oldDelegate.entry != entry ||
       oldDelegate.textDirection != textDirection ||
       oldDelegate.guide != guide;
 }
