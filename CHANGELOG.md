@@ -1,3 +1,7 @@
+## [1.1.1] 04-04-2023
+- Fix an issue that caused some nodes to lose line hierarchy when the tree
+  structure changes (e.g., node added/removed/reordered).
+
 ## [1.1.0] 24-03-2023
 - Fix refresh issue on controller change
   - Author: @bambinoua (https://github.com/bambinoua)
