@@ -40,6 +40,7 @@ class SliverReorderableList extends StatefulWidget {
     required this.itemCount,
     required this.onReorder,
     this.onReorderStart,
+    this.onReorderMove,
     this.onReorderEnd,
     this.itemExtent,
     this.prototypeItem,
@@ -64,6 +65,8 @@ class SliverReorderableList extends StatefulWidget {
 
   /// {@macro flutter.widgets.reorderable_list.onReorderStart}
   final void Function(int)? onReorderStart;
+
+  final void Function(int)? onReorderMove;
 
   /// {@macro flutter.widgets.reorderable_list.onReorderEnd}
   final void Function(int)? onReorderEnd;
@@ -96,7 +99,6 @@ class SliverReorderableList extends StatefulWidget {
   ///  * [maybeOf], a similar function that will return null if no
   ///    [SliverReorderableList] ancestor is found.
   static SliverReorderableListState of(BuildContext context) {
-    assert(context != null);
     final SliverReorderableListState? result = context.findAncestorStateOfType<SliverReorderableListState>();
     assert(() {
       if (result == null) {
@@ -137,7 +139,6 @@ class SliverReorderableList extends StatefulWidget {
   ///  * [of], a similar function that will throw if no [SliverReorderableList]
   ///    ancestor is found.
   static SliverReorderableListState? maybeOf(BuildContext context) {
-    assert(context != null);
     return context.findAncestorStateOfType<SliverReorderableListState>();
   }
 }
@@ -495,6 +496,8 @@ class SliverReorderableListState extends State<SliverReorderableList> with Ticke
 
     if (newIndex != _insertIndex) {
       _insertIndex = newIndex;
+      widget.onReorderMove?.call(newIndex);
+
       for (final _ReorderableItemState item in _items.values) {
         if (item.index == _dragIndex! || !item.mounted) {
           continue;
