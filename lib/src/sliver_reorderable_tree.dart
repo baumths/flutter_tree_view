@@ -96,13 +96,80 @@ class _SliverReorderableTreeState<T extends Object>
       onReorderEnd: _onReorderEnd,
       onReorder: _onReorder,
       proxyDecorator: (Widget child, int index, Animation<double> animation) {
+        // TODO: create a new TreeEntry to show the virtual tree hierarchy
+        //       while it is being dragged.
         final TreeEntry<T> entry = _entryAt(index);
-        return widget.proxyDecorator?.call(child, entry, animation) ?? child;
+
+        return _ProxyTreeEntry<T>(
+          entry: entry,
+          child: widget.proxyDecorator?.call(child, entry, animation) ?? child,
+        );
       },
       itemBuilder: (BuildContext context, int index) {
-        return widget.nodeBuilder(context, _entryAt(index));
+        return _ReorderableTreeEntry<T>(
+          entry: _entryAt(index),
+          builder: widget.nodeBuilder,
+        );
       },
     );
+  }
+}
+
+class _ProxyTreeEntry<T extends Object> extends InheritedWidget {
+  const _ProxyTreeEntry({
+    super.key,
+    required super.child,
+    required this.entry,
+  });
+
+  final TreeEntry<T> entry;
+
+  static TreeEntry<T>? maybeOf<T extends Object>(BuildContext context) {
+    return context
+        .dependOnInheritedWidgetOfExactType<_ProxyTreeEntry<T>>()
+        ?.entry;
+  }
+
+  @override
+  bool updateShouldNotify(covariant _ProxyTreeEntry<T> oldWidget) {
+    return oldWidget.entry != entry;
+  }
+}
+
+class _ReorderableTreeEntry<T extends Object> extends StatefulWidget {
+  const _ReorderableTreeEntry({
+    super.key,
+    required this.entry,
+    required this.builder,
+  });
+
+  final TreeEntry<T> entry;
+  final TreeNodeBuilder<T> builder;
+
+  @override
+  State<_ReorderableTreeEntry<T>> createState() =>
+      _ReorderableTreeEntryState<T>();
+}
+
+class _ReorderableTreeEntryState<T extends Object>
+    extends State<_ReorderableTreeEntry<T>> {
+  TreeEntry<T>? proxyEntry;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    proxyEntry = _ProxyTreeEntry.maybeOf<T>(context);
+  }
+
+  @override
+  void dispose() {
+    proxyEntry = null;
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.builder(context, proxyEntry ?? widget.entry);
   }
 }
 
