@@ -112,7 +112,7 @@ class _SliverReorderableTreeState<T extends Object>
 ///
 /// See also:
 ///
-///  * [ReorderableDelayedDragStartListener], a similar wrapper that will
+///  * [TreeReorderableDelayedDragStartListener], a similar wrapper that will
 ///    only recognize the start after a long press event.
 ///  * [ReorderableList], a widget list that allows the user to reorder
 ///    its items.
@@ -120,13 +120,13 @@ class _SliverReorderableTreeState<T extends Object>
 ///    its items.
 ///  * [ReorderableListView], a Material Design list that allows the user to
 ///    reorder its items.
-class ReorderableDragStartListener extends StatelessWidget {
+class TreeReorderableDragStartListener extends StatelessWidget {
   /// Creates a listener for a drag immediately following a pointer down
   /// event over the given child widget.
   ///
   /// This is most commonly used to wrap part of a list item like a drag
   /// handle.
-  const ReorderableDragStartListener({
+  const TreeReorderableDragStartListener({
     super.key,
     required this.child,
     required this.index,
@@ -167,14 +167,11 @@ class ReorderableDragStartListener extends StatelessWidget {
   }
 
   void _startDragging(BuildContext context, PointerDownEvent event) {
-    final DeviceGestureSettings? gestureSettings =
-        MediaQuery.maybeOf(context)?.gestureSettings;
-    final SliverReorderableListState? list =
-        SliverReorderableList.maybeOf(context);
-    list?.startItemDragReorder(
+    SliverCustomReorderableList.maybeOf(context)?.startItemDragReorder(
       index: index,
       event: event,
-      recognizer: createRecognizer()..gestureSettings = gestureSettings,
+      recognizer: createRecognizer()
+        ..gestureSettings = MediaQuery.maybeOf(context)?.gestureSettings,
     );
   }
 }
@@ -185,7 +182,7 @@ class ReorderableDragStartListener extends StatelessWidget {
 ///
 /// See also:
 ///
-///  * [ReorderableDragStartListener], a similar wrapper that will
+///  * [TreeReorderableDragStartListener], a similar wrapper that will
 ///    recognize the start of the drag immediately after a pointer down event.
 ///  * [ReorderableList], a widget list that allows the user to reorder
 ///    its items.
@@ -193,13 +190,14 @@ class ReorderableDragStartListener extends StatelessWidget {
 ///    its items.
 ///  * [ReorderableListView], a Material Design list that allows the user to
 ///    reorder its items.
-class ReorderableDelayedDragStartListener extends ReorderableDragStartListener {
+class TreeReorderableDelayedDragStartListener
+    extends TreeReorderableDragStartListener {
   /// Creates a listener for an drag following a long press event over the
   /// given child widget.
   ///
   /// This is most commonly used to wrap an entire list item in a reorderable
   /// list.
-  const ReorderableDelayedDragStartListener({
+  const TreeReorderableDelayedDragStartListener({
     super.key,
     required super.child,
     required super.index,
