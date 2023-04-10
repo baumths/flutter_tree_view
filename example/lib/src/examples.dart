@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'examples/lazy_loading.dart' show LazyLoadingTreeView;
 import 'examples/minimal.dart' show MinimalTreeView;
+import 'examples/reordering.dart' show ReorderingTreeView;
 import 'settings/controller.dart' show IndentType, SettingsController;
 
 class SelectedExampleNotifier extends ValueNotifier<Example> {
@@ -17,7 +18,8 @@ class SelectedExampleNotifier extends ValueNotifier<Example> {
 
 enum Example {
   lazyLoading('Lazy Loading', Icon(Icons.hourglass_top_rounded)),
-  minimal('Minimal', Icon(Icons.segment));
+  minimal('Minimal', Icon(Icons.segment)),
+  reordering('Reorderable', Icon(Icons.reorder));
 
   const Example(this.title, this.icon);
 
@@ -30,6 +32,8 @@ enum Example {
         return const LazyLoadingTreeView();
       case Example.minimal:
         return const MinimalTreeView();
+      case Example.reordering:
+        return const ReorderingTreeView();
     }
   }
 }
