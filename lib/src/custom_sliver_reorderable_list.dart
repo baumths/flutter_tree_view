@@ -224,7 +224,16 @@ class SliverCustomReorderableListState extends State<SliverCustomReorderableList
   void didUpdateWidget(covariant SliverCustomReorderableList oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.itemCount != oldWidget.itemCount) {
-      cancelReorder();
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (_insertIndex != null && _dragInfo != null) {
+          for (final _ReorderableItemState childItem in _items.values) {
+            if (childItem.index == _dragInfo!.index || !childItem.mounted) {
+              continue;
+            }
+            childItem.updateForGap(_insertIndex!, _dragInfo!.itemExtent, false, _reverse);
+          }
+        }
+      });
     }
   }
 
