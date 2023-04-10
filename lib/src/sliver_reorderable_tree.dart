@@ -276,3 +276,32 @@ class TreeReorderableDelayedDragStartListener
     return DelayedMultiDragGestureRecognizer(debugOwner: this);
   }
 }
+
+// A global key that takes its identity from the object and uses a value of a
+// particular type to identify itself.
+//
+// The difference with GlobalObjectKey is that it uses [==] instead of [identical]
+// of the objects used to generate widgets.
+@optionalTypeArgs
+class _ReorderableItemGlobalKey extends GlobalObjectKey {
+  const _ReorderableItemGlobalKey(this.subKey, this.index, this.state)
+      : super(subKey);
+
+  final Key subKey;
+  final int index;
+  final SliverReorderableListState state;
+
+  @override
+  bool operator ==(Object other) {
+    if (other.runtimeType != runtimeType) {
+      return false;
+    }
+    return other is _ReorderableItemGlobalKey &&
+        other.subKey == subKey &&
+        other.index == index &&
+        other.state == state;
+  }
+
+  @override
+  int get hashCode => Object.hash(subKey, index, state);
+}
