@@ -106,8 +106,11 @@ class _SliverReorderableTreeState<T extends Object>
         );
       },
       itemBuilder: (BuildContext context, int index) {
+        final TreeEntry<T> entry = _entryAt(index);
+
         return _ReorderableTreeEntry<T>(
-          entry: _entryAt(index),
+          key: _ReorderableTreeEntryGlobalKey<T>(entry.node, this),
+          entry: entry,
           builder: widget.nodeBuilder,
         );
       },
@@ -283,25 +286,22 @@ class TreeReorderableDelayedDragStartListener
 // The difference with GlobalObjectKey is that it uses [==] instead of [identical]
 // of the objects used to generate widgets.
 @optionalTypeArgs
-class _ReorderableItemGlobalKey extends GlobalObjectKey {
-  const _ReorderableItemGlobalKey(this.subKey, this.index, this.state)
-      : super(subKey);
+class _ReorderableTreeEntryGlobalKey<T extends Object> extends GlobalObjectKey {
+  const _ReorderableTreeEntryGlobalKey(this.node, this.state) : super(node);
 
-  final Key subKey;
-  final int index;
-  final SliverReorderableListState state;
+  final T node;
+  final _SliverReorderableTreeState<T> state;
 
   @override
   bool operator ==(Object other) {
     if (other.runtimeType != runtimeType) {
       return false;
     }
-    return other is _ReorderableItemGlobalKey &&
-        other.subKey == subKey &&
-        other.index == index &&
+    return other is _ReorderableTreeEntryGlobalKey<T> &&
+        other.node == node &&
         other.state == state;
   }
 
   @override
-  int get hashCode => Object.hash(subKey, index, state);
+  int get hashCode => Object.hash(node, state);
 }
