@@ -29,6 +29,18 @@ class Node {
     _children.add(node);
   }
 
+  void insertChild(int index, Node node) {
+    if (node.parent == this && node.index < index) {
+      --index;
+    }
+
+    node
+      .._parent?._children.remove(node)
+      .._parent = this;
+
+    _children.insert(index, node);
+  }
+
   @override
   String toString() => 'Node $id';
 }
