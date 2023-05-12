@@ -322,18 +322,6 @@ class FolderButton extends StatelessWidget {
   ///    how a transition builder should function.
   final AnimatedSwitcherTransitionBuilder transitionBuilder;
 
-  Widget get _effectiveIcon {
-    switch (isOpen) {
-      case true:
-        return openedIcon;
-      case false:
-        return closedIcon;
-      case null:
-      default:
-        return icon;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return IconButton(
@@ -363,7 +351,11 @@ class FolderButton extends StatelessWidget {
         transitionBuilder: transitionBuilder,
         child: KeyedSubtree(
           key: Key('FolderButton#$isOpen'),
-          child: _effectiveIcon,
+          child: switch (isOpen) {
+            null => icon,
+            true => openedIcon,
+            false => closedIcon,
+          },
         ),
       ),
     );

@@ -6,7 +6,7 @@ homepage: https://baumths.github.io/flutter_tree_view
 repository: https://github.com/baumths/flutter_tree_view
 
 environment:
-  sdk: ">=2.19.0 <3.0.0"
+  sdk: ^3.0.0
 
 dependencies:
   flutter:
