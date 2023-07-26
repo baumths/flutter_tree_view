@@ -112,13 +112,11 @@ class _SliverTreeState<T extends Object> extends State<SliverTree<T>> {
 
   @override
   Widget build(BuildContext context) {
-    return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        childCount: _flatTree.length,
-        (BuildContext context, int index) {
-          return widget.nodeBuilder(context, _flatTree[index]);
-        },
-      ),
+    return SliverList.builder(
+      itemCount: _flatTree.length,
+      itemBuilder: (BuildContext context, int index) {
+        return widget.nodeBuilder(context, _flatTree[index]);
+      },
     );
   }
 }
