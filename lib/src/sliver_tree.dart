@@ -54,7 +54,7 @@ class SliverTree<T extends Object> extends StatefulWidget {
   });
 
   /// {@template flutter_fancy_tree_view.SliverTree.controller}
-  /// The object responsible for providing access to tree nodes and its states.
+  /// The object responsible for providing access to tree nodes and their states.
   ///
   /// This widget will listen to the notifications of this controller and
   /// rebuild the internal flat represetantion of the tree to make sure the
