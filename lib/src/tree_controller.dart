@@ -84,6 +84,7 @@ class TreeController<T extends Object> with ChangeNotifier {
   TreeController({
     required Iterable<T> roots,
     required this.childrenProvider,
+    this.parentProvider,
   }) : _roots = roots;
 
   /// The roots of the tree.
@@ -133,6 +134,36 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// done, set the expansion state of the parent node to `true` and call
   /// [rebuild] to reveal the loaded nodes.
   final ChildrenProvider<T> childrenProvider;
+
+  /// A getter callback that should return the direct parent of the tree node
+  /// that is given to it.
+  ///
+  /// This callback must return `null` when either a root node or an orphan node
+  /// is given to it. Otherwise this could lead to infinite loops while walking
+  /// up the ancestors of a tree node.
+  ///
+  /// Avoid doing heavy computations in this callback as it may be called a lot
+  /// while walking the ancestors of a tree node.
+  ///
+  /// Example:
+  /// ```dart
+  /// class Node {
+  ///   Node? parent;
+  /// }
+  ///
+  /// TreeController<Node> treeController = TreeController<Node>(
+  ///   ...
+  ///   parentProvider: (Node node) => node.parent,
+  /// );
+  /// ```
+  ///
+  /// Omitting this callback could lead to poor performance as the methods
+  /// that walk up the tree to visit ancestor nodes would potentially have to
+  /// traverse the entire tree to locate a given node to collect its path.
+  /// Whereas with this callback, the path finding would only iterate once for
+  /// each ancestor of the given node, stopping when the first `null` ancestor
+  /// is reached.
+  final ParentProvider<T>? parentProvider;
 
   Set<T> get _expandedNodes => _expandedNodesCache ??= <T>{};
   Set<T>? _expandedNodesCache;
@@ -247,7 +278,23 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// [parentProvider] should return the direct parent of the given node or
   /// `null` if the root node is reached, this callback is used to traverse the
   /// ancestors of [node].
-  void expandAncestors(T node, ParentProvider<T> parentProvider) {
+  void expandAncestors(
+    T node, [
+    @Deprecated('Use `TreeController.parentProvider` instead.')
+    ParentProvider<T>? parentProvider,
+  ]) {
+    parentProvider ??= this.parentProvider;
+
+    if (parentProvider == null) {
+      assert(
+        false,
+        '`TreeController.expandAncestors()` requires a `parentProvider` to work. '
+        'Either define a `TreeController.parentProvider` (preferred way) or '
+        'provide it directly to the `expandAncestors` method (deprecated way).',
+      );
+      return;
+    }
+
     T? current = parentProvider(node);
 
     if (current == null) return;

@@ -5,6 +5,7 @@ class TestTreeController<T extends Object> extends TreeController<T> {
   TestTreeController({
     required super.roots,
     required super.childrenProvider,
+    super.parentProvider,
   });
 
   TestTreeController.create({super.roots = const []})
@@ -97,6 +98,8 @@ class TestTree {
   Iterable<String> childrenProvider(String node) {
     return childrenOf[node] ?? const Iterable.empty();
   }
+
+  String? parentProvider(String node) => parentOf[node];
 
   Iterable<String> get roots => childrenProvider(root);
 
