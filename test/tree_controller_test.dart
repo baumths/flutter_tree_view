@@ -1,15 +1,14 @@
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+Iterable<T> emptyChildrenProvider<T>(T _) => const Iterable.empty();
+
 class TestTreeController<T extends Object> extends TreeController<T> {
   TestTreeController({
-    required super.roots,
-    required super.childrenProvider,
+    super.roots = const [],
+    ChildrenProvider<T>? childrenProvider,
     super.parentProvider,
-  });
-
-  TestTreeController.create({super.roots = const []})
-      : super(childrenProvider: (T node) => const Iterable.empty());
+  }) : super(childrenProvider: childrenProvider ?? emptyChildrenProvider);
 
   int defaultDescendConditionCallCount = 0;
   int notifyListenersCallCount = 0;
@@ -109,18 +108,26 @@ class TestTree {
     final siblings = childrenProvider(parentOf[node] ?? root);
     return siblings.isEmpty || node == siblings.last;
   }
+
+  TestTreeController<String> createController() {
+    return TestTreeController<String>(
+      roots: roots,
+      childrenProvider: childrenProvider,
+      parentProvider: parentProvider,
+    );
+  }
 }
 
 void main() {
   group('TreeController', () {
     test('testing properties like *CallCount always start at 0', () {
-      final controller = TestTreeController.create();
+      final controller = TestTreeController();
       expect(controller.notifyListenersCallCount, equals(0));
       expect(controller.defaultDescendConditionCallCount, equals(0));
     });
 
     test('properly sets root nodes', () {
-      final controller = TestTreeController<int>.create(roots: const [1, 2, 3]);
+      final controller = TestTreeController(roots: const [1, 2, 3]);
 
       expect(controller.roots, equals(const [1, 2, 3]));
       controller.roots = const [];
@@ -129,7 +136,7 @@ void main() {
 
     test('properly calls notifyListeners() when updating roots', () {
       const roots = [1, 2, 3];
-      final controller = TestTreeController<int>.create(roots: roots);
+      final controller = TestTreeController(roots: roots);
 
       controller.roots = roots;
       expect(controller.notifyListenersCallCount, equals(0));
@@ -142,7 +149,7 @@ void main() {
       'setExpansionState() properly updates the expansion state of nodes',
       () {
         const roots = [1, 2, 3];
-        final controller = TestTreeController<int>.create(roots: roots);
+        final controller = TestTreeController(roots: roots);
 
         expect(controller.getExpansionState(1), isFalse);
         controller.setExpansionState(1, true);
@@ -153,7 +160,7 @@ void main() {
     );
 
     test('setExpansionState() must not call notifyListeners()', () {
-      final controller = TestTreeController<int>.create();
+      final controller = TestTreeController();
 
       for (int node = 0; node < 1000; ++node) {
         controller.setExpansionState(node, true);
@@ -164,7 +171,7 @@ void main() {
 
     test('getExpansionState() returns the correct value for a given node', () {
       const roots = [1, 2, 3];
-      final controller = TestTreeController<int>.create(roots: roots);
+      final controller = TestTreeController(roots: roots);
 
       for (final root in roots) {
         expect(controller.getExpansionState(root), isFalse);
@@ -179,7 +186,7 @@ void main() {
 
     group('toggleExpansion()', () {
       test('properly flips the expansion state of a node', () {
-        final controller = TestTreeController<int>.create();
+        final controller = TestTreeController();
         expect(controller.getExpansionState(1), isFalse);
 
         controller.toggleExpansion(1);
@@ -190,7 +197,7 @@ void main() {
       });
 
       test('calls notifyListeners() once', () {
-        final controller = TestTreeController<int>.create();
+        final controller = TestTreeController();
         controller.toggleExpansion(1);
         expect(controller.notifyListenersCallCount, equals(1));
       });
@@ -200,7 +207,7 @@ void main() {
       late TestTreeController<int> controller;
 
       setUp(() {
-        controller = TestTreeController<int>.create();
+        controller = TestTreeController();
       });
 
       test('expands a node when it is collapsed', () {
@@ -219,7 +226,7 @@ void main() {
       });
 
       test('properly calls notifyListeners()', () {
-        final controller = TestTreeController<int>.create();
+        final controller = TestTreeController();
 
         controller.expand(1);
         expect(controller.notifyListenersCallCount, equals(1));
@@ -233,7 +240,7 @@ void main() {
       late TestTreeController<int> controller;
 
       setUp(() {
-        controller = TestTreeController<int>.create();
+        controller = TestTreeController();
       });
 
       test('collapses a node when it is expanded', () {
@@ -284,7 +291,7 @@ void main() {
       });
 
       test('does nothing when provided empty iterables', () {
-        final controller = TestTreeController<int>.create(roots: const [root]);
+        final controller = TestTreeController(roots: const [root]);
 
         controller.expandCascading(const Iterable.empty());
         expect(controller.getExpansionState(root), isFalse);
@@ -358,7 +365,10 @@ void main() {
       late TestTreeController<int> controller;
 
       setUp(() {
-        controller = TestTreeController<int>.create(roots: const [root]);
+        controller = TestTreeController(
+          roots: const [root],
+          parentProvider: (int node) => parentOf[node],
+        );
       });
 
       test('expands all ancestors of a node', () {
@@ -366,7 +376,7 @@ void main() {
           expect(controller.getExpansionState(node), isFalse);
         }
 
-        controller.expandAncestors(target, (int node) => parentOf[node]);
+        controller.expandAncestors(target);
 
         for (final node in ancestors) {
           expect(controller.getExpansionState(node), isTrue);
@@ -376,7 +386,7 @@ void main() {
       test('does not expand the node passed to it', () {
         expect(controller.getExpansionState(target), isFalse);
 
-        controller.expandAncestors(target, (int node) => parentOf[node]);
+        controller.expandAncestors(target);
         for (final node in ancestors) {
           expect(controller.getExpansionState(node), isTrue);
         }
@@ -385,16 +395,16 @@ void main() {
       });
 
       test('properly calls notifyListeners()', () {
-        controller.expandAncestors(root, (_) => null);
+        controller.expandAncestors(root);
         expect(controller.notifyListenersCallCount, equals(0));
 
-        controller.expandAncestors(target, (int node) => parentOf[node]);
+        controller.expandAncestors(target);
         expect(controller.notifyListenersCallCount, equals(1));
       });
     });
 
     test('areAllRootsExpanded', () {
-      final controller = TestTreeController<int>.create(roots: const [1, 2, 3]);
+      final controller = TestTreeController(roots: const [1, 2, 3]);
       expect(controller.areAllRootsExpanded, isFalse);
 
       for (final root in controller.roots) {
@@ -412,7 +422,7 @@ void main() {
     });
 
     test('areAllRootsCollapsed', () {
-      final controller = TestTreeController<int>.create(roots: const [1, 2, 3]);
+      final controller = TestTreeController(roots: const [1, 2, 3]);
       expect(controller.areAllRootsCollapsed, isTrue);
 
       controller.setExpansionState(2, true);
@@ -434,10 +444,7 @@ void main() {
 
       setUp(() {
         tree = TestTree.breadthFirst();
-        controller = TestTreeController(
-          roots: tree.roots,
-          childrenProvider: tree.childrenProvider,
-        );
+        controller = tree.createController();
       });
 
       test('only returns true when all tree nodes are expanded', () {
@@ -469,10 +476,7 @@ void main() {
 
       setUp(() {
         tree = TestTree.breadthFirst();
-        controller = TestTreeController(
-          roots: tree.roots,
-          childrenProvider: tree.childrenProvider,
-        );
+        controller = tree.createController();
       });
 
       test('only returns true when all tree nodes are collapsed', () {
@@ -504,10 +508,7 @@ void main() {
 
       setUp(() {
         tree = TestTree.breadthFirst();
-        controller = TestTreeController(
-          roots: tree.roots,
-          childrenProvider: tree.childrenProvider,
-        );
+        controller = tree.createController();
       });
 
       test('uses roots when startingNodes is not provided', () {
@@ -704,10 +705,7 @@ void main() {
 
       setUp(() {
         tree = TestTree.depthFirst();
-        controller = TestTreeController(
-          roots: tree.roots,
-          childrenProvider: tree.childrenProvider,
-        );
+        controller = tree.createController();
       });
 
       test('traverses the tree in the right order', () {
