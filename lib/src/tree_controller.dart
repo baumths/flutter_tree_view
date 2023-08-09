@@ -353,6 +353,64 @@ class TreeController<T extends Object> with ChangeNotifier {
     return allNodesCollapsed;
   }
 
+  /// Checks if [potentialAncestor] is present in the path from [node] to its
+  /// root node.
+  ///
+  /// By default, [node] is not checked against [potentialAncestor]. Set
+  /// [checkForEquality] to `true` so an additional `node == potentialAncestor`
+  /// check is done.
+  ///
+  /// Consider defining a [TreeController.parentProvider] to avoid having
+  /// to traverse the, in the worst case, entire tree to find [node]'s path.
+  /// When [TreeController.parentProvider] is defined, this iterates once for
+  /// each ancestor node in [node]'s path returning early if [potentialAncestor]
+  /// is found.
+  bool checkNodeHasAncestor({
+    required T node,
+    required T potentialAncestor,
+    bool checkForEquality = false,
+  }) {
+    if (checkForEquality && node == potentialAncestor) {
+      return true;
+    }
+
+    if (parentProvider case final ParentProvider<T> parentProvider?) {
+      T? current = parentProvider(node);
+      bool foundAncestor = false;
+
+      while (!(foundAncestor || current == null)) {
+        foundAncestor = current == potentialAncestor;
+        current = parentProvider(current);
+      }
+
+      return foundAncestor;
+    } else {
+      bool foundAncestor = false;
+
+      bool traverse(Iterable<T> nodes) {
+        for (final T current in nodes) {
+          if (current == node) {
+            // Target found, returning `true` as we are in the right path
+            return true;
+          }
+
+          // Move into [current]'s subtree
+          if (traverse(childrenProvider(current))) {
+            foundAncestor = current == potentialAncestor;
+
+            // Continue returning `true` so all ancestors are visited
+            return true;
+          }
+        }
+
+        return false;
+      }
+
+      traverse(roots);
+      return foundAncestor;
+    }
+  }
+
   /// Traverses the subtrees of [startingNodes] in breadth first order. If
   /// [startingNodes] is not provided, [roots] will be used instead.
   ///

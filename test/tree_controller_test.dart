@@ -502,6 +502,58 @@ void main() {
       });
     });
 
+    group('checkNodeHasAncestor()', () {
+      late TestTree tree;
+      late TreeController<String> controller;
+
+      setUp(() {
+        tree = TestTree.depthFirst();
+        controller = tree.createController();
+      });
+
+      test('returns `false` for unknown nodes', () {
+        final result = controller.checkNodeHasAncestor(
+          node: 'not-a-node',
+          potentialAncestor: '1',
+        );
+        expect(result, isFalse);
+      });
+
+      test('respects [checkForEquality]', () {
+        bool executeWithCheckForEquality(bool checkForEquality) {
+          return controller.checkNodeHasAncestor(
+            node: '1',
+            potentialAncestor: '1',
+            checkForEquality: checkForEquality,
+          );
+        }
+
+        expect(executeWithCheckForEquality(true), isTrue);
+        expect(executeWithCheckForEquality(false), isFalse);
+      });
+
+      test('returns `true` for every ancestor on the path to a node', () {
+        const target = '2.1.1.1.1';
+
+        String? current = controller.parentProvider!(target);
+        while (current != null) {
+          expect(
+            current,
+            isNot(equals(target)),
+            reason: '[checkForEquality] is set to `false` by default',
+          );
+
+          final result = controller.checkNodeHasAncestor(
+            node: target,
+            potentialAncestor: current,
+          );
+          current = controller.parentProvider!(current);
+
+          expect(result, isTrue);
+        }
+      });
+    });
+
     group('breadthFirstSearch()', () {
       late TestTree tree;
       late TestTreeController<String> controller;
