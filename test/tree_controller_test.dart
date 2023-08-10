@@ -109,11 +109,13 @@ class TestTree {
     return siblings.isEmpty || node == siblings.last;
   }
 
-  TestTreeController<String> createController() {
+  TestTreeController<String> createController({
+    bool includeParentProvider = true,
+  }) {
     return TestTreeController<String>(
       roots: roots,
       childrenProvider: childrenProvider,
-      parentProvider: parentProvider,
+      parentProvider: includeParentProvider ? parentProvider : null,
     );
   }
 }
@@ -504,53 +506,72 @@ void main() {
 
     group('checkNodeHasAncestor()', () {
       late TestTree tree;
-      late TreeController<String> controller;
+      late TreeController<String> controllerWithParentProvider;
+      late TreeController<String> controllerWithoutParentProvider;
 
       setUp(() {
         tree = TestTree.depthFirst();
-        controller = tree.createController();
+        controllerWithParentProvider = tree.createController();
+        controllerWithoutParentProvider = tree.createController(
+          includeParentProvider: false,
+        );
       });
 
       test('returns `false` for unknown nodes', () {
-        final result = controller.checkNodeHasAncestor(
-          node: 'not-a-node',
-          potentialAncestor: '1',
-        );
-        expect(result, isFalse);
+        void checkUnknownNodes(TreeController<String> controller) {
+          final result = controller.checkNodeHasAncestor(
+            node: 'not-a-node',
+            potentialAncestor: '1',
+          );
+          expect(result, isFalse);
+        }
+
+        checkUnknownNodes(controllerWithParentProvider);
+        checkUnknownNodes(controllerWithoutParentProvider);
       });
 
       test('respects [checkForEquality]', () {
-        bool executeWithCheckForEquality(bool checkForEquality) {
-          return controller.checkNodeHasAncestor(
-            node: '1',
-            potentialAncestor: '1',
-            checkForEquality: checkForEquality,
-          );
+        void checkRespectsCheckForEquality(TreeController<String> controller) {
+          bool executeWithCheckForEquality(bool checkForEquality) {
+            return controller.checkNodeHasAncestor(
+              node: '1',
+              potentialAncestor: '1',
+              checkForEquality: checkForEquality,
+            );
+          }
+
+          expect(executeWithCheckForEquality(true), isTrue);
+          expect(executeWithCheckForEquality(false), isFalse);
         }
 
-        expect(executeWithCheckForEquality(true), isTrue);
-        expect(executeWithCheckForEquality(false), isFalse);
+        checkRespectsCheckForEquality(controllerWithParentProvider);
+        checkRespectsCheckForEquality(controllerWithoutParentProvider);
       });
 
       test('returns `true` for every ancestor on the path to a node', () {
-        const target = '2.1.1.1.1';
+        void checkEveryAncestor(TreeController<String> controller) {
+          const target = '2.1.1.1.1';
 
-        String? current = controller.parentProvider!(target);
-        while (current != null) {
-          expect(
-            current,
-            isNot(equals(target)),
-            reason: '[checkForEquality] is set to `false` by default',
-          );
+          String? current = tree.parentOf[target];
+          while (current != null) {
+            expect(
+              current,
+              isNot(equals(target)),
+              reason: '[checkForEquality] is set to `false` by default',
+            );
 
-          final result = controller.checkNodeHasAncestor(
-            node: target,
-            potentialAncestor: current,
-          );
-          current = controller.parentProvider!(current);
+            final result = controller.checkNodeHasAncestor(
+              node: target,
+              potentialAncestor: current,
+            );
+            current = tree.parentOf[current];
 
-          expect(result, isTrue);
+            expect(result, isTrue);
+          }
         }
+
+        checkEveryAncestor(controllerWithParentProvider);
+        checkEveryAncestor(controllerWithoutParentProvider);
       });
     });
 

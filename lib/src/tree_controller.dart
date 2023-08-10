@@ -360,6 +360,7 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// [checkForEquality] to `true` so an additional `node == potentialAncestor`
   /// check is done.
   ///
+  /// **This method can be extremely slow.**
   /// Consider defining a [TreeController.parentProvider] to avoid having
   /// to traverse the, in the worst case, entire tree to find [node]'s path.
   /// When [TreeController.parentProvider] is defined, this iterates once for
@@ -396,7 +397,9 @@ class TreeController<T extends Object> with ChangeNotifier {
 
           // Move into [current]'s subtree
           if (traverse(childrenProvider(current))) {
-            foundAncestor = current == potentialAncestor;
+            if (!foundAncestor) {
+              foundAncestor = current == potentialAncestor;
+            }
 
             // Continue returning `true` so all ancestors are visited
             return true;
