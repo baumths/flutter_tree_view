@@ -112,11 +112,100 @@ class _SliverTreeState<T extends Object> extends State<SliverTree<T>> {
 
   @override
   Widget build(BuildContext context) {
-    return SliverList.builder(
-      itemCount: _flatTree.length,
-      itemBuilder: (BuildContext context, int index) {
-        return widget.nodeBuilder(context, _flatTree[index]);
-      },
+    return TreeViewScope<T>(
+      controller: widget.controller,
+      child: SliverList.builder(
+        itemCount: _flatTree.length,
+        itemBuilder: (BuildContext context, int index) {
+          return widget.nodeBuilder(context, _flatTree[index]);
+        },
+      ),
     );
+  }
+}
+
+/// An [InheritedWidget] responsible for providing some information about a
+/// [TreeView] for descendant widgets.
+///
+/// This widget will be added to the widget tree by [SliverTree] and
+/// [SliverAnimtedTree] so descendant widgets can have access to some tree
+/// properties like the [TreeController].
+///
+/// Both [TreeDraggable] and [TreeDragTarget] will use this widget to access
+/// the [TreeController] when needed for some drag and drop features like auto
+/// toggle expansion on hover.
+class TreeViewScope<T extends Object> extends InheritedWidget {
+  /// Creates a [TreeViewScope].
+  const TreeViewScope({
+    super.key,
+    required this.controller,
+    required super.child,
+  });
+
+  /// The object responsible for providing access to tree nodes, their
+  /// hierarchies and states.
+  final TreeController<T> controller;
+
+  /// The closest instance of [TreeViewScope] that encloses the given context,
+  /// or null if none is found.
+  ///
+  /// Typical usage is as follows:
+  ///
+  /// ```dart
+  /// TreeViewScope<T>? treeViewScope = TreeViewScope.maybeOf<T>(context);
+  /// ```
+  ///
+  /// Calling this method will create a dependency on the closest
+  /// [TreeViewScope] in the [context], if there is one.
+  ///
+  /// See also:
+  ///
+  /// * [TreeViewScope.of], which is similar to this method, but asserts if no
+  ///   [TreeViewScope] ancestor is found.
+  static TreeViewScope<T>? maybeOf<T extends Object>(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<TreeViewScope<T>>();
+  }
+
+  /// The closest instance of [TreeViewScope] that encloses the given context.
+  ///
+  /// If no instance is found, this method will assert in debug mode and throw
+  /// an exception in release mode.
+  ///
+  /// Calling this method will create a dependency on the closest
+  /// [TreeViewScope] in the [context].
+  ///
+  /// Typical usage is as follows:
+  ///
+  /// ```dart
+  /// TreeViewScope<T> treeViewScope = TreeViewScope.of<T>(context);
+  /// ```
+  ///
+  /// See also:
+  ///
+  /// * [TreeViewScope.maybeOf], which is similar to this method, but returns
+  ///   null if no [TreeViewScope] ancestor is found.
+  static TreeViewScope<T> of<T extends Object>(BuildContext context) {
+    final TreeViewScope<T>? scope = maybeOf<T>(context);
+    assert(() {
+      if (scope == null) {
+        throw FlutterError(
+          'TreeViewScope.of() was called with a context that does not contain '
+          'a TreeViewScope widget.\n'
+          'No TreeViewScope widget ancestor could be found starting from the '
+          'context that was passed to TreeViewScope.of(). This can happen '
+          'because you are using a widget that looks for a TreeViewScope '
+          'ancestor, but no such ancestor exists.\n'
+          'The context used was:\n'
+          '  $context',
+        );
+      }
+      return true;
+    }());
+    return scope!;
+  }
+
+  @override
+  bool updateShouldNotify(covariant TreeViewScope<T> oldWidget) {
+    return oldWidget.controller != controller;
   }
 }
