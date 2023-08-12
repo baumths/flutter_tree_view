@@ -2,6 +2,7 @@
 /// to life.
 library flutter_fancy_tree_view;
 
+export 'src/drag_and_drop.dart';
 export 'src/folder_button.dart';
 export 'src/sliver_animated_tree.dart';
 export 'src/sliver_tree.dart';
