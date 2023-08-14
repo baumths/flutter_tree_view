@@ -183,8 +183,8 @@ class DragAndDropTreeTile extends StatelessWidget {
         Decoration? decoration;
 
         if (details != null) {
-          // Add a border to indicate which portion of the target's height the
-          // dragging node will be inserted.
+          // Add a border to indicate in which portion of the target's height
+          // the dragging node will be inserted.
           decoration = BoxDecoration(
             border: details.mapDropPosition(
               whenAbove: () => Border(top: borderSide),

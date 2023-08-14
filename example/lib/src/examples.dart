@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 import 'package:provider/provider.dart';
 
-import 'examples/drag_and_drop.dart';
+import 'examples/drag_and_drop.dart' show DragAndDropTreeView;
 import 'examples/lazy_loading.dart' show LazyLoadingTreeView;
 import 'examples/minimal.dart' show MinimalTreeView;
 import 'settings/controller.dart' show IndentType, SettingsController;
@@ -27,14 +27,11 @@ enum Example {
   final Widget icon;
 
   Widget get tree {
-    switch (this) {
-      case Example.dragAndDrop:
-        return const DragAndDropTreeView();
-      case Example.lazyLoading:
-        return const LazyLoadingTreeView();
-      case Example.minimal:
-        return const MinimalTreeView();
-    }
+    return switch (this) {
+      Example.dragAndDrop => const DragAndDropTreeView(),
+      Example.lazyLoading => const LazyLoadingTreeView(),
+      Example.minimal => const MinimalTreeView(),
+    };
   }
 }
 
