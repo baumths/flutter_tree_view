@@ -261,20 +261,20 @@ class TreeDraggable<T extends Object> extends StatefulWidget {
 class _TreeDraggableState<T extends Object> extends State<TreeDraggable<T>>
     with AutomaticKeepAliveClientMixin {
   @override
-  bool get wantKeepAlive => _isDragging;
+  bool get wantKeepAlive => isDragging;
 
-  bool get _isDragging => _dragging;
-  bool _dragging = false;
-  set _isDragging(bool value) {
-    if (value == _dragging) return;
+  bool get isDragging => _isDragging;
+  bool _isDragging = false;
+  set isDragging(bool value) {
+    if (value == _isDragging) return;
 
     if (mounted) {
       setState(() {
-        _dragging = value;
+        _isDragging = value;
         updateKeepAlive();
       });
     } else {
-      _dragging = value;
+      _isDragging = value;
     }
   }
 
@@ -316,7 +316,7 @@ class _TreeDraggableState<T extends Object> extends State<TreeDraggable<T>>
   }
 
   void _endDrag() {
-    _isDragging = false;
+    isDragging = false;
     _stopAutoScroll();
 
     if (widget.expandOnDragEnd) {
@@ -325,7 +325,7 @@ class _TreeDraggableState<T extends Object> extends State<TreeDraggable<T>>
   }
 
   void onDragStarted() {
-    _isDragging = true;
+    isDragging = true;
     _createAutoScroller();
 
     if (widget.collapseOnDragStart) {
@@ -362,7 +362,7 @@ class _TreeDraggableState<T extends Object> extends State<TreeDraggable<T>>
 
   @override
   void dispose() {
-    _isDragging = false;
+    isDragging = false;
     _stopAutoScroll();
     _autoScroller = null;
     _treeScope = null;
@@ -668,7 +668,10 @@ class TreeDragTarget<T extends Object> extends StatefulWidget {
 
 class _TreeDragTargetState<T extends Object> extends State<TreeDragTarget<T>> {
   TreeViewScope<T>? _treeScope;
-  TreeController<T> get treeController => _treeScope!.controller;
+  TreeController<T> get treeController {
+    assert(_treeScope != null);
+    return _treeScope!.controller;
+  }
 
   Timer? _toggleExpansionTimer;
 
@@ -682,16 +685,16 @@ class _TreeDragTargetState<T extends Object> extends State<TreeDragTarget<T>> {
       return;
     }
 
-    final bool targetIsAncestor = treeController.checkNodeHasAncestor(
+    final bool isAncestorOfIncomingNode = treeController.checkNodeHasAncestor(
       node: incomingNode,
       potentialAncestor: widget.node,
       checkForEquality: true,
     );
 
     // Disallow toggling the expansion state if the target node is an ancestor
-    // of the dragging node as if an ancestor is collapsed, the dragging node
-    // would be removed from the view, stopping the drag geture.
-    if (targetIsAncestor) {
+    // of the dragging node as if an ancestor would be collapsed, the dragging
+    // node would be removed from the view, stopping the drag geture.
+    if (isAncestorOfIncomingNode) {
       return;
     }
 
