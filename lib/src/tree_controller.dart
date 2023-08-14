@@ -35,11 +35,16 @@ typedef ReturnCondition<T> = bool Function(T node);
 /// their internal flat representaton of the tree, showing/hiding the updated
 /// nodes (if any).
 ///
+/// Make sure to define a [parentProvider] when using methods that depend on
+/// it, like [expandAncestors] and [checkNodeHasAncestor], or indirectly depend
+/// on it like the drag and drop widgets [TreeDraggable] and [TreeDragTarget].
+///
 /// Usage:
 /// ```dart
 /// class Node {
 ///   Node(this.children);
 ///   List<Node> children;
+///   Node? parent;
 /// }
 ///
 /// final TreeController<Node> treeController = TreeController<Node>(
@@ -47,6 +52,7 @@ typedef ReturnCondition<T> = bool Function(T node);
 ///     Node(<Node>[]),
 ///   ],
 ///   childrenProvider: (Node node) => node.children,
+///   parentProvider: (Node node) => node.parent,
 /// );
 /// ```
 ///
@@ -81,11 +87,24 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// The [roots] parameter should contain all nodes that occupy the level `0`
   /// of the tree, these nodes are going to be used as a starting point when
   /// traversing the tree and building tree views.
+  ///
+  /// The [parentProvider] callback should return the direct parent of the tree
+  /// node that's given to it or null when given a root node. Some methods like
+  /// [checkNodeHasAncestor] require this callback to be defined and will throw
+  /// an [AssertionError] in debug mode. When [parentProvider] is not defined,
+  /// [TreeController.parentProvider] is set to a callback that always returns
+  /// null.
   TreeController({
     required Iterable<T> roots,
     required this.childrenProvider,
-    this.parentProvider,
-  }) : _roots = roots;
+    ParentProvider<T>? parentProvider,
+  }) : _roots = roots {
+    assert(() {
+      _debugHasParentProvider = parentProvider != null;
+      return true;
+    }());
+    this.parentProvider = parentProvider ?? (T node) => null;
+  }
 
   /// The roots of the tree.
   ///
@@ -136,11 +155,17 @@ class TreeController<T extends Object> with ChangeNotifier {
   final ChildrenProvider<T> childrenProvider;
 
   /// A getter callback that should return the direct parent of the tree node
-  /// that is given to it.
+  /// that is given to it or null if given a root node.
   ///
   /// This callback must return `null` when either a root node or an orphan node
   /// is given to it. Otherwise this could lead to infinite loops while walking
   /// up the ancestors of a tree node.
+  ///
+  /// When not defined, this will be set to a callback that always returns null.
+  ///
+  /// Some methods like [expandAncestors] and [checkNodeHasAncestor] depend on
+  /// this callback and will throw an [AssertionError] in debug mode when not
+  /// defined.
   ///
   /// Avoid doing heavy computations in this callback as it may be called a lot
   /// while walking the ancestors of a tree node.
@@ -156,14 +181,7 @@ class TreeController<T extends Object> with ChangeNotifier {
   ///   parentProvider: (Node node) => node.parent,
   /// );
   /// ```
-  ///
-  /// Omitting this callback could lead to poor performance as the methods
-  /// that walk up the tree to visit ancestor nodes would potentially have to
-  /// traverse the entire tree to locate a given node to collect its path.
-  /// Whereas with this callback, the path finding would only iterate once for
-  /// each ancestor of the given node, stopping when the first `null` ancestor
-  /// is reached.
-  final ParentProvider<T>? parentProvider;
+  late final ParentProvider<T> parentProvider;
 
   Set<T> get _expandedNodes => _expandedNodesCache ??= <T>{};
   Set<T>? _expandedNodesCache;
@@ -278,22 +296,19 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// [parentProvider] should return the direct parent of the given node or
   /// `null` if the root node is reached, this callback is used to traverse the
   /// ancestors of [node].
+  ///
+  /// This method depends on [TreeController.parentProvider] and will throw an
+  /// [AssertionError] in debug mode if [parentProvider] is not defined.
   void expandAncestors(
     T node, [
-    @Deprecated('Use `TreeController.parentProvider` instead.')
+    @Deprecated('Use [TreeController.parentProvider] instead.')
     ParentProvider<T>? parentProvider,
   ]) {
+    assert(() {
+      if (parentProvider == null) return _debugCheckHasParentProvider();
+      return true;
+    }());
     parentProvider ??= this.parentProvider;
-
-    if (parentProvider == null) {
-      assert(
-        false,
-        '`TreeController.expandAncestors()` requires a `parentProvider` to work. '
-        'Either define a `TreeController.parentProvider` (preferred way) or '
-        'provide it directly to the `expandAncestors` method (deprecated way).',
-      );
-      return;
-    }
 
     T? current = parentProvider(node);
 
@@ -360,58 +375,28 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// [checkForEquality] to `true` so an additional `node == potentialAncestor`
   /// check is done.
   ///
-  /// **This method can be extremely slow.**
-  /// Consider defining a [TreeController.parentProvider] to avoid having
-  /// to traverse the, in the worst case, entire tree to find [node]'s path.
-  /// When [TreeController.parentProvider] is defined, this iterates once for
-  /// each ancestor node in [node]'s path returning early if [potentialAncestor]
-  /// is found.
+  /// This method requires a [parentProvider] to be defined and will throw an
+  /// [AssertionError] in debug mode.
   bool checkNodeHasAncestor({
     required T node,
     required T potentialAncestor,
     bool checkForEquality = false,
   }) {
+    assert(_debugCheckHasParentProvider());
+
     if (checkForEquality && node == potentialAncestor) {
       return true;
     }
 
-    if (parentProvider case final ParentProvider<T> parentProvider?) {
-      T? current = parentProvider(node);
-      bool foundAncestor = false;
+    T? current = parentProvider(node);
+    bool foundAncestor = false;
 
-      while (!(foundAncestor || current == null)) {
-        foundAncestor = current == potentialAncestor;
-        current = parentProvider(current);
-      }
-
-      return foundAncestor;
-    } else {
-      bool foundAncestor = false;
-
-      bool traverse(Iterable<T> nodes) {
-        for (final T current in nodes) {
-          if (current == node) {
-            // Target found, returning `true` as we are in the right path
-            return true;
-          }
-
-          // Move into [current]'s subtree
-          if (traverse(childrenProvider(current))) {
-            if (!foundAncestor) {
-              foundAncestor = current == potentialAncestor;
-            }
-
-            // Continue returning `true` so all ancestors are visited
-            return true;
-          }
-        }
-
-        return false;
-      }
-
-      traverse(roots);
-      return foundAncestor;
+    while (!(foundAncestor || current == null)) {
+      foundAncestor = current == potentialAncestor;
+      current = parentProvider(current);
     }
+
+    return foundAncestor;
   }
 
   /// Traverses the subtrees of [startingNodes] in breadth first order. If
@@ -533,6 +518,22 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// The default [DescendCondition] used by [depthFirstTraversal].
   @visibleForTesting
   bool defaultDescendCondition(TreeEntry<T> entry) => entry.isExpanded;
+
+  bool _debugHasParentProvider = false;
+
+  bool _debugCheckHasParentProvider() {
+    assert(() {
+      if (_debugHasParentProvider) return true;
+      throw FlutterError.fromParts(<DiagnosticsNode>[
+        ErrorSummary('[TreeController.parentProvider] is not defined.'),
+        ErrorDescription(
+          'Some [TreeController] methods like `checkNodeHasAncestor()` '
+          'used by [TreeDragTarget] require a `parentProvider` to work.',
+        ),
+      ]);
+    }());
+    return true;
+  }
 
   @override
   void dispose() {

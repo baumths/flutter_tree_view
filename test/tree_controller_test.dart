@@ -506,72 +506,64 @@ void main() {
 
     group('checkNodeHasAncestor()', () {
       late TestTree tree;
-      late TreeController<String> controllerWithParentProvider;
-      late TreeController<String> controllerWithoutParentProvider;
+      late TreeController<String> controller;
 
       setUp(() {
         tree = TestTree.depthFirst();
-        controllerWithParentProvider = tree.createController();
-        controllerWithoutParentProvider = tree.createController(
-          includeParentProvider: false,
-        );
+        controller = tree.createController();
       });
 
       test('returns `false` for unknown nodes', () {
-        void checkUnknownNodes(TreeController<String> controller) {
-          final result = controller.checkNodeHasAncestor(
-            node: 'not-a-node',
-            potentialAncestor: '1',
-          );
-          expect(result, isFalse);
-        }
-
-        checkUnknownNodes(controllerWithParentProvider);
-        checkUnknownNodes(controllerWithoutParentProvider);
+        final result = controller.checkNodeHasAncestor(
+          node: 'not-a-node',
+          potentialAncestor: '1',
+        );
+        expect(result, isFalse);
       });
 
       test('respects [checkForEquality]', () {
-        void checkRespectsCheckForEquality(TreeController<String> controller) {
-          bool executeWithCheckForEquality(bool checkForEquality) {
-            return controller.checkNodeHasAncestor(
-              node: '1',
-              potentialAncestor: '1',
-              checkForEquality: checkForEquality,
-            );
-          }
-
-          expect(executeWithCheckForEquality(true), isTrue);
-          expect(executeWithCheckForEquality(false), isFalse);
+        bool executeWithCheckForEquality(bool checkForEquality) {
+          return controller.checkNodeHasAncestor(
+            node: '1',
+            potentialAncestor: '1',
+            checkForEquality: checkForEquality,
+          );
         }
 
-        checkRespectsCheckForEquality(controllerWithParentProvider);
-        checkRespectsCheckForEquality(controllerWithoutParentProvider);
+        expect(executeWithCheckForEquality(true), isTrue);
+        expect(executeWithCheckForEquality(false), isFalse);
       });
 
       test('returns `true` for every ancestor on the path to a node', () {
-        void checkEveryAncestor(TreeController<String> controller) {
-          const target = '2.1.1.1.1';
+        const target = '2.1.1.1.1';
 
-          String? current = tree.parentOf[target];
-          while (current != null) {
-            expect(
-              current,
-              isNot(equals(target)),
-              reason: '[checkForEquality] is set to `false` by default',
-            );
+        String? current = tree.parentOf[target];
+        while (current != null) {
+          expect(
+            current,
+            isNot(equals(target)),
+            reason: '[checkForEquality] is set to `false` by default',
+          );
 
-            final result = controller.checkNodeHasAncestor(
-              node: target,
-              potentialAncestor: current,
-            );
-            current = tree.parentOf[current];
+          final result = controller.checkNodeHasAncestor(
+            node: target,
+            potentialAncestor: current,
+          );
+          current = tree.parentOf[current];
 
-            expect(result, isTrue);
-          }
+          expect(result, isTrue);
         }
+      });
 
-        checkEveryAncestor(controllerWithParentProvider);
-        checkEveryAncestor(controllerWithoutParentProvider);
+      test('throws an AssertionError when parentProvider is not defined`', () {
+        final controller = tree.createController(includeParentProvider: false);
+        expect(
+          () => controller.checkNodeHasAncestor(
+            node: '',
+            potentialAncestor: '',
+          ),
+          throwsAssertionError,
+        );
       });
     });
 
