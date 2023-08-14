@@ -772,6 +772,15 @@ class _TreeDragTargetState<T extends Object> extends State<TreeDragTarget<T>> {
   }
 
   @override
+  void didUpdateWidget(covariant TreeDragTarget<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (!widget.toggleExpansionOnHover) {
+      _cancelToggleExpansionTimer();
+    }
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _treeScope = TreeViewScope.of<T>(context);
