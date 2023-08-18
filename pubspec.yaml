@@ -1,12 +1,12 @@
 name: flutter_fancy_tree_view
 description: >
   A collection of widgets and slivers that helps bringing hierarchical data to life.
-version: 1.1.1
+version: 1.2.0
 homepage: https://baumths.github.io/flutter_tree_view
 repository: https://github.com/baumths/flutter_tree_view
 
 environment:
-  sdk: ^3.0.0
+  sdk: ^3.1.0
 
 dependencies:
   flutter:

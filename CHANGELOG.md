@@ -1,3 +1,7 @@
+## [1.2.0] 18-08-2023
+- Upgrade to Dart 3
+- Rudimentary Drag and Drop support
+
 ## [1.1.1] 04-04-2023
 - Fix an issue that caused some nodes to lose line hierarchy when the tree
   structure changes (e.g., node added/removed/reordered).
