@@ -232,22 +232,25 @@ class _SliverAnimatedTreeState<T extends Object>
 
   @override
   Widget build(BuildContext context) {
-    return SliverList.builder(
-      itemCount: _flatTree.length,
-      itemBuilder: (BuildContext context, int index) {
-        final TreeEntry<T> entry = _flatTree[index];
-        return _TreeEntry<T>(
-          key: _SaltedTreeNodeKey(entry.node),
-          entry: entry,
-          nodeBuilder: widget.nodeBuilder,
-          buildFlatSubtree: _buildSubtree,
-          transitionBuilder: widget.transitionBuilder,
-          onAnimationComplete: _onAnimationComplete,
-          curve: widget.curve,
-          duration: widget.duration,
-          showSubtree: _animatingNodes.contains(entry.node),
-        );
-      },
+    return TreeViewScope<T>(
+      controller: widget.controller,
+      child: SliverList.builder(
+        itemCount: _flatTree.length,
+        itemBuilder: (BuildContext context, int index) {
+          final TreeEntry<T> entry = _flatTree[index];
+          return _TreeEntry<T>(
+            key: _SaltedTreeNodeKey(entry.node),
+            entry: entry,
+            nodeBuilder: widget.nodeBuilder,
+            buildFlatSubtree: _buildSubtree,
+            transitionBuilder: widget.transitionBuilder,
+            onAnimationComplete: _onAnimationComplete,
+            curve: widget.curve,
+            duration: widget.duration,
+            showSubtree: _animatingNodes.contains(entry.node),
+          );
+        },
+      ),
     );
   }
 }

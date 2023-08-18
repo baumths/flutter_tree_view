@@ -35,11 +35,16 @@ typedef ReturnCondition<T> = bool Function(T node);
 /// their internal flat representaton of the tree, showing/hiding the updated
 /// nodes (if any).
 ///
+/// Make sure to define a [parentProvider] when using methods that depend on
+/// it, like [expandAncestors] and [checkNodeHasAncestor], or indirectly depend
+/// on it like the drag and drop widgets [TreeDraggable] and [TreeDragTarget].
+///
 /// Usage:
 /// ```dart
 /// class Node {
 ///   Node(this.children);
 ///   List<Node> children;
+///   Node? parent;
 /// }
 ///
 /// final TreeController<Node> treeController = TreeController<Node>(
@@ -47,6 +52,7 @@ typedef ReturnCondition<T> = bool Function(T node);
 ///     Node(<Node>[]),
 ///   ],
 ///   childrenProvider: (Node node) => node.children,
+///   parentProvider: (Node node) => node.parent,
 /// );
 /// ```
 ///
@@ -81,10 +87,24 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// The [roots] parameter should contain all nodes that occupy the level `0`
   /// of the tree, these nodes are going to be used as a starting point when
   /// traversing the tree and building tree views.
+  ///
+  /// The [parentProvider] callback should return the direct parent of the tree
+  /// node that's given to it or null when given a root node. Some methods like
+  /// [checkNodeHasAncestor] require this callback to be defined and will throw
+  /// an [AssertionError] in debug mode. When [parentProvider] is not defined,
+  /// [TreeController.parentProvider] is set to a callback that always returns
+  /// null.
   TreeController({
     required Iterable<T> roots,
     required this.childrenProvider,
-  }) : _roots = roots;
+    ParentProvider<T>? parentProvider,
+  }) : _roots = roots {
+    assert(() {
+      _debugHasParentProvider = parentProvider != null;
+      return true;
+    }());
+    this.parentProvider = parentProvider ?? (T node) => null;
+  }
 
   /// The roots of the tree.
   ///
@@ -133,6 +153,35 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// done, set the expansion state of the parent node to `true` and call
   /// [rebuild] to reveal the loaded nodes.
   final ChildrenProvider<T> childrenProvider;
+
+  /// A getter callback that should return the direct parent of the tree node
+  /// that is given to it or null if given a root node.
+  ///
+  /// This callback must return `null` when either a root node or an orphan node
+  /// is given to it. Otherwise this could lead to infinite loops while walking
+  /// up the ancestors of a tree node.
+  ///
+  /// When not defined, this will be set to a callback that always returns null.
+  ///
+  /// Some methods like [expandAncestors] and [checkNodeHasAncestor] depend on
+  /// this callback and will throw an [AssertionError] in debug mode when not
+  /// defined.
+  ///
+  /// Avoid doing heavy computations in this callback as it may be called a lot
+  /// while walking the ancestors of a tree node.
+  ///
+  /// Example:
+  /// ```dart
+  /// class Node {
+  ///   Node? parent;
+  /// }
+  ///
+  /// TreeController<Node> treeController = TreeController<Node>(
+  ///   ...
+  ///   parentProvider: (Node node) => node.parent,
+  /// );
+  /// ```
+  late final ParentProvider<T> parentProvider;
 
   Set<T> get _expandedNodes => _expandedNodesCache ??= <T>{};
   Set<T>? _expandedNodesCache;
@@ -247,7 +296,20 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// [parentProvider] should return the direct parent of the given node or
   /// `null` if the root node is reached, this callback is used to traverse the
   /// ancestors of [node].
-  void expandAncestors(T node, ParentProvider<T> parentProvider) {
+  ///
+  /// This method depends on [TreeController.parentProvider] and will throw an
+  /// [AssertionError] in debug mode if [parentProvider] is not defined.
+  void expandAncestors(
+    T node, [
+    @Deprecated('Use [TreeController.parentProvider] instead.')
+    ParentProvider<T>? parentProvider,
+  ]) {
+    assert(() {
+      if (parentProvider == null) return _debugCheckHasParentProvider();
+      return true;
+    }());
+    parentProvider ??= this.parentProvider;
+
     T? current = parentProvider(node);
 
     if (current == null) return;
@@ -304,6 +366,37 @@ class TreeController<T extends Object> with ChangeNotifier {
     );
 
     return allNodesCollapsed;
+  }
+
+  /// Checks if [potentialAncestor] is present in the path from [node] to its
+  /// root node.
+  ///
+  /// By default, [node] is not checked against [potentialAncestor]. Set
+  /// [checkForEquality] to `true` so an additional `node == potentialAncestor`
+  /// check is done.
+  ///
+  /// This method requires a [parentProvider] to be defined and will throw an
+  /// [AssertionError] in debug mode.
+  bool checkNodeHasAncestor({
+    required T node,
+    required T potentialAncestor,
+    bool checkForEquality = false,
+  }) {
+    assert(_debugCheckHasParentProvider());
+
+    if (checkForEquality && node == potentialAncestor) {
+      return true;
+    }
+
+    T? current = parentProvider(node);
+    bool foundAncestor = false;
+
+    while (!(foundAncestor || current == null)) {
+      foundAncestor = current == potentialAncestor;
+      current = parentProvider(current);
+    }
+
+    return foundAncestor;
   }
 
   /// Traverses the subtrees of [startingNodes] in breadth first order. If
@@ -425,6 +518,22 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// The default [DescendCondition] used by [depthFirstTraversal].
   @visibleForTesting
   bool defaultDescendCondition(TreeEntry<T> entry) => entry.isExpanded;
+
+  bool _debugHasParentProvider = false;
+
+  bool _debugCheckHasParentProvider() {
+    assert(() {
+      if (_debugHasParentProvider) return true;
+      throw FlutterError.fromParts(<DiagnosticsNode>[
+        ErrorSummary('[TreeController.parentProvider] is not defined.'),
+        ErrorDescription(
+          'Some [TreeController] methods like `checkNodeHasAncestor()` '
+          'used by [TreeDragTarget] require a `parentProvider` to work.',
+        ),
+      ]);
+    }());
+    return true;
+  }
 
   @override
   void dispose() {
