@@ -71,6 +71,8 @@ class TreeIndentGuideScope extends StatelessWidget {
           thickness: state.lineThickness,
           origin: state.lineOrigin,
           roundCorners: state.roundedCorners,
+          strokeCap: StrokeCap.round,
+          pathModifier: state.lineStyle.toPathModifier(),
         );
         break;
       case IndentType.scopingLines:
@@ -79,6 +81,8 @@ class TreeIndentGuideScope extends StatelessWidget {
           color: Theme.of(context).colorScheme.outline,
           thickness: state.lineThickness,
           origin: state.lineOrigin,
+          strokeCap: StrokeCap.round,
+          pathModifier: state.lineStyle.toPathModifier(),
         );
         break;
       case IndentType.blank:
