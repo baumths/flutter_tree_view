@@ -128,11 +128,13 @@ class IndentGuide {
   /// Creates an [IndentGuide].
   const IndentGuide({
     this.indent = 40.0,
+    this.padding = EdgeInsets.zero,
   }) : assert(indent >= 0.0);
 
   /// Convenient constructor to create a [ConnectingLinesGuide].
   const factory IndentGuide.connectingLines({
     double indent,
+    EdgeInsetsGeometry padding,
     Color color,
     double thickness,
     double origin,
@@ -142,6 +144,7 @@ class IndentGuide {
   /// Convenient constructor to create a [ScopingLinesGuide].
   const factory IndentGuide.scopingLines({
     double indent,
+    EdgeInsetsGeometry padding,
     Color color,
     double thickness,
     double origin,
@@ -157,6 +160,14 @@ class IndentGuide {
   /// ```
   final double indent;
 
+  /// The amount of space to inset [TreeIndentation.child].
+  ///
+  /// The indentation of tree nodes will be added to this object, i.e.,
+  /// `padding.add(EdgeInsetsDirectional.only(start: indentation))`.
+  ///
+  /// Defaults to [EdgeInsets.zero].
+  final EdgeInsetsGeometry padding;
+
   /// Method used to wrap [child] in the desired decoration/painting.
   ///
   /// Subclasses must override this method to customize whats shown inside of
@@ -166,13 +177,27 @@ class IndentGuide {
   /// * [AbstractLineGuide], an interface for working with line painting;
   Widget wrap(BuildContext context, Widget child, TreeEntry<Object> entry) {
     return Padding(
-      padding: EdgeInsetsDirectional.only(start: entry.level * indent),
+      padding: padding.add(
+        EdgeInsetsDirectional.only(start: entry.level * indent),
+      ),
       child: child,
     );
   }
 
+  /// Creates a copy of this indent guide but with the given fields replaced
+  /// with the new values.
+  IndentGuide copyWith({
+    double? indent,
+    EdgeInsetsGeometry? padding,
+  }) {
+    return IndentGuide(
+      indent: indent ?? this.indent,
+      padding: padding ?? this.padding,
+    );
+  }
+
   @override
-  int get hashCode => indent.hashCode;
+  int get hashCode => Object.hash(indent, padding);
 
   @override
   operator ==(Object other) {
@@ -180,7 +205,8 @@ class IndentGuide {
 
     return other.runtimeType == runtimeType &&
         other is IndentGuide &&
-        other.indent == indent;
+        other.indent == indent &&
+        other.padding == padding;
   }
 }
 
@@ -193,6 +219,7 @@ abstract class AbstractLineGuide extends IndentGuide {
   /// Constructor with requried parameters for building the indent line guides.
   const AbstractLineGuide({
     super.indent,
+    super.padding,
     this.color = Colors.grey,
     this.thickness = 2.0,
     this.origin = 0.5,
@@ -265,6 +292,7 @@ class ScopingLinesGuide extends AbstractLineGuide {
   /// Creates a [ScopingLinesGuide].
   const ScopingLinesGuide({
     super.indent,
+    super.padding,
     super.color,
     super.thickness,
     super.origin,
@@ -281,14 +309,17 @@ class ScopingLinesGuide extends AbstractLineGuide {
 
   /// Creates a copy of this indent guide but with the given fields replaced
   /// with the new values.
+  @override
   ScopingLinesGuide copyWith({
     double? indent,
+    EdgeInsetsGeometry? padding,
     Color? color,
     double? thickness,
     double? origin,
   }) {
     return ScopingLinesGuide(
       indent: indent ?? this.indent,
+      padding: padding ?? this.padding,
       color: color ?? this.color,
       thickness: thickness ?? this.thickness,
       origin: origin ?? this.origin,
@@ -298,6 +329,7 @@ class ScopingLinesGuide extends AbstractLineGuide {
   @override
   int get hashCode => Object.hash(
         indent,
+        padding,
         color,
         thickness,
         origin,
@@ -310,6 +342,7 @@ class ScopingLinesGuide extends AbstractLineGuide {
     return other.runtimeType == runtimeType &&
         other is ScopingLinesGuide &&
         other.indent == indent &&
+        other.padding == padding &&
         other.color == color &&
         other.thickness == thickness &&
         other.origin == origin;
@@ -365,6 +398,7 @@ class ConnectingLinesGuide extends AbstractLineGuide {
   /// Creates a [ConnectingLinesGuide].
   const ConnectingLinesGuide({
     super.indent,
+    super.padding,
     super.color,
     super.thickness,
     super.origin,
@@ -386,8 +420,10 @@ class ConnectingLinesGuide extends AbstractLineGuide {
 
   /// Creates a copy of this indent guide but with the given fields replaced
   /// with the new values.
+  @override
   ConnectingLinesGuide copyWith({
     double? indent,
+    EdgeInsetsGeometry? padding,
     Color? color,
     double? thickness,
     double? origin,
@@ -395,6 +431,7 @@ class ConnectingLinesGuide extends AbstractLineGuide {
   }) {
     return ConnectingLinesGuide(
       indent: indent ?? this.indent,
+      padding: padding ?? this.padding,
       color: color ?? this.color,
       thickness: thickness ?? this.thickness,
       origin: origin ?? this.origin,
@@ -405,6 +442,7 @@ class ConnectingLinesGuide extends AbstractLineGuide {
   @override
   int get hashCode => Object.hash(
         indent,
+        padding,
         color,
         thickness,
         origin,
@@ -418,6 +456,7 @@ class ConnectingLinesGuide extends AbstractLineGuide {
     return other.runtimeType == runtimeType &&
         other is ConnectingLinesGuide &&
         other.indent == indent &&
+        other.padding == padding &&
         other.color == color &&
         other.thickness == thickness &&
         other.origin == origin &&
