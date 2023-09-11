@@ -139,6 +139,8 @@ class IndentGuide {
     double thickness,
     double origin,
     bool roundCorners,
+    StrokeCap strokeCap,
+    StrokeJoin strokeJoin,
     PathModifier? pathModifier,
   }) = ConnectingLinesGuide;
 
@@ -149,6 +151,8 @@ class IndentGuide {
     Color color,
     double thickness,
     double origin,
+    StrokeCap strokeCap,
+    StrokeJoin strokeJoin,
     PathModifier? pathModifier,
   }) = ScopingLinesGuide;
 
@@ -230,6 +234,8 @@ abstract class AbstractLineGuide extends IndentGuide {
     this.color = Colors.grey,
     this.thickness = 2.0,
     this.origin = 0.5,
+    this.strokeCap = StrokeCap.butt,
+    this.strokeJoin = StrokeJoin.miter,
     this.pathModifier,
   })  : assert(thickness >= 0.0),
         assert(
@@ -266,6 +272,16 @@ abstract class AbstractLineGuide extends IndentGuide {
   ///
   /// Used when painting to horizontally position a line on each [indent] level.
   final double originOffset;
+
+  /// The kind of finish to place on the end of lines drawn.
+  ///
+  /// Defaults to [StrokeCap.butt], i.e. no caps.
+  final StrokeCap strokeCap;
+
+  /// The kind of finish to place on the joins between line segments.
+  ///
+  /// Defaults to [StrokeJoin.miter], i.e. sharp corners.
+  final StrokeJoin strokeJoin;
 
   /// An optional mapper callback that can be used to apply some styling to tree
   /// lines like dashing and dotting.
@@ -304,10 +320,12 @@ abstract class AbstractLineGuide extends IndentGuide {
   /// will handle line painting.
   CustomPainter createPainter(BuildContext context, TreeEntry<Object> entry);
 
-  /// Creates the [Paint] object that will be used to paint lines.
+  /// Creates the [Paint] object that will be used to draw lines.
   Paint createPaint() => Paint()
     ..color = color
     ..strokeWidth = thickness
+    ..strokeCap = strokeCap
+    ..strokeJoin = strokeJoin
     ..style = PaintingStyle.stroke;
 
   /// Calculates the origin offset of the line drawn for the given [level].
@@ -337,6 +355,8 @@ class ScopingLinesGuide extends AbstractLineGuide {
     super.color,
     super.thickness,
     super.origin,
+    super.strokeCap,
+    super.strokeJoin,
     super.pathModifier,
   });
 
@@ -358,6 +378,8 @@ class ScopingLinesGuide extends AbstractLineGuide {
     Color? color,
     double? thickness,
     double? origin,
+    StrokeCap? strokeCap,
+    StrokeJoin? strokeJoin,
     PathModifier? Function()? pathModifier,
   }) {
     return ScopingLinesGuide(
@@ -366,6 +388,8 @@ class ScopingLinesGuide extends AbstractLineGuide {
       color: color ?? this.color,
       thickness: thickness ?? this.thickness,
       origin: origin ?? this.origin,
+      strokeCap: strokeCap ?? this.strokeCap,
+      strokeJoin: strokeJoin ?? this.strokeJoin,
       pathModifier: pathModifier != null ? pathModifier() : this.pathModifier,
     );
   }
@@ -377,6 +401,8 @@ class ScopingLinesGuide extends AbstractLineGuide {
         color,
         thickness,
         origin,
+        strokeCap,
+        strokeJoin,
         pathModifier,
       );
 
@@ -391,6 +417,8 @@ class ScopingLinesGuide extends AbstractLineGuide {
         other.color == color &&
         other.thickness == thickness &&
         other.origin == origin &&
+        other.strokeCap == strokeCap &&
+        other.strokeJoin == strokeJoin &&
         other.pathModifier == pathModifier;
   }
 }
@@ -451,6 +479,8 @@ class ConnectingLinesGuide extends AbstractLineGuide {
     super.color,
     super.thickness,
     super.origin,
+    super.strokeCap,
+    super.strokeJoin,
     super.pathModifier,
     this.roundCorners = false,
   });
@@ -478,6 +508,8 @@ class ConnectingLinesGuide extends AbstractLineGuide {
     double? thickness,
     double? origin,
     bool? roundCorners,
+    StrokeCap? strokeCap,
+    StrokeJoin? strokeJoin,
     PathModifier? Function()? pathModifier,
   }) {
     return ConnectingLinesGuide(
@@ -487,6 +519,8 @@ class ConnectingLinesGuide extends AbstractLineGuide {
       thickness: thickness ?? this.thickness,
       origin: origin ?? this.origin,
       roundCorners: roundCorners ?? this.roundCorners,
+      strokeCap: strokeCap ?? this.strokeCap,
+      strokeJoin: strokeJoin ?? this.strokeJoin,
       pathModifier: pathModifier != null ? pathModifier() : this.pathModifier,
     );
   }
@@ -498,6 +532,8 @@ class ConnectingLinesGuide extends AbstractLineGuide {
         color,
         thickness,
         origin,
+        strokeCap,
+        strokeJoin,
         pathModifier,
         roundCorners,
       );
@@ -513,6 +549,8 @@ class ConnectingLinesGuide extends AbstractLineGuide {
         other.color == color &&
         other.thickness == thickness &&
         other.origin == origin &&
+        other.strokeCap == strokeCap &&
+        other.strokeJoin == strokeJoin &&
         other.pathModifier == pathModifier &&
         other.roundCorners == roundCorners;
   }
