@@ -139,6 +139,7 @@ class IndentGuide {
     double thickness,
     double origin,
     bool roundCorners,
+    PathModifier? pathModifier,
   }) = ConnectingLinesGuide;
 
   /// Convenient constructor to create a [ScopingLinesGuide].
@@ -148,6 +149,7 @@ class IndentGuide {
     Color color,
     double thickness,
     double origin,
+    PathModifier? pathModifier,
   }) = ScopingLinesGuide;
 
   /// The amount of indent to apply for each level of the tree.
@@ -210,6 +212,11 @@ class IndentGuide {
   }
 }
 
+/// Signature for a function that takes a [Path] and returns a [Path].
+///
+/// Used by the tree line painters to update the tree line path if desired.
+typedef PathModifier = Path Function(Path path);
+
 /// An interface for configuring how to paint line guides in the indentation of
 /// a tree node.
 ///
@@ -223,6 +230,7 @@ abstract class AbstractLineGuide extends IndentGuide {
     this.color = Colors.grey,
     this.thickness = 2.0,
     this.origin = 0.5,
+    this.pathModifier,
   })  : assert(thickness >= 0.0),
         assert(
           0.0 <= origin && origin <= 1.0,
@@ -258,6 +266,39 @@ abstract class AbstractLineGuide extends IndentGuide {
   ///
   /// Used when painting to horizontally position a line on each [indent] level.
   final double originOffset;
+
+  /// An optional mapper callback that can be used to apply some styling to tree
+  /// lines like dashing and dotting.
+  ///
+  /// When defined, this is called right before drawing lines on the canvas.
+  ///
+  /// A [Path] instance containing all computed tree line segments is provided
+  /// to this callback which should then apply the desired transformations and
+  /// return either the same or a new [Path] instance.
+  ///
+  /// Example using the [path_drawing](https://pub.dev/packages/path_drawing)
+  /// package:
+  /// ```dart
+  /// import 'package:path_drawing/path_drawing.dart';
+  ///
+  /// Path dashingModifier(Path path) {
+  ///   return dashPath(
+  ///     path,
+  ///     dashArray: CircularIntervalList(const <double>[8.0, 2.0]),
+  ///     dashOffset: const DashOffset.absolute(1),
+  ///   );
+  /// }
+  ///
+  /// Path dottingModifier(Path path) {
+  ///   return dashPath(
+  ///     path,
+  ///     dashArray: CircularIntervalList(const <double>[2.0]),
+  ///     dashOffset: const DashOffset.absolute(1),
+  ///   );
+  /// }
+  /// ```
+  /// > The values above should be tweaked to reach the desired result.
+  final PathModifier? pathModifier;
 
   /// Subclasses must override this method to provide the [CustomPainter] that
   /// will handle line painting.
@@ -296,6 +337,7 @@ class ScopingLinesGuide extends AbstractLineGuide {
     super.color,
     super.thickness,
     super.origin,
+    super.pathModifier,
   });
 
   @override
@@ -316,6 +358,7 @@ class ScopingLinesGuide extends AbstractLineGuide {
     Color? color,
     double? thickness,
     double? origin,
+    PathModifier? Function()? pathModifier,
   }) {
     return ScopingLinesGuide(
       indent: indent ?? this.indent,
@@ -323,6 +366,7 @@ class ScopingLinesGuide extends AbstractLineGuide {
       color: color ?? this.color,
       thickness: thickness ?? this.thickness,
       origin: origin ?? this.origin,
+      pathModifier: pathModifier != null ? pathModifier() : this.pathModifier,
     );
   }
 
@@ -333,6 +377,7 @@ class ScopingLinesGuide extends AbstractLineGuide {
         color,
         thickness,
         origin,
+        pathModifier,
       );
 
   @override
@@ -345,7 +390,8 @@ class ScopingLinesGuide extends AbstractLineGuide {
         other.padding == padding &&
         other.color == color &&
         other.thickness == thickness &&
-        other.origin == origin;
+        other.origin == origin &&
+        other.pathModifier == pathModifier;
   }
 }
 
@@ -379,7 +425,10 @@ class _ScopingLinesPainter extends CustomPainter {
         ..lineTo(x, 0);
     }
 
-    canvas.drawPath(path, guide.createPaint());
+    canvas.drawPath(
+      guide.pathModifier?.call(path) ?? path,
+      guide.createPaint(),
+    );
   }
 
   @override
@@ -402,6 +451,7 @@ class ConnectingLinesGuide extends AbstractLineGuide {
     super.color,
     super.thickness,
     super.origin,
+    super.pathModifier,
     this.roundCorners = false,
   });
 
@@ -428,6 +478,7 @@ class ConnectingLinesGuide extends AbstractLineGuide {
     double? thickness,
     double? origin,
     bool? roundCorners,
+    PathModifier? Function()? pathModifier,
   }) {
     return ConnectingLinesGuide(
       indent: indent ?? this.indent,
@@ -436,6 +487,7 @@ class ConnectingLinesGuide extends AbstractLineGuide {
       thickness: thickness ?? this.thickness,
       origin: origin ?? this.origin,
       roundCorners: roundCorners ?? this.roundCorners,
+      pathModifier: pathModifier != null ? pathModifier() : this.pathModifier,
     );
   }
 
@@ -446,6 +498,7 @@ class ConnectingLinesGuide extends AbstractLineGuide {
         color,
         thickness,
         origin,
+        pathModifier,
         roundCorners,
       );
 
@@ -460,6 +513,7 @@ class ConnectingLinesGuide extends AbstractLineGuide {
         other.color == color &&
         other.thickness == thickness &&
         other.origin == origin &&
+        other.pathModifier == pathModifier &&
         other.roundCorners == roundCorners;
   }
 }
@@ -536,7 +590,10 @@ class _ConnectingLinesPainter extends CustomPainter {
       path.lineTo(connectionEnd, y);
     }
 
-    canvas.drawPath(path, guide.createPaint());
+    canvas.drawPath(
+      guide.pathModifier?.call(path) ?? path,
+      guide.createPaint(),
+    );
   }
 
   @override
