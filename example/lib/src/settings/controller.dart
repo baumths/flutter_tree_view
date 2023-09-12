@@ -50,6 +50,7 @@ class SettingsState {
     this.roundedCorners = false,
     this.textDirection = TextDirection.ltr,
     this.lineStyle = LineStyle.solid,
+    this.connectBranches = false,
   });
 
   final bool animateExpansions;
@@ -62,6 +63,7 @@ class SettingsState {
   final bool roundedCorners;
   final TextDirection textDirection;
   final LineStyle lineStyle;
+  final bool connectBranches;
 
   SettingsState copyWith({
     bool? animateExpansions,
@@ -74,6 +76,7 @@ class SettingsState {
     bool? roundedCorners,
     TextDirection? textDirection,
     LineStyle? lineStyle,
+    bool? connectBranches,
   }) {
     return SettingsState(
       animateExpansions: animateExpansions ?? this.animateExpansions,
@@ -86,6 +89,7 @@ class SettingsState {
       roundedCorners: roundedCorners ?? this.roundedCorners,
       textDirection: textDirection ?? this.textDirection,
       lineStyle: lineStyle ?? this.lineStyle,
+      connectBranches: connectBranches ?? this.connectBranches,
     );
   }
 }
@@ -155,5 +159,10 @@ class SettingsController with ChangeNotifier {
   void updateLineStyle(LineStyle value) {
     if (state.lineStyle == value) return;
     state = state.copyWith(lineStyle: value);
+  }
+
+  void updateConnectBranches(bool value) {
+    if (state.connectBranches == value) return;
+    state = state.copyWith(connectBranches: value);
   }
 }

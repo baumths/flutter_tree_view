@@ -23,6 +23,7 @@ class SettingsCategories extends StatelessWidget {
       if (indentType != IndentType.blank) ...[
         if (indentType == IndentType.connectingLines) ...[
           const RoundedConnections(),
+          const ConnectBranches(),
         ],
         const LineStyleSelector(),
         const LineThickness(),
@@ -398,6 +399,28 @@ class RoundedConnections extends StatelessWidget {
       value: roundedConnections,
       onChanged: (value) {
         context.read<SettingsController>().updateRoundedCorners(value);
+      },
+      contentPadding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
+    );
+  }
+}
+
+//* Connect Branches -----------------------------------------------------------
+
+class ConnectBranches extends StatelessWidget {
+  const ConnectBranches({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final connectBranches = context.select<SettingsController, bool>(
+      (controller) => controller.state.connectBranches,
+    );
+
+    return SwitchListTile(
+      title: const Text('Connect Branches'),
+      value: connectBranches,
+      onChanged: (value) {
+        context.read<SettingsController>().updateConnectBranches(value);
       },
       contentPadding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
     );

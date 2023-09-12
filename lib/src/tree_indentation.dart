@@ -138,10 +138,11 @@ class IndentGuide {
     Color color,
     double thickness,
     double origin,
-    bool roundCorners,
     StrokeCap strokeCap,
     StrokeJoin strokeJoin,
     PathModifier? pathModifier,
+    bool roundCorners,
+    bool connectBranches,
   }) = ConnectingLinesGuide;
 
   /// Convenient constructor to create a [ScopingLinesGuide].
@@ -483,11 +484,27 @@ class ConnectingLinesGuide extends AbstractLineGuide {
     super.strokeJoin,
     super.pathModifier,
     this.roundCorners = false,
+    this.connectBranches = false,
   });
 
-  /// Determines if the connection between a horizontal and a vertical line
-  /// should be rounded.
+  /// Decides if the connection between vertical and horizontal lines should be
+  /// rounded.
   final bool roundCorners;
+
+  /// Decides if the horizontal connection should be extended one level further
+  /// (and connect to descendant lines, if any).
+  ///
+  /// When set to true, the horizontal connection will be extended to the next
+  /// level and if the node has child nodes under it, the line will be extended
+  /// downwards to connect a parent and its subtree.
+  ///
+  /// The `┐` connection is only drawn for nodes that are both expanded and
+  /// have at least one child node. If this is set to true and a tree node
+  /// doesn't match the above conditions, the connection is only extended
+  /// horizontally to the next level.
+  ///
+  /// Defaults to `false`.
+  final bool connectBranches;
 
   @override
   CustomPainter createPainter(BuildContext context, TreeEntry<Object> entry) {
@@ -507,10 +524,11 @@ class ConnectingLinesGuide extends AbstractLineGuide {
     Color? color,
     double? thickness,
     double? origin,
-    bool? roundCorners,
     StrokeCap? strokeCap,
     StrokeJoin? strokeJoin,
     PathModifier? Function()? pathModifier,
+    bool? roundCorners,
+    bool? connectBranches,
   }) {
     return ConnectingLinesGuide(
       indent: indent ?? this.indent,
@@ -518,10 +536,11 @@ class ConnectingLinesGuide extends AbstractLineGuide {
       color: color ?? this.color,
       thickness: thickness ?? this.thickness,
       origin: origin ?? this.origin,
-      roundCorners: roundCorners ?? this.roundCorners,
       strokeCap: strokeCap ?? this.strokeCap,
       strokeJoin: strokeJoin ?? this.strokeJoin,
       pathModifier: pathModifier != null ? pathModifier() : this.pathModifier,
+      roundCorners: roundCorners ?? this.roundCorners,
+      connectBranches: connectBranches ?? this.connectBranches,
     );
   }
 
@@ -536,6 +555,7 @@ class ConnectingLinesGuide extends AbstractLineGuide {
         strokeJoin,
         pathModifier,
         roundCorners,
+        connectBranches,
       );
 
   @override
@@ -552,7 +572,8 @@ class ConnectingLinesGuide extends AbstractLineGuide {
         other.strokeCap == strokeCap &&
         other.strokeJoin == strokeJoin &&
         other.pathModifier == pathModifier &&
-        other.roundCorners == roundCorners;
+        other.roundCorners == roundCorners &&
+        other.connectBranches == connectBranches;
   }
 }
 
@@ -626,6 +647,21 @@ class _ConnectingLinesPainter extends CustomPainter {
       }
 
       path.lineTo(connectionEnd, y);
+    }
+
+    if (guide.connectBranches) {
+      connectionEnd = calculateOffset(entry.level + 1);
+
+      if (entry.isExpanded && entry.hasChildren) {
+        if (guide.roundCorners) {
+          path.quadraticBezierTo(connectionEnd, y, connectionEnd, size.height);
+        } else {
+          path.lineTo(connectionEnd, y);
+          path.lineTo(connectionEnd, size.height);
+        }
+      } else {
+        path.lineTo(connectionEnd, y);
+      }
     }
 
     canvas.drawPath(
