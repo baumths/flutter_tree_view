@@ -608,12 +608,12 @@ class _ConnectingLinesPainter extends CustomPainter {
     late double Function(int level) calculateOffset;
 
     if (textDirection == TextDirection.rtl) {
-      connectionEnd = size.width - indentation;
-      connectionStart = connectionEnd + guide.originOffset;
+      connectionStart = size.width - (indentation - guide.originOffset);
+      connectionEnd = connectionStart - guide.indent * 0.5;
       calculateOffset = (int level) => size.width - guide.offsetOfLevel(level);
     } else {
-      connectionEnd = indentation;
       connectionStart = indentation - guide.originOffset;
+      connectionEnd = connectionStart + guide.indent * 0.5;
       calculateOffset = guide.offsetOfLevel;
     }
 
