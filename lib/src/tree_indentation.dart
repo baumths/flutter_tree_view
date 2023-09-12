@@ -449,9 +449,8 @@ class _ScopingLinesPainter extends CustomPainter {
 
     for (int level = 1; level <= nodeLevel; level++) {
       final double x = calculateOffset(level);
-      path
-        ..moveTo(x, size.height)
-        ..lineTo(x, 0);
+      path.moveTo(x, size.height);
+      path.lineTo(x, 0);
     }
 
     canvas.drawPath(
@@ -589,9 +588,7 @@ class _ConnectingLinesPainter extends CustomPainter {
   final TextDirection? textDirection;
   final double indentation;
 
-  void runForEachAncestorLevelThatHasNextSibling(
-    void Function(int level) action,
-  ) {
+  void runForEachAncestorLevelThatHasNextSibling(ValueChanged<int> action) {
     TreeEntry<Object>? current = entry;
     while (current != null && current.level > 0) {
       if (current.hasNextSibling) {
@@ -603,18 +600,18 @@ class _ConnectingLinesPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    late double connectionEnd;
-    late double connectionStart;
-    late double Function(int level) calculateOffset;
+    final double Function(int level) calculateOffset;
+    double connectionEnd;
+    double connectionStart;
 
     if (textDirection == TextDirection.rtl) {
+      calculateOffset = (int level) => size.width - guide.offsetOfLevel(level);
       connectionStart = size.width - (indentation - guide.originOffset);
       connectionEnd = connectionStart - guide.indent * 0.5;
-      calculateOffset = (int level) => size.width - guide.offsetOfLevel(level);
     } else {
+      calculateOffset = guide.offsetOfLevel;
       connectionStart = indentation - guide.originOffset;
       connectionEnd = connectionStart + guide.indent * 0.5;
-      calculateOffset = guide.offsetOfLevel;
     }
 
     final Path path = Path();
@@ -622,15 +619,12 @@ class _ConnectingLinesPainter extends CustomPainter {
     // Add vertical lines
     runForEachAncestorLevelThatHasNextSibling((int level) {
       final double x = calculateOffset(level);
-      path
-        ..moveTo(x, size.height)
-        ..lineTo(x, 0);
+      path.moveTo(x, size.height);
+      path.lineTo(x, 0);
     });
 
-    // Add connection
-
+    // Add connections
     final double y = size.height * 0.5;
-
     path.moveTo(connectionStart, 0.0);
 
     if (guide.roundCorners) {
@@ -645,7 +639,6 @@ class _ConnectingLinesPainter extends CustomPainter {
       } else {
         path.lineTo(connectionStart, y);
       }
-
       path.lineTo(connectionEnd, y);
     }
 
