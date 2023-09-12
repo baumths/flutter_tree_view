@@ -315,6 +315,10 @@ abstract class AbstractLineGuide extends IndentGuide {
   /// }
   /// ```
   /// > The values above should be tweaked to reach the desired result.
+  ///
+  /// Performance warning: be careful when using dashing/dotting algorithms
+  /// as they could lead to poor rendering (jank), typically when combining
+  /// large trees and animations.
   final PathModifier? pathModifier;
 
   /// Subclasses must override this method to provide the [CustomPainter] that
