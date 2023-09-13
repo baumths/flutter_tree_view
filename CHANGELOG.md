@@ -1,3 +1,15 @@
+## [1.3.0] 13-09-2023
+- Added [pub topics](https://pub.dev/topics) to pubspec.yaml
+- Indentation Improvements:
+  - Added a way to apply dashing algorithms to the indentation lines through
+    `AbstractLineGuide.pathModifier`
+  - Added an optional connection between the line of a parent node and its
+    subtree lines with `ConnectingLinesGuide.connectBranches`
+  - Added the `IndentGuide.padding` property, which is added to the Padding
+    widget that indents tree nodes
+  - Fixed an issue with rounded corners being mistakenly offset by
+    `ConnectingLinesGuide.origin`
+
 ## [1.2.0] 18-08-2023
 - Upgrade to Dart 3
 - Rudimentary Drag and Drop support
