@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:path_drawing/path_drawing.dart';
 
 enum IndentType {
   connectingLines('Connecting Lines'),
@@ -14,6 +15,29 @@ enum IndentType {
   }
 }
 
+enum LineStyle {
+  dashed('Dashed'),
+  dotted('Dotted'),
+  solid('Solid');
+
+  final String title;
+  const LineStyle(this.title);
+
+  Path Function(Path)? toPathModifier() => switch (this) {
+        dashed => (Path path) => dashPath(
+              path,
+              dashArray: CircularIntervalList(const [6, 4]),
+              dashOffset: const DashOffset.absolute(6 / 4),
+            ),
+        dotted => (Path path) => dashPath(
+              path,
+              dashArray: CircularIntervalList(const [0.5, 3.5]),
+              dashOffset: const DashOffset.absolute(0.5 * 3.5),
+            ),
+        solid => null,
+      };
+}
+
 class SettingsState {
   const SettingsState({
     this.animateExpansions = true,
@@ -25,6 +49,8 @@ class SettingsState {
     this.lineThickness = 2.0,
     this.roundedCorners = false,
     this.textDirection = TextDirection.ltr,
+    this.lineStyle = LineStyle.solid,
+    this.connectBranches = false,
   });
 
   final bool animateExpansions;
@@ -36,6 +62,8 @@ class SettingsState {
   final double lineThickness;
   final bool roundedCorners;
   final TextDirection textDirection;
+  final LineStyle lineStyle;
+  final bool connectBranches;
 
   SettingsState copyWith({
     bool? animateExpansions,
@@ -47,6 +75,8 @@ class SettingsState {
     double? lineThickness,
     bool? roundedCorners,
     TextDirection? textDirection,
+    LineStyle? lineStyle,
+    bool? connectBranches,
   }) {
     return SettingsState(
       animateExpansions: animateExpansions ?? this.animateExpansions,
@@ -58,6 +88,8 @@ class SettingsState {
       lineThickness: lineThickness ?? this.lineThickness,
       roundedCorners: roundedCorners ?? this.roundedCorners,
       textDirection: textDirection ?? this.textDirection,
+      lineStyle: lineStyle ?? this.lineStyle,
+      connectBranches: connectBranches ?? this.connectBranches,
     );
   }
 }
@@ -122,5 +154,15 @@ class SettingsController with ChangeNotifier {
   void updateTextDirection(TextDirection value) {
     if (state.textDirection == value) return;
     state = state.copyWith(textDirection: value);
+  }
+
+  void updateLineStyle(LineStyle value) {
+    if (state.lineStyle == value) return;
+    state = state.copyWith(lineStyle: value);
+  }
+
+  void updateConnectBranches(bool value) {
+    if (state.connectBranches == value) return;
+    state = state.copyWith(connectBranches: value);
   }
 }

@@ -23,7 +23,9 @@ class SettingsCategories extends StatelessWidget {
       if (indentType != IndentType.blank) ...[
         if (indentType == IndentType.connectingLines) ...[
           const RoundedConnections(),
+          const ConnectBranches(),
         ],
+        const LineStyleSelector(),
         const LineThickness(),
         const LineOrigin(),
       ],
@@ -333,6 +335,54 @@ class LineOrigin extends StatelessWidget {
   }
 }
 
+//* Line Style -----------------------------------------------------------------
+
+class LineStyleSelector extends StatelessWidget {
+  const LineStyleSelector({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedLineStyle = context.select<SettingsController, LineStyle>(
+      (controller) => controller.state.lineStyle,
+    );
+
+    return ListTile(
+      title: const Text('Line Style'),
+      subtitle: Text(
+        selectedLineStyle.title,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      ),
+      trailing: const Icon(Icons.chevron_right),
+      contentPadding: const EdgeInsetsDirectional.only(start: 16, end: 8),
+      onTap: () async {
+        final controller = context.read<SettingsController>();
+
+        final RenderBox tile = context.findRenderObject()! as RenderBox;
+        final Offset offset = tile.localToGlobal(Offset.zero);
+        final Rect(:top, :right) = offset & tile.size;
+
+        final LineStyle? newLineStyle = await showMenu<LineStyle>(
+          context: context,
+          position: RelativeRect.fromLTRB(right, top, tile.size.width, 0),
+          items: <PopupMenuEntry<LineStyle>>[
+            for (final LineStyle lineStyle in LineStyle.values)
+              PopupMenuItem(
+                value: lineStyle,
+                enabled: lineStyle != selectedLineStyle,
+                child: Text(lineStyle.title),
+              ),
+          ],
+        );
+
+        if (newLineStyle == null) return;
+        controller.updateLineStyle(newLineStyle);
+      },
+    );
+  }
+}
+
 //* Rounded Line Connections ---------------------------------------------------
 
 class RoundedConnections extends StatelessWidget {
@@ -349,6 +399,28 @@ class RoundedConnections extends StatelessWidget {
       value: roundedConnections,
       onChanged: (value) {
         context.read<SettingsController>().updateRoundedCorners(value);
+      },
+      contentPadding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
+    );
+  }
+}
+
+//* Connect Branches -----------------------------------------------------------
+
+class ConnectBranches extends StatelessWidget {
+  const ConnectBranches({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final connectBranches = context.select<SettingsController, bool>(
+      (controller) => controller.state.connectBranches,
+    );
+
+    return SwitchListTile(
+      title: const Text('Connect Branches'),
+      value: connectBranches,
+      onChanged: (value) {
+        context.read<SettingsController>().updateConnectBranches(value);
       },
       contentPadding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
     );
