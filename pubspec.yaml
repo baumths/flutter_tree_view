@@ -24,3 +24,7 @@ screenshots:
     path: screenshots/scoping_lines.png
   - description: A TreeView with blank indentations.
     path: screenshots/blank_indentation.png
+
+topics:
+  - layout
+  - ui
