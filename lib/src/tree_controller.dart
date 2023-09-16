@@ -16,17 +16,22 @@ typedef ParentProvider<T> = T? Function(T node);
 /// Signature of a function used to visit nodes during tree traversal.
 typedef Visitor<T> = void Function(T node);
 
+/// Signature of a function that takes a `T` value and returns a `bool`.
+typedef ValuePredicate<T> = bool Function(T value);
+
 /// Signature of a function that takes a `T` node and returns a `bool`.
 ///
 /// Used when traversing a tree to decide if the children of [node] should be
 /// traversed or skipped.
-typedef DescendCondition<T> = bool Function(T node);
+@Deprecated('Use ValuePredicate instead.')
+typedef DescendCondition<T> = ValuePredicate<T>;
 
 /// Signature of a function that takes a `T` node and returns a `bool`.
 ///
 /// Used when traversing the tree in breadth first order to decide whether the
 /// traversal should stop.
-typedef ReturnCondition<T> = bool Function(T node);
+@Deprecated('Use ValuePredicate instead.')
+typedef ReturnCondition<T> = ValuePredicate<T>;
 
 /// A controller used to dynamically manage the state of a tree.
 ///
@@ -403,15 +408,15 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// [startingNodes] is not provided, [roots] will be used instead.
   ///
   /// [descendCondition] is used to determine if the descendants of the node
-  /// passed to it should be traversed. When not provided, defaults to
-  /// [alwaysReturnsTrue], a function that always returns `true` which leads
-  /// to every node on the tree being visited by this traversal.
+  /// passed to it should be traversed. When not provided, defaults to a
+  /// function that always returns `true` which leads to every node on the
+  /// tree being visited by this traversal.
   ///
-  /// [returnCondition] is used as a predicate to decide if the iteration should
-  /// be stopped. If this callback returns `true` the node that was passed to
-  /// it is returned from this method. When not provided, defaults to
-  /// [alwaysReturnsFalse], a function that always returns `false` which leads
-  /// to every node on the tree being visited by this traversal.
+  /// [returnCondition] is used as a predicate to decide if the iteration
+  /// should be stopped. If this callback returns `true` the node that was
+  /// passed to it is returned from this method. When not provided, defaults
+  /// to a function that always returns `false` which leads to every node on
+  /// the tree being visited by this traversal.
   ///
   /// An optional [onTraverse] callback can be provided to apply an action to
   /// each visited node. This callback is called prior to [returnCondition] and
@@ -419,10 +424,12 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// its properties.
   T? breadthFirstSearch({
     Iterable<T>? startingNodes,
-    DescendCondition<T> descendCondition = alwaysReturnsTrue,
-    ReturnCondition<T> returnCondition = alwaysReturnsFalse,
+    ValuePredicate<T>? descendCondition,
+    ValuePredicate<T>? returnCondition,
     Visitor<T>? onTraverse,
   }) {
+    descendCondition ??= (T _) => true;
+    returnCondition ??= (T _) => false;
     final List<T> nodes = List<T>.of(startingNodes ?? roots);
 
     while (nodes.isNotEmpty) {
@@ -460,10 +467,10 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// indentation context of the main tree.
   void depthFirstTraversal({
     required Visitor<TreeEntry<T>> onTraverse,
-    DescendCondition<TreeEntry<T>>? descendCondition,
+    ValuePredicate<TreeEntry<T>>? descendCondition,
     TreeEntry<T>? rootEntry,
   }) {
-    final DescendCondition<TreeEntry<T>> shouldDescend =
+    final ValuePredicate<TreeEntry<T>> shouldDescend =
         descendCondition ?? defaultDescendCondition;
 
     int treeIndex = 0;
@@ -515,7 +522,7 @@ class TreeController<T extends Object> with ChangeNotifier {
     }
   }
 
-  /// The default [DescendCondition] used by [depthFirstTraversal].
+  /// The default `descendCondition` used by [depthFirstTraversal].
   @visibleForTesting
   bool defaultDescendCondition(TreeEntry<T> entry) => entry.isExpanded;
 
@@ -543,14 +550,12 @@ class TreeController<T extends Object> with ChangeNotifier {
   }
 }
 
-/// A function that can take a nullable [Object] and will always return `true`.
-///
-/// Used in other function declarations as a constant default parameter.
+/// @nodoc
+@Deprecated('Use an annonymous callback instead, e.g., `(Object? _) => true.`')
 bool alwaysReturnsTrue([Object? _]) => true;
 
-/// A function that can take a nullable [Object] and will always return `false`.
-///
-/// Used in other function declarations as a constant default parameter.
+/// @nodoc
+@Deprecated('Use an annonymous callback instead, e.g., `(Object? _) => false`.')
 bool alwaysReturnsFalse([Object? _]) => false;
 
 /// Used to store useful information about [node] in a tree.
