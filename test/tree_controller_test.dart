@@ -567,6 +567,43 @@ void main() {
       });
     });
 
+    test('search()', () {
+      final TestTree tree = TestTree.depthFirst();
+      final TreeController<String> controller = tree.createController();
+
+      TreeSearchMatch newMatch(bool isMatch, int totalNodes, int totalMatches) {
+        return TreeSearchMatch(
+          isDirectMatch: isMatch,
+          subtreeNodeCount: totalNodes,
+          subtreeMatchCount: totalMatches,
+        );
+      }
+
+      const Pattern targetPattern = '1.1';
+      const int totalMatchCount = 6;
+      final Map<String, TreeSearchMatch> expectedMatches = {
+        '1': newMatch(false, 6, 3),
+        '1.1': newMatch(true, 2, 2),
+        '1.1.1': newMatch(true, 0, 0),
+        '1.1.2': newMatch(true, 0, 0),
+        '2': newMatch(false, 4, 3),
+        '2.1': newMatch(false, 3, 3),
+        '2.1.1': newMatch(true, 2, 2),
+        '2.1.1.1': newMatch(true, 1, 1),
+        '2.1.1.1.1': newMatch(true, 0, 0),
+      };
+
+      final result = controller.search((node) => node.contains(targetPattern));
+
+      expect(result.matches, hasLength(expectedMatches.length));
+      expect(result.totalNodeCount, tree.totalNodeCount);
+      expect(result.totalMatchCount, totalMatchCount);
+
+      for (final MapEntry(:key, :value) in result.matches.entries) {
+        expect(value, equals(expectedMatches[key]));
+      }
+    });
+
     group('breadthFirstSearch()', () {
       late TestTree tree;
       late TestTreeController<String> controller;

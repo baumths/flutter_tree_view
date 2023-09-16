@@ -404,6 +404,52 @@ class TreeController<T extends Object> with ChangeNotifier {
     return foundAncestor;
   }
 
+  /// Traverses the tree looking for nodes that match the given [predicate].
+  ///
+  /// The returned [TreeSearchResult] contains all direct and indirect matches,
+  /// i.e., a direct match means the predicate returned true for that given
+  /// node, and an indirect match means the given node is not a match, but it
+  /// has one or more matching nodes in its subtree.
+  ///
+  /// The absence of a node in [TreeSearchResult.matches.keys] means that itself
+  /// as well as its entire subtree didn't match the search predicate, or the
+  /// given node was not reached during tree traversal.
+  TreeSearchResult<T> search(ValuePredicate<T> predicate) {
+    final Map<T, TreeSearchMatch> allMatches = <T, TreeSearchMatch>{};
+
+    (int subtreeNodeCount, int subtreeMatchCount) traverse(Iterable<T> nodes) {
+      int totalNodeCount = 0;
+      int totalMatchCount = 0;
+
+      for (final T child in nodes) {
+        if (predicate(child)) {
+          totalMatchCount++;
+          allMatches[child] = const TreeSearchMatch();
+        }
+
+        final (int nodes, int matches) = traverse(childrenProvider(child));
+        totalNodeCount += nodes + 1;
+        totalMatchCount += matches;
+
+        if (matches > 0) {
+          allMatches[child] = TreeSearchMatch(
+            isDirectMatch: allMatches[child]?.isDirectMatch ?? false,
+            subtreeNodeCount: nodes,
+            subtreeMatchCount: matches,
+          );
+        }
+      }
+      return (totalNodeCount, totalMatchCount);
+    }
+
+    final (int totalNodeCount, int totalMatchCount) = traverse(roots);
+    return TreeSearchResult<T>(
+      matches: allMatches,
+      totalNodeCount: totalNodeCount,
+      totalMatchCount: totalMatchCount,
+    );
+  }
+
   /// Traverses the subtrees of [startingNodes] in breadth first order. If
   /// [startingNodes] is not provided, [roots] will be used instead.
   ///
@@ -557,6 +603,107 @@ bool alwaysReturnsTrue([Object? _]) => true;
 /// @nodoc
 @Deprecated('Use an annonymous callback instead, e.g., `(Object? _) => false`.')
 bool alwaysReturnsFalse([Object? _]) => false;
+
+/// Represents the result of a search operation on a tree.
+///
+/// See also:
+/// * [TreeSearchMatch], which holds the search match details of a single node
+///   and its subtree.
+/// * [TreeController.search], which traverses a tree looking for nodes that
+///   match the given predicate.
+class TreeSearchResult<T extends Object> with Diagnosticable {
+  /// Creates a [TreeSearchResult].
+  const TreeSearchResult({
+    required this.matches,
+    this.totalNodeCount = 0,
+    this.totalMatchCount = 0,
+  });
+
+  /// A [Map] of `T node -> TreeSearchMatch` that represents a direct or
+  /// indirect match of a search operation on a tree.
+  ///
+  /// The absence of a node means neither itself nor any of its descendants
+  /// matched the search predicate.
+  ///
+  /// If a node is present in this map, it was either a direct search match
+  /// (i.e., the search predicate returned true for itself) or indirect (i.e.,
+  /// the search predicate returned true for one or more descendant nodes).
+  ///
+  /// The values in this map are not arranged in any particular order.
+  final Map<T, TreeSearchMatch> matches;
+
+  /// The total number of nodes visited by the traversal.
+  final int totalNodeCount;
+
+  /// The total number of nodes that match the search predicate.
+  final int totalMatchCount;
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty.lazy('matches', () => matches))
+      ..add(IntProperty('total node count', totalNodeCount))
+      ..add(IntProperty('total match count', totalMatchCount));
+  }
+}
+
+/// Represents the details of a search operation on a tree for a given node.
+///
+/// This class contains information about whether a node is a match for the
+/// search predicate, the number of nodes in the subtree rooted at the node,
+/// and the number of nodes in the subtree that match the search predicate.
+///
+/// See also:
+/// * [TreeSearchResult], which holds all matches of a search operation on a
+///   tree.
+/// * [TreeController.search], which traverses a tree looking for nodes that
+///   match the given predicate.
+class TreeSearchMatch with Diagnosticable {
+  /// Creates a [TreeSearchMatch].
+  const TreeSearchMatch({
+    this.isDirectMatch = true,
+    this.subtreeNodeCount = 0,
+    this.subtreeMatchCount = 0,
+  });
+
+  /// Whether the node itself is a direct match for the search predicate.
+  final bool isDirectMatch;
+
+  /// The number of nodes in the subtree rooted at the node, excluding the root
+  /// itself.
+  final int subtreeNodeCount;
+
+  /// The number of nodes in the subtree rooted at the node, excluding the root
+  /// itself, that match the search predicate.
+  final int subtreeMatchCount;
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('direct match', isDirectMatch))
+      ..add(IntProperty('subtree node count', subtreeNodeCount))
+      ..add(IntProperty('subtree match count', subtreeMatchCount));
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        isDirectMatch,
+        subtreeNodeCount,
+        subtreeMatchCount,
+      );
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is TreeSearchMatch &&
+        other.runtimeType == runtimeType &&
+        other.isDirectMatch == isDirectMatch &&
+        other.subtreeNodeCount == subtreeNodeCount &&
+        other.subtreeMatchCount == subtreeMatchCount;
+  }
+}
 
 /// Used to store useful information about [node] in a tree.
 ///
