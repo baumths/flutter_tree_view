@@ -619,8 +619,8 @@ class TreeSearchResult<T extends Object> with Diagnosticable {
     this.totalMatchCount = 0,
   });
 
-  /// A [Map] of `T node -> TreeSearchMatch` that represents a direct or
-  /// indirect match of a search operation on a tree.
+  /// A [Map] of `node -> TreeSearchMatch` that represents a direct or indirect
+  /// match of a search operation on a tree.
   ///
   /// The absence of a node means neither itself nor any of its descendants
   /// matched the search predicate.
@@ -630,6 +630,9 @@ class TreeSearchResult<T extends Object> with Diagnosticable {
   /// the search predicate returned true for one or more descendant nodes).
   ///
   /// The values in this map are not arranged in any particular order.
+  ///
+  /// See also:
+  /// * [matchOf] which returns the [TreeSearchMatch] (if any) of a given node.
   final Map<T, TreeSearchMatch> matches;
 
   /// The total number of nodes visited by the traversal.
@@ -637,6 +640,19 @@ class TreeSearchResult<T extends Object> with Diagnosticable {
 
   /// The total number of nodes that match the search predicate.
   final int totalMatchCount;
+
+  /// The search result match values of [node].
+  ///
+  /// If this returns null, either [node] wasn't reached during tree traversal
+  /// or neither [node] nor its entire subtree matched the search predicate.
+  TreeSearchMatch? matchOf(T node) => matches[node];
+
+  /// Whether [node] has a direct or indirect search match.
+  ///
+  /// A direct match means the search predicate returned true for [node].
+  /// An indirect match means the search predicate returned false for [node],
+  /// but it returned true for at least one descendant node in [node]'s subtree.
+  bool hasMatch(T node) => matches.containsKey(node);
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
