@@ -3,6 +3,7 @@ import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 import 'package:provider/provider.dart';
 
 import 'examples/drag_and_drop.dart' show DragAndDropTreeView;
+import 'examples/filterable.dart' show FilterableTreeView;
 import 'examples/lazy_loading.dart' show LazyLoadingTreeView;
 import 'examples/minimal.dart' show MinimalTreeView;
 import 'settings/controller.dart' show IndentType, SettingsController;
@@ -18,6 +19,7 @@ class SelectedExampleNotifier extends ValueNotifier<Example> {
 
 enum Example {
   dragAndDrop('Drag and Drop', Icon(Icons.move_down_rounded)),
+  filterable('Filterable', Icon(Icons.manage_search_rounded)),
   lazyLoading('Lazy Loading', Icon(Icons.hourglass_top_rounded)),
   minimal('Minimal', Icon(Icons.segment));
 
@@ -29,6 +31,7 @@ enum Example {
   Widget get tree {
     return switch (this) {
       Example.dragAndDrop => const DragAndDropTreeView(),
+      Example.filterable => const FilterableTreeView(),
       Example.lazyLoading => const LazyLoadingTreeView(),
       Example.minimal => const MinimalTreeView(),
     };
