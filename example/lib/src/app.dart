@@ -10,16 +10,24 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colorScheme = ColorScheme.fromSeed(
+      seedColor: context.select<SettingsController, Color>(
+        (controller) => controller.state.color,
+      ),
+      brightness: context.select<SettingsController, Brightness>(
+        (controller) => controller.state.brightness,
+      ),
+    );
+
     return MaterialApp(
       title: 'flutter_fancy_tree_view',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorSchemeSeed: context.select<SettingsController, Color>(
-          (controller) => controller.state.color,
-        ),
-        brightness: context.select<SettingsController, Brightness>(
-          (controller) => controller.state.brightness,
+        colorScheme: colorScheme,
+        badgeTheme: BadgeThemeData(
+          backgroundColor: colorScheme.primary,
+          textColor: colorScheme.onPrimary,
         ),
       ),
       builder: (BuildContext context, Widget? child) {

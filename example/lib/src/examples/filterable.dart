@@ -25,6 +25,7 @@ class _FilterableTreeViewState extends State<FilterableTreeView> {
   late final Node root = Node(title: '/');
 
   TreeSearchResult<Node>? filter;
+  Pattern? searchPattern;
 
   Iterable<Node> getChildren(Node node) {
     if (filter case TreeSearchResult<Node> filter?) {
@@ -38,10 +39,15 @@ class _FilterableTreeViewState extends State<FilterableTreeView> {
     // wouldn't reach some nodes because of the `getChildren()` impl above.
     filter = null;
 
-    Pattern searchPattern = query.maybeToRegex();
-    filter = treeController.search(
-      (Node node) => node.title.contains(searchPattern),
-    );
+    Pattern pattern;
+    try {
+      pattern = RegExp(query);
+    } on FormatException {
+      pattern = query;
+    }
+    searchPattern = pattern;
+
+    filter = treeController.search((Node node) => node.title.contains(pattern));
     treeController.rebuild();
 
     if (mounted) {
@@ -54,6 +60,7 @@ class _FilterableTreeViewState extends State<FilterableTreeView> {
 
     setState(() {
       filter = null;
+      searchPattern = null;
       treeController.rebuild();
       searchBarTextEditingController.clear();
     });
@@ -87,120 +94,162 @@ class _FilterableTreeViewState extends State<FilterableTreeView> {
   @override
   void dispose() {
     filter = null;
+    searchPattern = null;
     treeController.dispose();
     searchBarTextEditingController.dispose();
     super.dispose();
   }
 
-  String get counter => '${filter?.totalMatchCount}/${filter?.totalNodeCount}';
-
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-
-    return BadgeTheme(
-      data: BadgeThemeData(
-        backgroundColor: colorScheme.primary,
-        textColor: colorScheme.onPrimary,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: SearchBar(
-              controller: searchBarTextEditingController,
-              hintText: 'Type to Filter',
-              leading: const Padding(
-                padding: EdgeInsets.all(8),
-                child: Icon(Icons.filter_list),
-              ),
-              trailing: [
-                Badge(
-                  label: Text(counter),
-                  isLabelVisible: filter != null,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8),
+          child: SearchBar(
+            controller: searchBarTextEditingController,
+            hintText: 'Type to Filter',
+            leading: const Padding(
+              padding: EdgeInsets.all(8),
+              child: Icon(Icons.filter_list),
+            ),
+            trailing: [
+              Badge(
+                isLabelVisible: filter != null,
+                label: Text(
+                  '${filter?.totalMatchCount}/${filter?.totalNodeCount}',
                 ),
-                IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: clearSearch,
-                )
-              ],
-            ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: clearSearch,
+              )
+            ],
           ),
-          Expanded(
-            child: TreeView<Node>(
-              treeController: treeController,
-              nodeBuilder: (BuildContext context, TreeEntry<Node> entry) {
-                return MyTreeTile(
-                  entry: entry,
-                  match: filter?.matchOf(entry.node),
-                  hasActiveFilter: filter != null,
-                  onPressed: entry.hasChildren
-                      ? (_) => treeController.toggleExpansion(entry.node)
-                      : null,
-                );
-              },
-            ),
+        ),
+        Expanded(
+          child: TreeView<Node>(
+            treeController: treeController,
+            nodeBuilder: (BuildContext context, TreeEntry<Node> entry) {
+              return TreeTile(
+                entry: entry,
+                match: filter?.matchOf(entry.node),
+                searchPattern: searchPattern,
+              );
+            },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
-class MyTreeTile extends StatelessWidget {
-  const MyTreeTile({
+class TreeTile extends StatefulWidget {
+  const TreeTile({
     super.key,
     required this.entry,
     required this.match,
-    required this.onPressed,
-    this.hasActiveFilter = false,
+    required this.searchPattern,
   });
 
   final TreeEntry<Node> entry;
   final TreeSearchMatch? match;
-  final ValueChanged<bool>? onPressed;
-  final bool hasActiveFilter;
+  final Pattern? searchPattern;
+
+  @override
+  State<TreeTile> createState() => _TreeTileState();
+}
+
+class _TreeTileState extends State<TreeTile> {
+  late InlineSpan titleSpan;
+
+  TextStyle? dimStyle;
+  TextStyle? highlightStyle;
+
+  bool get shouldShowBadge =>
+      !widget.entry.isExpanded && (widget.match?.subtreeMatchCount ?? 0) > 0;
 
   @override
   Widget build(BuildContext context) {
-    final bool isDirectMatch = match?.isDirectMatch ?? false;
-
     return TreeIndentation(
-      entry: entry,
+      entry: widget.entry,
       child: Row(
         children: [
           ExpandIcon(
-            key: GlobalObjectKey(entry.node),
-            isExpanded: entry.isExpanded,
-            onPressed: onPressed,
+            key: GlobalObjectKey(widget.entry.node),
+            isExpanded: widget.entry.isExpanded,
+            onPressed: (_) => TreeViewScope.of<Node>(context)
+              ..controller.toggleExpansion(widget.entry.node),
           ),
-          if (!entry.isExpanded && (match?.subtreeMatchCount ?? 0) > 0)
+          if (shouldShowBadge)
             Padding(
               padding: const EdgeInsetsDirectional.only(end: 8),
               child: Badge(
-                label: Text('${match?.subtreeMatchCount}'),
+                label: Text('${widget.match?.subtreeMatchCount}'),
               ),
             ),
-          Flexible(
-            child: Opacity(
-              opacity: !hasActiveFilter || isDirectMatch ? 1 : 0.5,
-              child: Text(entry.node.title),
-            ),
-          ),
+          Flexible(child: Text.rich(titleSpan)),
         ],
       ),
     );
   }
-}
 
-extension on String {
-  Pattern maybeToRegex() {
-    try {
-      return RegExp(this);
-    } on FormatException {
-      return this;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    setupTextStyles();
+    titleSpan = buildTextSpan();
+  }
+
+  @override
+  void didUpdateWidget(covariant TreeTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.searchPattern != widget.searchPattern ||
+        oldWidget.entry.node.title != widget.entry.node.title) {
+      titleSpan = buildTextSpan();
     }
+  }
+
+  void setupTextStyles() {
+    final TextStyle style = DefaultTextStyle.of(context).style;
+    final Color highlightColor = Theme.of(context).colorScheme.primary;
+    highlightStyle = style.copyWith(
+      color: highlightColor,
+      decorationColor: highlightColor,
+      decoration: TextDecoration.underline,
+    );
+    dimStyle = style.copyWith(color: style.color?.withAlpha(128));
+  }
+
+  InlineSpan buildTextSpan() {
+    final String title = widget.entry.node.title;
+
+    if (widget.searchPattern == null) {
+      return TextSpan(text: title);
+    }
+
+    final List<InlineSpan> spans = <InlineSpan>[];
+    bool hasAnyMatches = false;
+
+    title.splitMapJoin(
+      widget.searchPattern!,
+      onMatch: (Match match) {
+        hasAnyMatches = true;
+        spans.add(TextSpan(text: match.group(0)!, style: highlightStyle));
+        return '';
+      },
+      onNonMatch: (String text) {
+        spans.add(TextSpan(text: text));
+        return '';
+      },
+    );
+
+    if (hasAnyMatches) {
+      return TextSpan(children: spans);
+    }
+
+    return TextSpan(text: title, style: dimStyle);
   }
 }
 
