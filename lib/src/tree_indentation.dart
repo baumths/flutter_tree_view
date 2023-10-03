@@ -1,3 +1,5 @@
+import 'dart:math' as math show min;
+
 import 'package:flutter/material.dart';
 
 import 'tree_controller.dart' show TreeEntry;
@@ -119,6 +121,11 @@ class DefaultIndentGuide extends InheritedTheme {
   }
 }
 
+/// The default value used for [IndentGuide.maxLevel].
+///
+/// This value differs depending on the running platform.
+const int largestPositiveInteger = -1 >>> 1;
+
 /// The configuration used to indent and paint optional guides for tree nodes.
 ///
 /// This indent guide only indents tree nodes without decorations. Check out the
@@ -129,7 +136,9 @@ class IndentGuide {
   const IndentGuide({
     this.indent = 40.0,
     this.padding = EdgeInsets.zero,
-  }) : assert(indent >= 0.0);
+    this.maxLevel = largestPositiveInteger,
+  })  : assert(indent >= 0.0),
+        assert(maxLevel >= 0);
 
   /// Convenient constructor to create a [ConnectingLinesGuide].
   const factory IndentGuide.connectingLines({
@@ -167,6 +176,15 @@ class IndentGuide {
   /// ```
   final double indent;
 
+  /// The maximum indentation level allowed for tree nodes.
+  ///
+  /// This value can be used to limit the indentation of tree nodes. If a node
+  /// expands to a level higher than [maxLevel], all descendants will have the
+  /// same indentation level as their parent.
+  ///
+  /// Defaults to [largestPositiveInteger].
+  final int maxLevel;
+
   /// The amount of space to inset [TreeIndentation.child].
   ///
   /// The indentation of tree nodes will be added to this object, i.e.,
@@ -174,6 +192,8 @@ class IndentGuide {
   ///
   /// Defaults to [EdgeInsets.zero].
   final EdgeInsetsGeometry padding;
+
+  int _constrainLevel(int level) => math.min(level, maxLevel);
 
   /// Method used to wrap [child] in the desired decoration/painting.
   ///
@@ -184,9 +204,9 @@ class IndentGuide {
   /// * [AbstractLineGuide], an interface for working with line painting;
   Widget wrap(BuildContext context, Widget child, TreeEntry<Object> entry) {
     return Padding(
-      padding: padding.add(
-        EdgeInsetsDirectional.only(start: entry.level * indent),
-      ),
+      padding: padding.add(EdgeInsetsDirectional.only(
+        start: _constrainLevel(entry.level) * indent,
+      )),
       child: child,
     );
   }
@@ -196,15 +216,17 @@ class IndentGuide {
   IndentGuide copyWith({
     double? indent,
     EdgeInsetsGeometry? padding,
+    int? maxLevel,
   }) {
     return IndentGuide(
       indent: indent ?? this.indent,
       padding: padding ?? this.padding,
+      maxLevel: maxLevel ?? this.maxLevel,
     );
   }
 
   @override
-  int get hashCode => Object.hash(indent, padding);
+  int get hashCode => Object.hash(indent, padding, maxLevel);
 
   @override
   operator ==(Object other) {
@@ -213,7 +235,8 @@ class IndentGuide {
     return other.runtimeType == runtimeType &&
         other is IndentGuide &&
         other.indent == indent &&
-        other.padding == padding;
+        other.padding == padding &&
+        other.maxLevel == maxLevel;
   }
 }
 
@@ -232,6 +255,7 @@ abstract class AbstractLineGuide extends IndentGuide {
   const AbstractLineGuide({
     super.indent,
     super.padding,
+    super.maxLevel,
     this.color = Colors.grey,
     this.thickness = 2.0,
     this.origin = 0.5,
@@ -345,6 +369,13 @@ abstract class AbstractLineGuide extends IndentGuide {
       ),
     );
   }
+
+  void _drawPath(Canvas canvas, Path path) {
+    canvas.drawPath(
+      pathModifier?.call(path) ?? path,
+      createPaint(),
+    );
+  }
 }
 
 /// The [IndentGuide] configuration for painting vertical lines at every level
@@ -357,6 +388,7 @@ class ScopingLinesGuide extends AbstractLineGuide {
   const ScopingLinesGuide({
     super.indent,
     super.padding,
+    super.maxLevel,
     super.color,
     super.thickness,
     super.origin,
@@ -380,6 +412,7 @@ class ScopingLinesGuide extends AbstractLineGuide {
   ScopingLinesGuide copyWith({
     double? indent,
     EdgeInsetsGeometry? padding,
+    int? maxLevel,
     Color? color,
     double? thickness,
     double? origin,
@@ -390,6 +423,7 @@ class ScopingLinesGuide extends AbstractLineGuide {
     return ScopingLinesGuide(
       indent: indent ?? this.indent,
       padding: padding ?? this.padding,
+      maxLevel: maxLevel ?? this.maxLevel,
       color: color ?? this.color,
       thickness: thickness ?? this.thickness,
       origin: origin ?? this.origin,
@@ -403,6 +437,7 @@ class ScopingLinesGuide extends AbstractLineGuide {
   int get hashCode => Object.hash(
         indent,
         padding,
+        maxLevel,
         color,
         thickness,
         origin,
@@ -419,6 +454,7 @@ class ScopingLinesGuide extends AbstractLineGuide {
         other is ScopingLinesGuide &&
         other.indent == indent &&
         other.padding == padding &&
+        other.maxLevel == maxLevel &&
         other.color == color &&
         other.thickness == thickness &&
         other.origin == origin &&
@@ -451,16 +487,13 @@ class _ScopingLinesPainter extends CustomPainter {
 
     final Path path = Path();
 
-    for (int level = 1; level <= nodeLevel; level++) {
+    for (int level = 1; level <= guide._constrainLevel(nodeLevel); level++) {
       final double x = calculateOffset(level);
       path.moveTo(x, size.height);
       path.lineTo(x, 0);
     }
 
-    canvas.drawPath(
-      guide.pathModifier?.call(path) ?? path,
-      guide.createPaint(),
-    );
+    guide._drawPath(canvas, path);
   }
 
   @override
@@ -480,6 +513,7 @@ class ConnectingLinesGuide extends AbstractLineGuide {
   const ConnectingLinesGuide({
     super.indent,
     super.padding,
+    super.maxLevel,
     super.color,
     super.thickness,
     super.origin,
@@ -524,6 +558,7 @@ class ConnectingLinesGuide extends AbstractLineGuide {
   ConnectingLinesGuide copyWith({
     double? indent,
     EdgeInsetsGeometry? padding,
+    int? maxLevel,
     Color? color,
     double? thickness,
     double? origin,
@@ -536,6 +571,7 @@ class ConnectingLinesGuide extends AbstractLineGuide {
     return ConnectingLinesGuide(
       indent: indent ?? this.indent,
       padding: padding ?? this.padding,
+      maxLevel: maxLevel ?? this.maxLevel,
       color: color ?? this.color,
       thickness: thickness ?? this.thickness,
       origin: origin ?? this.origin,
@@ -551,6 +587,7 @@ class ConnectingLinesGuide extends AbstractLineGuide {
   int get hashCode => Object.hash(
         indent,
         padding,
+        maxLevel,
         color,
         thickness,
         origin,
@@ -569,6 +606,7 @@ class ConnectingLinesGuide extends AbstractLineGuide {
         other is ConnectingLinesGuide &&
         other.indent == indent &&
         other.padding == padding &&
+        other.maxLevel == maxLevel &&
         other.color == color &&
         other.thickness == thickness &&
         other.origin == origin &&
@@ -585,7 +623,7 @@ class _ConnectingLinesPainter extends CustomPainter {
     required this.guide,
     required this.entry,
     this.textDirection,
-  }) : indentation = entry.level * guide.indent;
+  }) : indentation = guide._constrainLevel(entry.level) * guide.indent;
 
   final ConnectingLinesGuide guide;
   final TreeEntry<Object> entry;
@@ -595,7 +633,7 @@ class _ConnectingLinesPainter extends CustomPainter {
   void runForEachAncestorLevelThatHasNextSibling(ValueChanged<int> action) {
     TreeEntry<Object>? current = entry;
     while (current != null && current.level > 0) {
-      if (current.hasNextSibling) {
+      if (current.level <= guide.maxLevel && current.hasNextSibling) {
         action(current.level);
       }
       current = current.parent;
@@ -627,6 +665,11 @@ class _ConnectingLinesPainter extends CustomPainter {
       path.lineTo(x, 0);
     });
 
+    if (entry.level > guide.maxLevel) {
+      guide._drawPath(canvas, path);
+      return;
+    }
+
     // Add connections
     final double y = size.height * 0.5;
     path.moveTo(connectionStart, 0.0);
@@ -649,7 +692,7 @@ class _ConnectingLinesPainter extends CustomPainter {
     if (guide.connectBranches) {
       connectionEnd = calculateOffset(entry.level + 1);
 
-      if (entry.isExpanded && entry.hasChildren) {
+      if (_hasVisibleDescendants && entry.level + 1 <= guide.maxLevel) {
         if (guide.roundCorners) {
           path.quadraticBezierTo(connectionEnd, y, connectionEnd, size.height);
         } else {
@@ -661,11 +704,10 @@ class _ConnectingLinesPainter extends CustomPainter {
       }
     }
 
-    canvas.drawPath(
-      guide.pathModifier?.call(path) ?? path,
-      guide.createPaint(),
-    );
+    guide._drawPath(canvas, path);
   }
+
+  bool get _hasVisibleDescendants => entry.isExpanded && entry.hasChildren;
 
   @override
   bool shouldRepaint(covariant _ConnectingLinesPainter oldDelegate) =>
