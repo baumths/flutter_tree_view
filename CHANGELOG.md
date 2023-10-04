@@ -1,3 +1,7 @@
+## [1.4.1] 04-10-2023
+- Revert v1.4.0 change to `collapseCascading()`. The change broke non-cascading
+  animations
+
 ## [1.4.0] 04-10-2023
 - Added `TreeController.search()` + filtering example
 - Added a way to limit the depth of the tree. Checkout `IndentGuide.maxLevel`
