@@ -195,18 +195,19 @@ class _SliverAnimatedTreeState<T extends Object>
   List<TreeEntry<T>> _buildSubtree(TreeEntry<T> entry) {
     final List<TreeEntry<T>> subtree = <TreeEntry<T>>[];
     widget.controller.depthFirstTraversal(
-        rootEntry: entry,
-        onTraverse: subtree.add,
-        descendCondition: (TreeEntry<T> entry) {
-          TreeEntry<T>? current = entry;
-          while (current != null) {
-            if (_animatingNodes.contains(current.node)) {
-              return true;
-            }
-            current = current.parent;
+      rootEntry: entry,
+      onTraverse: subtree.add,
+      descendCondition: (TreeEntry<T> entry) {
+        TreeEntry<T>? current = entry;
+        while (current != null) {
+          if (_animatingNodes.contains(current.node)) {
+            return true;
           }
-          return entry.isExpanded;
-        });
+          current = current.parent;
+        }
+        return entry.isExpanded;
+      },
+    );
     if (subtree.length > widget.maxNodesToShowWhenAnimating) {
       return subtree.sublist(0, widget.maxNodesToShowWhenAnimating);
     }
