@@ -1,3 +1,11 @@
+## [1.4.0] 04-10-2023
+- Added `TreeController.search()` + filtering example
+- Added a way to limit the depth of the tree. Checkout `IndentGuide.maxLevel`
+- Fixed `collapseCascading()` when used with an animated tree would only
+  animate the first level and the other levels would just vanish immediately
+- Deprecated `(Descend|Return)Condition` in favor of `ValuePredicate`
+- Deprecated `alwaysReturnsTrue` and `alwaysReturnsFalse`
+
 ## [1.3.0] 13-09-2023
 - Added [pub topics](https://pub.dev/topics) to pubspec.yaml
 - Indentation Improvements:
