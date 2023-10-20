@@ -32,35 +32,184 @@ class SliverReorderableTree<T extends Object> extends SliverTree<T> {
       _SliverReorderableTreeState<T>();
 }
 
+class _TreeReorderingDetails<T extends Object> {
+  _TreeReorderingDetails({
+    required this.index,
+    required this.node,
+    required this.path,
+  });
+
+  final int index;
+  final T node;
+  final List<T> path;
+
+  Offset pointerDelta = Offset.zero;
+}
+
 class _SliverReorderableTreeState<T extends Object>
     extends State<SliverReorderableTree<T>> {
   List<TreeEntry<T>> _flatTree = const [];
-  TreeEntry<T> _entryAt(int index) => _flatTree[index];
+  late Map<int, TreeEntry<T>> _temporaryOverrides = {};
+  late Map<int, TreeEntry<T>> _permanentOverrides = {};
+
+  TreeEntry<T> _entryAt(int index) {
+    return _temporaryOverrides[index] ??
+        _permanentOverrides[index] ??
+        _flatTree[index];
+  }
 
   void _updateFlatTree() {
     final List<TreeEntry<T>> flatTree = <TreeEntry<T>>[];
-    // TODO: make sure to NOT descend into the subtree of the node being dragged
-    //       since it must remain collapsed for the duration of the drag.
     widget.controller.depthFirstTraversal(onTraverse: flatTree.add);
     _flatTree = flatTree;
   }
 
   void _rebuild() => setState(_updateFlatTree);
 
-  void _onReorderStart(int index) {
-    widget.controller.collapse(_entryAt(index).node);
+  // This ValueNotifier is used to update the TreeEntry properties of the
+  // dragging node so it shows the proper indent & guides while moving around.
+  late final ValueNotifier<TreeEntry<T>?> _draggingEntryNotifier;
+  _TreeReorderingDetails<T>? _details;
+  int? _insertIndex;
+
+  List<T> _getFullPath(TreeEntry<T> entry) {
+    final List<T> path = <T>[entry.node];
+    TreeEntry<T>? current = entry.parent;
+
+    while (current != null) {
+      path.insert(0, current.node);
+      current = current.parent;
+    }
+
+    return path;
   }
 
-  void _onReorderMove(int index) {
-    // TODO: update proxy TreeEntry instances to show virtual hierarchy
+  TreeEntry<T>? _getEntryAbove(int index) {
+    assert(_details != null);
+
+    if (index < 1) return null;
+
+    final TreeEntry<T> entry = _entryAt(index - 1);
+
+    if (entry.node == _details!.node) {
+      return _getEntryAbove(index - 1);
+    }
+
+    return entry;
+  }
+
+  void _onReorderStart(int index) {
+    assert(_details == null);
+    TreeEntry<T> draggingEntry = _entryAt(index);
+
+    setState(() {
+      _details = _TreeReorderingDetails<T>(
+        index: index,
+        node: draggingEntry.node,
+        path: _getFullPath(draggingEntry),
+      );
+
+      if (widget.controller.getExpansionState(draggingEntry.node)) {
+        widget.controller.setExpansionState(draggingEntry.node, false);
+        _updateFlatTree();
+
+        final TreeEntry<T> newEntry = _entryAt(index);
+        assert(
+          newEntry.node == draggingEntry.node,
+          'Index of a node must not change when it is collapsed.',
+        );
+        draggingEntry = newEntry;
+        _draggingEntryNotifier.value = draggingEntry;
+      }
+
+      if (index > 0 && !draggingEntry.hasNextSibling) {
+        final TreeEntry<T> previousEntry = _flatTree[index - 1];
+
+        if (_areSiblings(previousEntry, draggingEntry)) {
+          _permanentOverrides[index - 1] = previousEntry.copyWith(
+            parent: () => previousEntry.parent,
+            hasNextSibling: false,
+          );
+        }
+      }
+    });
+  }
+
+  bool _areSiblings(TreeEntry<T> a, TreeEntry<T> b) {
+    return a.level == b.level && a.parent?.node == b.parent?.node;
+  }
+
+  void _updateVirtualEntries(int insertIndex) {
+    assert(_details != null);
+
+    _temporaryOverrides.clear();
+
+    final TreeEntry<T> draggingEntry = _entryAt(_details!.index);
+    final TreeEntry<T>? entryAbove = _getEntryAbove(insertIndex);
+
+    if (entryAbove == null) {
+      _draggingEntryNotifier.value = draggingEntry.copyWith(
+        parent: null,
+        level: 0,
+        isExpanded: false,
+        hasNextSibling: _details!.node != _flatTree[1].node,
+      );
+    } else {
+      final TreeEntry<T>? newParent;
+      final int newLevel;
+      final bool newHasNextSibling;
+
+      if (entryAbove.isExpanded) {
+        // `draggingEntry` will become the first child of `entryAbove`
+
+        newParent = entryAbove;
+        newLevel = entryAbove.level + 1;
+        newHasNextSibling = entryAbove.hasChildren;
+      } else {
+        // `draggingEntry` will become the next sibling of `entryAbove`
+
+        newParent = entryAbove.parent;
+        newLevel = entryAbove.level;
+        newHasNextSibling = entryAbove.hasNextSibling;
+
+        _temporaryOverrides[entryAbove.index] = entryAbove.copyWith(
+          parent: () => entryAbove.parent,
+          hasNextSibling: true,
+        );
+      }
+
+      _draggingEntryNotifier.value = draggingEntry.copyWith(
+        parent: () => newParent,
+        level: newLevel,
+        index: insertIndex,
+        isExpanded: false,
+        hasNextSibling: newHasNextSibling,
+      );
+    }
+  }
+
+  void _onReorderMove(int insertIndex) {
+    assert(_details != null);
+
+    setState(() {
+      _updateVirtualEntries(insertIndex);
+      _insertIndex = insertIndex;
+    });
   }
 
   void _onReorderEnd(int index) {
-    // TODO
+    _details = null;
+    _insertIndex = null;
+    _temporaryOverrides.clear();
+    _permanentOverrides.clear();
   }
 
   void _onReorder(int oldIndex, int newIndex) {
     // TODO: find new node location in the tree
+    // widget.onReorder(...);
+
+    _rebuild();
+    _draggingEntryNotifier.value = null;
   }
 
   @override
@@ -68,6 +217,7 @@ class _SliverReorderableTreeState<T extends Object>
     super.initState();
     widget.controller.addListener(_rebuild);
     _updateFlatTree();
+    _draggingEntryNotifier = ValueNotifier<TreeEntry<T>?>(null);
   }
 
   @override
@@ -84,6 +234,11 @@ class _SliverReorderableTreeState<T extends Object>
   void dispose() {
     widget.controller.removeListener(_rebuild);
     _flatTree = const [];
+    _temporaryOverrides = const {};
+    _permanentOverrides = const {};
+    _draggingEntryNotifier.dispose();
+    _details = null;
+    _insertIndex = null;
     super.dispose();
   }
 
@@ -96,14 +251,8 @@ class _SliverReorderableTreeState<T extends Object>
       onReorderEnd: _onReorderEnd,
       onReorder: _onReorder,
       proxyDecorator: (Widget child, int index, Animation<double> animation) {
-        // TODO: create a new TreeEntry to show the virtual tree hierarchy
-        //       while it is being dragged.
         final TreeEntry<T> entry = _entryAt(index);
-
-        return _ProxyTreeEntry<T>(
-          entry: entry,
-          child: widget.proxyDecorator?.call(child, entry, animation) ?? child,
-        );
+        return widget.proxyDecorator?.call(child, entry, animation) ?? child;
       },
       itemBuilder: (BuildContext context, int index) {
         final TreeEntry<T> entry = _entryAt(index);
@@ -112,67 +261,43 @@ class _SliverReorderableTreeState<T extends Object>
           key: _ReorderableTreeEntryGlobalKey<T>(entry.node, this),
           entry: entry,
           builder: widget.nodeBuilder,
+          draggingEntryNotifier: _draggingEntryNotifier,
         );
       },
     );
   }
 }
 
-class _ProxyTreeEntry<T extends Object> extends InheritedWidget {
-  const _ProxyTreeEntry({
-    super.key,
-    required super.child,
-    required this.entry,
-  });
-
-  final TreeEntry<T> entry;
-
-  static TreeEntry<T>? maybeOf<T extends Object>(BuildContext context) {
-    return context
-        .dependOnInheritedWidgetOfExactType<_ProxyTreeEntry<T>>()
-        ?.entry;
-  }
-
-  @override
-  bool updateShouldNotify(covariant _ProxyTreeEntry<T> oldWidget) {
-    return oldWidget.entry != entry;
-  }
-}
-
-class _ReorderableTreeEntry<T extends Object> extends StatefulWidget {
+class _ReorderableTreeEntry<T extends Object> extends StatelessWidget {
   const _ReorderableTreeEntry({
     super.key,
     required this.entry,
     required this.builder,
+    required this.draggingEntryNotifier,
   });
 
   final TreeEntry<T> entry;
   final TreeNodeBuilder<T> builder;
-
-  @override
-  State<_ReorderableTreeEntry<T>> createState() =>
-      _ReorderableTreeEntryState<T>();
-}
-
-class _ReorderableTreeEntryState<T extends Object>
-    extends State<_ReorderableTreeEntry<T>> {
-  TreeEntry<T>? proxyEntry;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    proxyEntry = _ProxyTreeEntry.maybeOf<T>(context);
-  }
-
-  @override
-  void dispose() {
-    proxyEntry = null;
-    super.dispose();
-  }
+  final ValueNotifier<TreeEntry<T>?> draggingEntryNotifier;
 
   @override
   Widget build(BuildContext context) {
-    return widget.builder(context, proxyEntry ?? widget.entry);
+    return ValueListenableBuilder<TreeEntry<T>?>(
+      valueListenable: draggingEntryNotifier,
+      builder: (
+        BuildContext context,
+        TreeEntry<T>? draggingEntry,
+        Widget? child,
+      ) {
+        if (draggingEntry != null &&
+            draggingEntry != entry &&
+            draggingEntry.node == entry.node) {
+          return builder(context, draggingEntry);
+        }
+        return child!;
+      },
+      child: builder(context, entry),
+    );
   }
 }
 
@@ -304,4 +429,26 @@ class _ReorderableTreeEntryGlobalKey<T extends Object> extends GlobalObjectKey {
 
   @override
   int get hashCode => Object.hash(node, state);
+}
+
+extension<T extends Object> on TreeEntry<T> {
+  TreeEntry<T> copyWith({
+    TreeEntry<T>? Function()? parent,
+    T? node,
+    int? index,
+    int? level,
+    bool? isExpanded,
+    bool? hasChildren,
+    bool? hasNextSibling,
+  }) {
+    return TreeEntry<T>(
+      parent: parent != null ? parent() : this.parent,
+      node: node ?? this.node,
+      index: index ?? this.index,
+      level: level ?? this.level,
+      isExpanded: isExpanded ?? this.isExpanded,
+      hasChildren: hasChildren ?? this.hasChildren,
+      hasNextSibling: hasNextSibling ?? this.hasNextSibling,
+    );
+  }
 }
