@@ -137,6 +137,23 @@ class _DragAndDropTreeViewState extends State<DragAndDropTreeView> {
     treeController.rebuild();
   }
 
+  Duration? longPressDelay;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    longPressDelay = switch (Theme.of(context).platform) {
+      TargetPlatform.android ||
+      TargetPlatform.fuchsia ||
+      TargetPlatform.iOS =>
+        Durations.long2,
+      TargetPlatform.linux ||
+      TargetPlatform.macOS ||
+      TargetPlatform.windows =>
+        null,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final IndentGuide indentGuide = DefaultIndentGuide.of(context);
@@ -151,6 +168,7 @@ class _DragAndDropTreeViewState extends State<DragAndDropTreeView> {
         return DragAndDropTreeTile(
           entry: entry,
           borderSide: borderSide,
+          longPressDelay: longPressDelay,
           onNodeAccepted: onNodeAccepted,
           onFolderPressed: () => treeController.toggleExpansion(entry.node),
         );
@@ -166,12 +184,14 @@ class DragAndDropTreeTile extends StatelessWidget {
     required this.entry,
     required this.onNodeAccepted,
     this.borderSide = BorderSide.none,
+    this.longPressDelay,
     this.onFolderPressed,
   });
 
   final TreeEntry<Node> entry;
   final TreeDragTargetNodeAccepted<Node> onNodeAccepted;
   final BorderSide borderSide;
+  final Duration? longPressDelay;
   final VoidCallback? onFolderPressed;
 
   @override
@@ -196,6 +216,7 @@ class DragAndDropTreeTile extends StatelessWidget {
 
         return TreeDraggable<Node>(
           node: entry.node,
+          longPressDelay: longPressDelay,
           childWhenDragging: Opacity(
             opacity: .5,
             child: IgnorePointer(
