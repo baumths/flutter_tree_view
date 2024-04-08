@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'sliver_tree.dart';
 import 'tree_controller.dart';
 
+// ignore_for_file: deprecated_member_use_from_same_package
+
 /// A widget that wraps either [Draggable] or [LongPressDraggable] depending on
 /// the value of [longPressDelay], with additional tree view capabilities.
 ///
@@ -488,7 +490,7 @@ class TreeDragAndDropDetails<T extends Object> with Diagnosticable {
   final Rect targetBounds;
 
   /// Contains the list of drag data that is hovering over the [TreeDragTarget]
-  /// that was passed to [TreeDragTarget.onWillAccept].
+  /// that that will be accepted by the [TreeDragTarget].
   ///
   /// This and [rejectedData] are collected from the data given to the builder
   /// callback of the [DragTarget] widget.
@@ -573,16 +575,20 @@ class TreeDragTarget<T extends Object> extends StatefulWidget {
     required this.node,
     required this.builder,
     required this.onNodeAccepted,
+    this.onWillAcceptWithDetails,
     this.toggleExpansionOnHover = true,
     this.toggleExpansionDelay = const Duration(seconds: 1),
     this.canToggleExpansion = true,
-    this.onWillAccept,
-    this.onAccept,
+    @Deprecated('Use onWillAcceptWithDetails instead.') this.onWillAccept,
+    @Deprecated('Use onAcceptWithDetails instead.') this.onAccept,
     this.onAcceptWithDetails,
     this.onLeave,
     this.onMove,
     this.hitTestBehavior = HitTestBehavior.translucent,
-  });
+  }) : assert(
+          onWillAccept == null || onWillAcceptWithDetails == null,
+          "Don't pass both onWillAccept and onWillAcceptWithDetails.",
+        );
 
   /// The tree node that is going to receive the drop of a [TreeDraggable].
   final T node;
@@ -594,6 +600,19 @@ class TreeDragTarget<T extends Object> extends StatefulWidget {
   /// tree structure and call [TreeController.rebuild] to show the newly
   /// reordered tree data.
   final TreeDragTargetNodeAccepted<T> onNodeAccepted;
+
+  /// Called to determine whether this widget is interested in receiving a given
+  /// piece of data being dragged over this drag target.
+  ///
+  /// Called when a piece of data enters the target. This will be followed by
+  /// either [onAccept] and [onAcceptWithDetails], if the data is dropped, or
+  /// [onLeave], if the drag leaves the target.
+  ///
+  /// Equivalent to `onWillAccept`, but with information, including the data,
+  /// in a [DragTargetDetails].
+  ///
+  /// Must not be provided if `onWillAccept` is provided.
+  final DragTargetWillAcceptWithDetails<T>? onWillAcceptWithDetails;
 
   /// Called to build the contents of this widget.
   ///
@@ -635,14 +654,21 @@ class TreeDragTarget<T extends Object> extends StatefulWidget {
   /// Called when a piece of data enters the target. This will be followed by
   /// either [onAccept] and [onAcceptWithDetails], if the data is dropped, or
   /// [onLeave], if the drag leaves the target.
+  ///
+  /// Equivalent to [onWillAcceptWithDetails], but only includes the data.
+  ///
+  /// Must not be provided if [onWillAcceptWithDetails] is provided.
+  @Deprecated('Use onWillAcceptWithDetails instead.')
   final DragTargetWillAccept<T>? onWillAccept;
 
   /// Called when an acceptable piece of data was dropped over this drag target.
   ///
   /// Equivalent to [onAcceptWithDetails], but only includes the data.
+  @Deprecated('Use onAcceptWithDetails instead.')
   final DragTargetAccept<T>? onAccept;
 
   /// Called when an acceptable piece of data was dropped over this drag target.
+  /// It will not be called if `data` is `null`.
   ///
   /// Equivalent to [onAccept], but with information, including the data, in a
   /// [DragTargetDetails].
@@ -719,11 +745,14 @@ class _TreeDragTargetState<T extends Object> extends State<TreeDragTarget<T>> {
     );
   }
 
-  bool _onWillAccept(T? data) {
+  bool _onWillAccept(DragTargetDetails<T> details) {
     if (widget.onWillAccept != null) {
-      return widget.onWillAccept!(data);
+      return widget.onWillAccept!(details.data);
     }
-    return !(data == null || data == widget.node);
+    if (widget.onWillAcceptWithDetails != null) {
+      return widget.onWillAcceptWithDetails!(details);
+    }
+    return details.data != widget.node;
   }
 
   void _onMove(DragTargetDetails<T> details) {
@@ -744,12 +773,13 @@ class _TreeDragTargetState<T extends Object> extends State<TreeDragTarget<T>> {
     widget.onMove?.call(details);
   }
 
-  void _onAccept(T incomingNode) {
+  void _onAccept(DragTargetDetails<T> details) {
     _cancelToggleExpansionTimer();
 
-    if (_details == null || _details!.draggedNode != incomingNode) return;
+    if (_details == null || _details!.draggedNode != details.data) return;
 
-    widget.onAccept?.call(incomingNode);
+    widget.onAccept?.call(details.data);
+    widget.onAcceptWithDetails?.call(details);
     widget.onNodeAccepted(_details!);
 
     setState(() {
@@ -795,9 +825,8 @@ class _TreeDragTargetState<T extends Object> extends State<TreeDragTarget<T>> {
   @override
   Widget build(BuildContext context) {
     return DragTarget<T>(
-      onWillAccept: _onWillAccept,
-      onAccept: _onAccept,
-      onAcceptWithDetails: widget.onAcceptWithDetails,
+      onWillAcceptWithDetails: _onWillAccept,
+      onAcceptWithDetails: _onAccept,
       onLeave: _onLeave,
       onMove: _onMove,
       hitTestBehavior: widget.hitTestBehavior,
