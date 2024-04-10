@@ -1,3 +1,11 @@
+## [1.5.0] 10-04-2024
+- Fixed an issue that prevented two `AnimatedTreeView`s with the same nodes
+  to be displayed alongside each other or on a router stack.
+- Follwing the updates to the Flutter Framework's `DragTarget` widget:
+  - Added `TreeDragTarget.onWillAcceptWithDetails`
+  - Deprecated `TreeDragTarget.onWillAccept`
+  - Deprecated `TreeDragTarget.onAccept`
+
 ## [1.4.1] 04-10-2023
 - Revert v1.4.0 change to `collapseCascading()`. The change broke non-cascading
   animations
