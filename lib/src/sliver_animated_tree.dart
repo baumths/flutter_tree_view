@@ -239,7 +239,7 @@ class _SliverAnimatedTreeState<T extends Object>
         itemBuilder: (BuildContext context, int index) {
           final TreeEntry<T> entry = _flatTree[index];
           return _TreeEntry<T>(
-            key: _SaltedTreeNodeKey(entry.node),
+            key: _SaltedTreeNodeKey<T>(entry.node, this),
             entry: entry,
             nodeBuilder: widget.nodeBuilder,
             buildFlatSubtree: _buildSubtree,
@@ -255,8 +255,24 @@ class _SliverAnimatedTreeState<T extends Object>
   }
 }
 
-class _SaltedTreeNodeKey extends GlobalObjectKey {
-  const _SaltedTreeNodeKey(super.value);
+class _SaltedTreeNodeKey<T extends Object> extends GlobalObjectKey {
+  const _SaltedTreeNodeKey(this.node, this.state) : super(node);
+
+  final T node;
+  final _SliverAnimatedTreeState<T> state;
+
+  @override
+  bool operator ==(Object other) {
+    if (other.runtimeType != runtimeType) {
+      return false;
+    }
+    return other is _SaltedTreeNodeKey<T> &&
+        other.node == node &&
+        other.state == state;
+  }
+
+  @override
+  int get hashCode => Object.hash(node, state);
 }
 
 typedef _FlatSubtreeBuilder<T extends Object> = List<TreeEntry<T>> Function(
