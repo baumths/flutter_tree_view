@@ -151,7 +151,7 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// ```
   ///
   /// Do not attempt to load the children of a node in this callback as it
-  /// would significantly slow down tree traversal which might couse the ui to
+  /// would significantly slow down tree traversal which might cause the ui to
   /// hang. Prefer doing such operations on a user interaction (e.g., a button
   /// press, keyboard shortcut, etc.). When lazy loading, temporarily return
   /// an empty iterable so tree traversal can continue. Once the loading is
