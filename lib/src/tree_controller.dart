@@ -198,6 +198,8 @@ class TreeController<T extends Object> with ChangeNotifier {
   ///   child nodes in tree views.
   /// - false: indicates that all nodes are collapsed by default, hiding their
   ///   child nodes in tree views.
+  ///
+  /// Defaults to `false`.
   final bool defaultExpansionState;
 
   /// Holds the expanded or collapsed nodes, depending on the value of
@@ -206,8 +208,6 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// This will hold every and only:
   /// - expanded nodes when [defaultExpansionState] is false.
   /// - collapsed nodes when [defaultExpansionState] is true.
-  ///
-  /// Defaults to `false`.
   late final Set<T> _toggledNodes = <T>{};
 
   /// The current expansion state of [node].
