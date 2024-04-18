@@ -191,23 +191,27 @@ class TreeController<T extends Object> with ChangeNotifier {
 
   /// Determines the initial expansion state of tree nodes.
   ///
-  /// This boolean value is used to define whether a node should be expanded
-  /// or collapsed by default.
+  /// This value is used to define whether a node should be expanded or
+  /// collapsed by default.
   ///
-  /// - true: indicates that all nodes are expanded by default, revealing their
-  ///   child nodes in tree views.
-  /// - false: indicates that all nodes are collapsed by default, hiding their
-  ///   child nodes in tree views.
+  /// When set to true, all nodes are expanded by default, revealing their
+  /// subtrees in tree views. When set to false, all nodes are collapsed by
+  /// default, hiding their subtrees in tree views.
   ///
   /// Defaults to `false`.
   final bool defaultExpansionState;
 
-  /// Holds the expanded or collapsed nodes, depending on the value of
+  /// Holds the expanded OR collapsed nodes, depending on the value of
   /// [defaultExpansionState].
   ///
   /// This will hold every and only:
   /// - expanded nodes when [defaultExpansionState] is false.
   /// - collapsed nodes when [defaultExpansionState] is true.
+  ///
+  /// This is done through an XOR operation (^) on `Set.contains()`. The same
+  /// applies to `Set.add()` and `Set.remove()` which are swapped depending on
+  /// [defaultExpansionState]. See [getExpansionState] and [setExpansionState]
+  /// below.
   late final Set<T> _toggledNodes = <T>{};
 
   /// The current expansion state of [node].
@@ -223,13 +227,6 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// When overriding this method, do not call `notifyListeners` as this may be
   /// called many times recursively in cascading operations.
   void setExpansionState(T node, bool expanded) {
-    // Depending on defaultExpansionState, the Set.add() and Set.remove()
-    // operations are swapped as follows:
-    // - true  ^ true  = remove()
-    // - true  ^ false = add()
-    // - false ^ true  = add()
-    // - false ^ false = remove()
-    // This makes sure the correct nodes are kept in the _toggledNodes Set.
     expanded ^ defaultExpansionState
         ? _toggledNodes.add(node)
         : _toggledNodes.remove(node);
