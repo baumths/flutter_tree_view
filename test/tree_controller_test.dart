@@ -8,6 +8,7 @@ class TestTreeController<T extends Object> extends TreeController<T> {
     super.roots = const [],
     ChildrenProvider<T>? childrenProvider,
     super.parentProvider,
+    super.defaultExpansionState,
   }) : super(childrenProvider: childrenProvider ?? emptyChildrenProvider);
 
   int defaultDescendConditionCallCount = 0;
@@ -147,17 +148,37 @@ void main() {
       expect(controller.notifyListenersCallCount, equals(1));
     });
 
-    test(
+    group(
       'setExpansionState() properly updates the expansion state of nodes',
       () {
         const roots = [1, 2, 3];
-        final controller = TestTreeController(roots: roots);
 
-        expect(controller.getExpansionState(1), isFalse);
-        controller.setExpansionState(1, true);
-        expect(controller.getExpansionState(1), isTrue);
-        controller.setExpansionState(1, false);
-        expect(controller.getExpansionState(1), isFalse);
+        test('when defaultExpansionState is set to false', () {
+          final controller = TestTreeController(roots: roots);
+
+          for (final node in roots) {
+            expect(controller.getExpansionState(node), isFalse);
+            controller.setExpansionState(node, true);
+            expect(controller.getExpansionState(node), isTrue);
+            controller.setExpansionState(node, false);
+            expect(controller.getExpansionState(node), isFalse);
+          }
+        });
+
+        test('when defaultExpansionState is set to true', () {
+          final controller = TestTreeController(
+            roots: roots,
+            defaultExpansionState: true,
+          );
+
+          for (final node in roots) {
+            expect(controller.getExpansionState(node), isTrue);
+            controller.setExpansionState(node, false);
+            expect(controller.getExpansionState(node), isFalse);
+            controller.setExpansionState(node, true);
+            expect(controller.getExpansionState(node), isTrue);
+          }
+        });
       },
     );
 
@@ -171,19 +192,71 @@ void main() {
       expect(controller.notifyListenersCallCount, equals(0));
     });
 
-    test('getExpansionState() returns the correct value for a given node', () {
-      const roots = [1, 2, 3];
-      final controller = TestTreeController(roots: roots);
+    group(
+      'setExpansionState() does not update the expansion state if called twice with the same values',
+      () {
+        test('when defaultExpansionState is set to false', () {
+          final controller = TestTreeController(defaultExpansionState: false);
 
-      for (final root in roots) {
-        expect(controller.getExpansionState(root), isFalse);
-      }
+          for (int node = 0; node < 10; ++node) {
+            expect(controller.getExpansionState(node), isFalse);
+            controller.setExpansionState(node, true);
+            expect(controller.getExpansionState(node), isTrue);
+            controller.setExpansionState(node, true);
+            expect(controller.getExpansionState(node), isTrue);
+          }
+        });
 
-      controller.setExpansionState(2, true);
+        test('when defaultExpansionState is set to true', () {
+          final controller = TestTreeController(defaultExpansionState: true);
 
-      expect(controller.getExpansionState(1), isFalse);
-      expect(controller.getExpansionState(2), isTrue);
-      expect(controller.getExpansionState(3), isFalse);
+          for (int node = 0; node < 10; ++node) {
+            expect(controller.getExpansionState(node), isTrue);
+            controller.setExpansionState(node, false);
+            expect(controller.getExpansionState(node), isFalse);
+            controller.setExpansionState(node, false);
+            expect(controller.getExpansionState(node), isFalse);
+          }
+        });
+      },
+    );
+
+    group('getExpansionState() returns the correct value for a given node', () {
+      test('when defaultExpansionState is set to false', () {
+        const roots = [1, 2, 3];
+        final controller = TestTreeController(
+          roots: roots,
+          defaultExpansionState: false,
+        );
+
+        for (final root in roots) {
+          expect(controller.getExpansionState(root), isFalse);
+        }
+
+        controller.setExpansionState(2, true);
+
+        expect(controller.getExpansionState(1), isFalse);
+        expect(controller.getExpansionState(2), isTrue);
+        expect(controller.getExpansionState(3), isFalse);
+      });
+
+      test('when defaultExpansionState is set to true', () {
+        const roots = [1, 2, 3];
+        final controller = TestTreeController(
+          roots: roots,
+          defaultExpansionState: true,
+        );
+
+        for (final root in roots) {
+          expect(controller.getExpansionState(root), isTrue);
+        }
+
+        controller.setExpansionState(2, false);
+
+        expect(controller.getExpansionState(1), isTrue);
+        expect(controller.getExpansionState(2), isFalse);
+        expect(controller.getExpansionState(3), isTrue);
+      });
     });
 
     group('toggleExpansion()', () {

@@ -103,6 +103,7 @@ class TreeController<T extends Object> with ChangeNotifier {
     required Iterable<T> roots,
     required this.childrenProvider,
     ParentProvider<T>? parentProvider,
+    this.defaultExpansionState = false,
   }) : _roots = roots {
     assert(() {
       _debugHasParentProvider = parentProvider != null;
@@ -188,15 +189,37 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// ```
   late final ParentProvider<T> parentProvider;
 
-  Set<T> get _expandedNodes => _expandedNodesCache ??= <T>{};
-  Set<T>? _expandedNodesCache;
+  /// Determines the initial expansion state of tree nodes.
+  ///
+  /// This value is used to define whether a node should be expanded or
+  /// collapsed by default.
+  ///
+  /// When set to true, all nodes are expanded by default, revealing their
+  /// subtrees in tree views. When set to false, all nodes are collapsed by
+  /// default, hiding their subtrees in tree views.
+  ///
+  /// Defaults to `false`.
+  final bool defaultExpansionState;
+
+  /// Holds the expanded OR collapsed nodes, depending on the value of
+  /// [defaultExpansionState].
+  ///
+  /// This will hold every and only:
+  /// - expanded nodes when [defaultExpansionState] is false.
+  /// - collapsed nodes when [defaultExpansionState] is true.
+  ///
+  /// This is done through an XOR operation (^) on `Set.contains()`. The same
+  /// applies to `Set.add()` and `Set.remove()` which are swapped depending on
+  /// [defaultExpansionState]. See [getExpansionState] and [setExpansionState]
+  /// below.
+  late final Set<T> _toggledNodes = <T>{};
 
   /// The current expansion state of [node].
   ///
   /// If this method returns `true`, the children of [node] should be visible
   /// in tree views.
   bool getExpansionState(T node) {
-    return _expandedNodesCache?.contains(node) ?? false;
+    return _toggledNodes.contains(node) ^ defaultExpansionState;
   }
 
   /// Updates the expansion state of [node] to the value of [expanded].
@@ -204,7 +227,9 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// When overriding this method, do not call `notifyListeners` as this may be
   /// called many times recursively in cascading operations.
   void setExpansionState(T node, bool expanded) {
-    expanded ? _expandedNodes.add(node) : _expandedNodes.remove(node);
+    expanded ^ defaultExpansionState
+        ? _toggledNodes.add(node)
+        : _toggledNodes.remove(node);
   }
 
   /// Notify listeners that the tree structure changed in some way.
@@ -591,7 +616,7 @@ class TreeController<T extends Object> with ChangeNotifier {
   @override
   void dispose() {
     _roots = const Iterable.empty();
-    _expandedNodesCache = null;
+    _toggledNodes.clear();
     super.dispose();
   }
 }
