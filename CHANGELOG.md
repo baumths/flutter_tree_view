@@ -1,3 +1,8 @@
+## [1.6.0] 24-04-2024
+- Added a way to set the default expansion state of tree nodes through
+  the `defaultExpansionState` property of `TreeController`.
+- Made `TreeController.toggledNodes` public for state restoration/persistence.
+
 ## [1.5.0] 10-04-2024
 - Fixed an issue that prevented two `AnimatedTreeView`s with the same nodes
   to be displayed alongside each other or on a router stack.
