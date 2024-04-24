@@ -52,7 +52,9 @@ class Header extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleLarge!,
               ),
             ),
+            const ThemeColorSelector(),
             const DarkModeButton(),
+            const ResetSettingsButton(),
             if (showCloseButton)
               IconButton(
                 tooltip: 'Close settings',

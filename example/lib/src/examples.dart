@@ -1,19 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
+import 'package:path_drawing/path_drawing.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'examples/drag_and_drop.dart' show DragAndDropTreeView;
 import 'examples/filterable.dart' show FilterableTreeView;
 import 'examples/lazy_loading.dart' show LazyLoadingTreeView;
 import 'examples/minimal.dart' show MinimalTreeView;
-import 'settings/controller.dart' show IndentType, SettingsController;
+import 'settings/controller.dart' show SettingsController;
+import 'shared.dart' show IndentGuideType, LineStyle, enumByName;
+
+const selectedExampleKey = 'fftv.selectedExample';
 
 class SelectedExampleNotifier extends ValueNotifier<Example> {
-  SelectedExampleNotifier() : super(Example.minimal);
+  SelectedExampleNotifier(this.prefs)
+      : super(Example.byName(prefs.getString(selectedExampleKey)));
+
+  final SharedPreferences prefs;
 
   void select(Example? example) {
-    if (example == null) return;
+    if (example == null || example == value) return;
     value = example;
+    prefs.setString(selectedExampleKey, example.name);
+  }
+
+  void reset() {
+    if (value == Example.minimal) return;
+    value = Example.minimal;
+    prefs.remove(selectedExampleKey);
   }
 }
 
@@ -21,21 +36,14 @@ enum Example {
   dragAndDrop('Drag and Drop', Icon(Icons.move_down_rounded)),
   filterable('Filterable', Icon(Icons.manage_search_rounded)),
   lazyLoading('Lazy Loading', Icon(Icons.hourglass_top_rounded)),
-  minimal('Minimal', Icon(Icons.segment));
+  minimal('Minimal', Icon(Icons.segment)),
+  ;
 
   const Example(this.title, this.icon);
-
   final String title;
   final Widget icon;
 
-  Widget get tree {
-    return switch (this) {
-      Example.dragAndDrop => const DragAndDropTreeView(),
-      Example.filterable => const FilterableTreeView(),
-      Example.lazyLoading => const LazyLoadingTreeView(),
-      Example.minimal => const MinimalTreeView(),
-    };
-  }
+  static Example byName(String? name) => enumByName(name, values) ?? minimal;
 }
 
 class ExamplesView extends StatelessWidget {
@@ -49,7 +57,12 @@ class ExamplesView extends StatelessWidget {
       duration: kThemeAnimationDuration,
       child: TreeIndentGuideScope(
         key: Key(selectedExample.title),
-        child: selectedExample.tree,
+        child: switch (selectedExample) {
+          Example.dragAndDrop => const DragAndDropTreeView(),
+          Example.filterable => const FilterableTreeView(),
+          Example.lazyLoading => const LazyLoadingTreeView(),
+          Example.minimal => const MinimalTreeView(),
+        },
       ),
     );
   }
@@ -66,30 +79,30 @@ class TreeIndentGuideScope extends StatelessWidget {
 
     final IndentGuide guide;
 
-    switch (state.indentType) {
-      case IndentType.connectingLines:
+    switch (state.indentGuideType) {
+      case IndentGuideType.connectingLines:
         guide = IndentGuide.connectingLines(
           indent: state.indent,
           color: Theme.of(context).colorScheme.outline,
           thickness: state.lineThickness,
           origin: state.lineOrigin,
           strokeCap: StrokeCap.round,
-          pathModifier: state.lineStyle.toPathModifier(),
+          pathModifier: getPathModifierFor(state.lineStyle),
           roundCorners: state.roundedCorners,
           connectBranches: state.connectBranches,
         );
         break;
-      case IndentType.scopingLines:
+      case IndentGuideType.scopingLines:
         guide = IndentGuide.scopingLines(
           indent: state.indent,
           color: Theme.of(context).colorScheme.outline,
           thickness: state.lineThickness,
           origin: state.lineOrigin,
           strokeCap: StrokeCap.round,
-          pathModifier: state.lineStyle.toPathModifier(),
+          pathModifier: getPathModifierFor(state.lineStyle),
         );
         break;
-      case IndentType.blank:
+      case IndentGuideType.blank:
         guide = IndentGuide(indent: state.indent);
         break;
     }
@@ -98,5 +111,21 @@ class TreeIndentGuideScope extends StatelessWidget {
       guide: guide,
       child: child,
     );
+  }
+
+  Path Function(Path)? getPathModifierFor(LineStyle lineStyle) {
+    return switch (lineStyle) {
+      LineStyle.dashed => (Path path) => dashPath(
+            path,
+            dashArray: CircularIntervalList(const [6, 4]),
+            dashOffset: const DashOffset.absolute(6 / 4),
+          ),
+      LineStyle.dotted => (Path path) => dashPath(
+            path,
+            dashArray: CircularIntervalList(const [0.5, 3.5]),
+            dashOffset: const DashOffset.absolute(0.5 * 3.5),
+          ),
+      LineStyle.solid => null,
+    };
   }
 }

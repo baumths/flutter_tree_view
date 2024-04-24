@@ -8,28 +8,36 @@ import 'examples.dart';
 class App extends StatelessWidget {
   const App({super.key});
 
+  ThemeData createTheme(Color color, Brightness brightness) {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: color,
+      brightness: brightness,
+    );
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: colorScheme,
+      badgeTheme: BadgeThemeData(
+        backgroundColor: colorScheme.primary,
+        textColor: colorScheme.onPrimary,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = ColorScheme.fromSeed(
-      seedColor: context.select<SettingsController, Color>(
-        (controller) => controller.state.color,
-      ),
-      brightness: context.select<SettingsController, Brightness>(
-        (controller) => controller.state.brightness,
+    final (themeColor, themeMode) = context.select(
+      (SettingsController controller) => (
+        controller.state.color,
+        controller.state.themeMode,
       ),
     );
 
     return MaterialApp(
       title: 'flutter_fancy_tree_view',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: colorScheme,
-        badgeTheme: BadgeThemeData(
-          backgroundColor: colorScheme.primary,
-          textColor: colorScheme.onPrimary,
-        ),
-      ),
+      themeMode: themeMode,
+      darkTheme: createTheme(themeColor, Brightness.dark),
+      theme: createTheme(themeColor, Brightness.light),
       builder: (BuildContext context, Widget? child) {
         return Directionality(
           textDirection: context.select<SettingsController, TextDirection>(

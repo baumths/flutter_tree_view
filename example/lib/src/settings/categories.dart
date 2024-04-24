@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:path_drawing/path_drawing.dart';
 import 'package:provider/provider.dart';
 
 import '../examples.dart';
+import '../shared.dart' show IndentGuideType, LineStyle;
 import 'controller.dart';
 
 class SettingsCategories extends StatelessWidget {
@@ -9,33 +11,37 @@ class SettingsCategories extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final indentType = context.select<SettingsController, IndentType>(
-      (controller) => controller.state.indentType,
+    final theme = Theme.of(context);
+    final indentGuideType = context.select<SettingsController, IndentGuideType>(
+      (controller) => controller.state.indentGuideType,
     );
 
-    final List<Widget> categories = [
-      const ColorSelector(),
-      const ExampleSelector(),
-      const Direction(),
-      const AnimateExpansions(),
-      const Indent(),
-      const IndentGuideType(),
-      if (indentType != IndentType.blank) ...[
-        if (indentType == IndentType.connectingLines) ...[
-          const RoundedConnections(),
-          const ConnectBranches(),
+    return ListTileTheme(
+      data: theme.listTileTheme.copyWith(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+        titleTextStyle: theme.textTheme.bodyMedium,
+        subtitleTextStyle: theme.textTheme.bodyMedium!.copyWith(
+          color: theme.colorScheme.primary,
+        ),
+      ),
+      child: ListView(
+        children: [
+          const TreeViewExampleSelector(),
+          const TextDirectionalitySwitch(),
+          const AnimatedExpansionSwitch(),
+          const IndentSlider(),
+          const IndentGuideTypeSelector(),
+          if (indentGuideType != IndentGuideType.blank) ...[
+            if (indentGuideType == IndentGuideType.connectingLines) ...[
+              const RoundedConnectionsSwitch(),
+              const ConnectBranchesSwitch(),
+            ],
+            const LineStyleSelector(),
+            const LineThicknessSlider(),
+            const LineOriginSlider(),
+          ],
         ],
-        const LineStyleSelector(),
-        const LineThickness(),
-        const LineOrigin(),
-      ],
-      const RestoreAllSettings(),
-    ];
-
-    return ListView.separated(
-      itemCount: categories.length,
-      itemBuilder: (_, int index) => categories[index],
-      separatorBuilder: (_, __) => const Divider(height: 1),
+      ),
     );
   }
 }
@@ -47,205 +53,142 @@ class DarkModeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = context.select<SettingsController, Brightness>(
-      (controller) => controller.state.brightness,
+    final selectedThemeMode = context.select<SettingsController, ThemeMode>(
+      (controller) => controller.state.themeMode,
     );
 
-    final Brightness oppositeBrightness;
-    final Widget icon;
-    final String tooltip;
-
-    if (brightness == Brightness.light) {
-      oppositeBrightness = Brightness.dark;
-      icon = const Icon(Icons.dark_mode_outlined);
-      tooltip = 'Dark Mode';
-    } else {
-      oppositeBrightness = Brightness.light;
-      icon = const Icon(Icons.light_mode_outlined);
-      tooltip = 'Light Mode';
-    }
+    final (icon, tooltip, nextThemeMode) = switch (selectedThemeMode) {
+      ThemeMode.system => (Icons.settings_brightness, 'Device', ThemeMode.dark),
+      ThemeMode.dark => (Icons.dark_mode_outlined, 'Dark', ThemeMode.light),
+      ThemeMode.light => (Icons.light_mode_outlined, 'Light', ThemeMode.system),
+    };
 
     return IconButton(
-      icon: icon,
-      tooltip: tooltip,
-      onPressed: () => context
-          .read<SettingsController>()
-          .updateBrightness(oppositeBrightness),
+      icon: Icon(icon),
+      tooltip: '$tooltip Theme Mode',
+      onPressed: () {
+        context.read<SettingsController>().updateThemeMode(nextThemeMode);
+      },
     );
   }
 }
 
 //* Theme Color ----------------------------------------------------------------
 
-class ColorSelector extends StatelessWidget {
-  const ColorSelector({super.key});
+class ThemeColorSelector extends StatelessWidget {
+  const ThemeColorSelector({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final selectedColor = context.select<SettingsController, Color>(
-      (controller) => controller.state.color,
-    );
-
-    return ExpansionTile(
-      title: const Text('Theme Color'),
-      trailing: ColorOption(color: selectedColor, canTap: false),
-      shape: const RoundedRectangleBorder(side: BorderSide.none),
-      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-      childrenPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      children: [
-        GridView.extent(
-          shrinkWrap: true,
-          maxCrossAxisExtent: 24,
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
-          padding: EdgeInsets.zero,
-          physics: const NeverScrollableScrollPhysics(),
-          children: const <Color>[Colors.black, Colors.white]
-              .followedBy(Colors.primaries.reversed)
-              .followedBy(Colors.accents)
-              .map(ColorOption.fromColor)
-              .toList(growable: false),
+    return MenuAnchor(
+      builder: (context, controller, __) => IconButton(
+        onPressed: controller.toggle,
+        tooltip: 'Theme Color',
+        icon: IgnorePointer(
+          child: ThemeColorOption(
+            color: context.select<SettingsController, Color>(
+              (controller) => controller.state.color,
+            ),
+          ),
+        ),
+      ),
+      menuChildren: [
+        SizedBox(
+          width: 296,
+          height: 136,
+          child: GridView.extent(
+            maxCrossAxisExtent: 24,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            padding: const EdgeInsets.all(8),
+            physics: const NeverScrollableScrollPhysics(),
+            children: const <Color>[Colors.black, Colors.white]
+                .followedBy(Colors.primaries.reversed)
+                .followedBy(Colors.accents)
+                .map((color) => ThemeColorOption(color: color))
+                .toList(growable: false),
+          ),
         ),
       ],
     );
   }
 }
 
-class ColorOption extends StatelessWidget {
-  const ColorOption({
-    super.key,
-    required this.color,
-    this.canTap = true,
-  });
-
-  factory ColorOption.fromColor(Color color) => ColorOption(color: color);
+class ThemeColorOption extends StatelessWidget {
+  const ThemeColorOption({super.key, required this.color});
 
   final Color color;
-  final bool canTap;
 
   static const borderRadius = BorderRadius.all(Radius.circular(4));
 
   @override
   Widget build(BuildContext context) {
-    void updateColor() => context.read<SettingsController>().updateColor(color);
-
     return Material(
       color: color,
       borderRadius: borderRadius,
       child: InkWell(
         borderRadius: borderRadius,
-        onTap: canTap ? updateColor : null,
-        child: const SizedBox.square(dimension: 24),
+        onTap: () => context.read<SettingsController>().updateColor(color),
+        child: const SizedBox.square(dimension: 20),
       ),
     );
   }
 }
 
-//* Example Selector =----------------------------------------------------------
+//* Example Selector -----------------------------------------------------------
 
-class ExampleSelector extends StatelessWidget {
-  const ExampleSelector({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final notifier = context.watch<SelectedExampleNotifier>();
-    final selectedExample = notifier.value;
-
-    return ListTile(
-      contentPadding: const EdgeInsetsDirectional.only(start: 16, end: 8),
-      iconColor: colorScheme.onSurface,
-      title: const Text('Selected Example'),
-      subtitle: Text(
-        selectedExample.title,
-        style: TextStyle(color: colorScheme.primary),
-      ),
-      trailing: ExamplesCatalog(
-        selectedExample: selectedExample,
-        onExampleSelected: notifier.select,
-      ),
-      onTap: ExamplesCatalog.showPopup,
-    );
-  }
-}
-
-class ExamplesCatalog extends StatelessWidget {
-  const ExamplesCatalog({
-    super.key,
-    required this.onExampleSelected,
-    required this.selectedExample,
-  });
-
-  final ValueChanged<Example?> onExampleSelected;
-  final Example selectedExample;
-
-  static final GlobalKey<PopupMenuButtonState> popupMenuKey = GlobalKey();
-  static void showPopup() => popupMenuKey.currentState?.showButtonMenu();
+class TreeViewExampleSelector extends StatelessWidget {
+  const TreeViewExampleSelector({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return PopupMenuButton<Example>(
-      key: popupMenuKey,
-      initialValue: selectedExample,
-      onSelected: onExampleSelected,
-      itemBuilder: (_) => <PopupMenuEntry<Example>>[
-        for (final example in Example.values)
-          PopupMenuItem(
-            value: example,
-            enabled: example != selectedExample,
-            child: Row(
-              children: [
-                example.icon,
-                const SizedBox(width: 16),
-                Text(example.title),
-              ],
-            ),
-          ),
-      ],
-      tooltip: 'Open Examples Popup',
-      icon: const Icon(Icons.more_vert),
+    return _MenuListTile<Example>(
+      header: 'Selected Example',
+      options: Example.values,
+      selected: context.watch<SelectedExampleNotifier>().value,
+      onSelect: (example) {
+        context.read<SelectedExampleNotifier>().select(example);
+        Navigator.maybePop(context); // remove modals if any
+      },
+      contentBuilder: (example) => (example.title, example.icon),
     );
   }
 }
 
 //* Animate Expand & Collapse --------------------------------------------------
 
-class AnimateExpansions extends StatelessWidget {
-  const AnimateExpansions({super.key});
+class AnimatedExpansionSwitch extends StatelessWidget {
+  const AnimatedExpansionSwitch({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final animatedExpansions = context.select<SettingsController, bool>(
-      (controller) => controller.state.animateExpansions,
-    );
-
     return SwitchListTile(
-      title: const Text('Animate Expand & Collapse'),
-      value: animatedExpansions,
+      title: const Text('Animated Expand/Collapse'),
+      value: context.select<SettingsController, bool>(
+        (controller) => controller.state.animateExpansions,
+      ),
       onChanged: (value) {
         context.read<SettingsController>().updateAnimateExpansions(value);
       },
-      contentPadding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
+      contentPadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 8, 0),
     );
   }
 }
 
 //* Indent ---------------------------------------------------------------------
 
-class Indent extends StatelessWidget {
-  const Indent({super.key});
+class IndentSlider extends StatelessWidget {
+  const IndentSlider({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final indent = context.select<SettingsController, double>(
-      (controller) => controller.state.indent,
-    );
-
     return _SliderListTile(
-      title: 'Indent per Level',
-      value: indent,
       min: 0.0,
       max: 64.0,
+      title: 'Indent per Level',
+      value: context.select<SettingsController, double>(
+        (controller) => controller.state.indent,
+      ),
       onChanged: (value) => context
           .read<SettingsController>()
           .updateIndent(value.roundToDouble()),
@@ -255,55 +198,40 @@ class Indent extends StatelessWidget {
 
 //* Indent Guide Type ----------------------------------------------------------
 
-class IndentGuideType extends StatelessWidget {
-  const IndentGuideType({super.key});
+class IndentGuideTypeSelector extends StatelessWidget {
+  const IndentGuideTypeSelector({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final indentType = context.select<SettingsController, IndentType>(
-      (controller) => controller.state.indentType,
-    );
-
-    return ExpansionTile(
-      title: const Text('Indent Guide Type'),
-      subtitle: Text(
-        indentType.title,
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.primary,
-        ),
+    return _MenuListTile<IndentGuideType>(
+      header: 'Indent Guide Type',
+      options: IndentGuideType.values,
+      selected: context.select<SettingsController, IndentGuideType>(
+        (controller) => controller.state.indentGuideType,
       ),
-      shape: const RoundedRectangleBorder(side: BorderSide.none),
-      children: [
-        for (final type in IndentType.allExcept(indentType))
-          ListTile(
-            title: Text(type.title),
-            onTap: () {
-              context.read<SettingsController>().updateIndentType(type);
-            },
-            dense: true,
-          ),
-      ],
+      onSelect: (option) {
+        context.read<SettingsController>().updateIndentGuideType(option);
+      },
+      contentBuilder: (indentGuideType) => (indentGuideType.title, null),
     );
   }
 }
 
 //* Line Thickness -------------------------------------------------------------
 
-class LineThickness extends StatelessWidget {
-  const LineThickness({super.key});
+class LineThicknessSlider extends StatelessWidget {
+  const LineThicknessSlider({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final thickness = context.select<SettingsController, double>(
-      (controller) => controller.state.lineThickness,
-    );
-
     return _SliderListTile(
-      title: 'Line Thickness',
-      value: thickness,
       min: 0.0,
       max: 8.0,
       divisions: 16,
+      title: 'Line Thickness',
+      value: context.select<SettingsController, double>(
+        (controller) => controller.state.lineThickness,
+      ),
       onChanged: (value) {
         context.read<SettingsController>().updateLineThickness(value);
       },
@@ -313,21 +241,19 @@ class LineThickness extends StatelessWidget {
 
 //* Line Origin ----------------------------------------------------------------
 
-class LineOrigin extends StatelessWidget {
-  const LineOrigin({super.key});
+class LineOriginSlider extends StatelessWidget {
+  const LineOriginSlider({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final origin = context.select<SettingsController, double>(
-      (controller) => controller.state.lineOrigin,
-    );
-
     return _SliderListTile(
-      title: 'Line Origin',
-      value: origin,
       min: 0.0,
       max: 1.0,
       divisions: 10,
+      title: 'Line Origin',
+      value: context.select<SettingsController, double>(
+        (controller) => controller.state.lineOrigin,
+      ),
       onChanged: (value) {
         context.read<SettingsController>().updateLineOrigin(value);
       },
@@ -342,159 +268,213 @@ class LineStyleSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return _MenuListTile<LineStyle>(
+      header: 'Line Style',
+      options: LineStyle.values,
+      selected: context.select<SettingsController, LineStyle>(
+        (controller) => controller.state.lineStyle,
+      ),
+      onSelect: (lineStyle) {
+        context.read<SettingsController>().updateLineStyle(lineStyle);
+        Navigator.maybePop(context); // remove modals if any
+      },
+      contentBuilder: (style) => (style.title, _LineStyleIcon(style)),
+    );
+  }
+}
+
+class _LineStyleIcon extends StatelessWidget {
+  const _LineStyleIcon(this.lineStyle);
+
+  final LineStyle lineStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.onSurfaceVariant;
     final selectedLineStyle = context.select<SettingsController, LineStyle>(
       (controller) => controller.state.lineStyle,
     );
 
-    return ListTile(
-      title: const Text('Line Style'),
-      subtitle: Text(
-        selectedLineStyle.title,
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.primary,
-        ),
+    return CustomPaint(
+      painter: _LineStylePainter(
+        lineStyle,
+        lineStyle == selectedLineStyle ? color.withOpacity(.3) : color,
       ),
-      trailing: const Icon(Icons.chevron_right),
-      contentPadding: const EdgeInsetsDirectional.only(start: 16, end: 8),
-      onTap: () async {
-        final controller = context.read<SettingsController>();
-
-        final RenderBox tile = context.findRenderObject()! as RenderBox;
-        final Offset offset = tile.localToGlobal(Offset.zero);
-        final Rect(:top, :right) = offset & tile.size;
-
-        final LineStyle? newLineStyle = await showMenu<LineStyle>(
-          context: context,
-          position: RelativeRect.fromLTRB(right, top, tile.size.width, 0),
-          items: <PopupMenuEntry<LineStyle>>[
-            for (final LineStyle lineStyle in LineStyle.values)
-              PopupMenuItem(
-                value: lineStyle,
-                enabled: lineStyle != selectedLineStyle,
-                child: Text(lineStyle.title),
-              ),
-          ],
-        );
-
-        if (newLineStyle == null) return;
-        controller.updateLineStyle(newLineStyle);
-      },
+      child: const SizedBox.square(dimension: 24),
     );
+  }
+}
+
+class _LineStylePainter extends CustomPainter {
+  _LineStylePainter(this.lineStyle, this.color);
+
+  final LineStyle lineStyle;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+
+    var path = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(4, 4, size.width - 8, size.height - 8),
+          const Radius.circular(4),
+        ),
+      );
+
+    path = switch (lineStyle) {
+      LineStyle.dashed => dashPath(path, dashArray: dashArrayOf(6, 2)),
+      LineStyle.dotted => dashPath(path, dashArray: dashArrayOf(2, 2)),
+      LineStyle.solid => path,
+    };
+
+    canvas.drawPath(path, paint);
+  }
+
+  CircularIntervalList<double> dashArrayOf(double width, double space) {
+    return CircularIntervalList<double>([width, space]);
+  }
+
+  @override
+  bool shouldRepaint(covariant _LineStylePainter oldDelegate) {
+    return oldDelegate.lineStyle != lineStyle || oldDelegate.color != color;
   }
 }
 
 //* Rounded Line Connections ---------------------------------------------------
 
-class RoundedConnections extends StatelessWidget {
-  const RoundedConnections({super.key});
+class RoundedConnectionsSwitch extends StatelessWidget {
+  const RoundedConnectionsSwitch({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final roundedConnections = context.select<SettingsController, bool>(
-      (controller) => controller.state.roundedCorners,
-    );
-
     return SwitchListTile(
       title: const Text('Rounded Line Connections'),
-      value: roundedConnections,
+      value: context.select<SettingsController, bool>(
+        (controller) => controller.state.roundedCorners,
+      ),
       onChanged: (value) {
         context.read<SettingsController>().updateRoundedCorners(value);
       },
-      contentPadding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
+      contentPadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 8, 0),
     );
   }
 }
 
 //* Connect Branches -----------------------------------------------------------
 
-class ConnectBranches extends StatelessWidget {
-  const ConnectBranches({super.key});
+class ConnectBranchesSwitch extends StatelessWidget {
+  const ConnectBranchesSwitch({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final connectBranches = context.select<SettingsController, bool>(
-      (controller) => controller.state.connectBranches,
-    );
-
     return SwitchListTile(
       title: const Text('Connect Branches'),
-      value: connectBranches,
+      value: context.select<SettingsController, bool>(
+        (controller) => controller.state.connectBranches,
+      ),
       onChanged: (value) {
         context.read<SettingsController>().updateConnectBranches(value);
       },
-      contentPadding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
+      contentPadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 8, 0),
     );
   }
 }
 
 //* Text Direction -------------------------------------------------------------
 
-class Direction extends StatelessWidget {
-  const Direction({super.key});
+class TextDirectionalitySwitch extends StatelessWidget {
+  const TextDirectionalitySwitch({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final highlightColor = Theme.of(context).colorScheme.primary;
-
     final textDirection = context.select<SettingsController, TextDirection>(
       (controller) => controller.state.textDirection,
     );
 
-    final String title;
-    final TextDirection oppositeTextDirection;
-
-    switch (textDirection) {
-      case TextDirection.ltr:
-        title = 'Left to Right';
-        oppositeTextDirection = TextDirection.rtl;
-        break;
-      case TextDirection.rtl:
-        title = 'Right to Left';
-        oppositeTextDirection = TextDirection.ltr;
-        break;
-    }
+    final (title, oppositeTextDirection) = switch (textDirection) {
+      TextDirection.ltr => ('Left to Right', TextDirection.rtl),
+      TextDirection.rtl => ('Right to Left', TextDirection.ltr),
+    };
 
     return ListTile(
       title: const Text('Text Direction'),
-      subtitle: Text(
-        title,
-        style: TextStyle(color: highlightColor),
-      ),
+      subtitle: Text(title),
+      trailing: const Icon(Icons.swap_horiz),
       onTap: () => context
           .read<SettingsController>()
           .updateTextDirection(oppositeTextDirection),
-      trailing: const Icon(Icons.swap_horiz),
-      iconColor: highlightColor,
     );
   }
 }
 
-//* Restore All Settings -------------------------------------------------------
+//* Reset Settings -------------------------------------------------------------
 
-class RestoreAllSettings extends StatelessWidget {
-  const RestoreAllSettings({super.key});
+class ResetSettingsButton extends StatelessWidget {
+  const ResetSettingsButton({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ElevatedButton.icon(
-        icon: const Icon(Icons.restore),
-        label: const Text('Restore Settings'),
-        onPressed: () => context.read<SettingsController>().restoreAll(),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: colorScheme.primary,
-          foregroundColor: colorScheme.onPrimary,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-        ),
-      ),
+    return IconButton(
+      icon: const Icon(Icons.restore),
+      tooltip: 'Reset Settings',
+      onPressed: () => context
+        ..read<SelectedExampleNotifier>().reset()
+        ..read<SettingsController>().reset(),
     );
   }
 }
 
 //* Helpers --------------------------------------------------------------------
+
+extension on MenuController {
+  void toggle() => isOpen ? close() : open();
+}
+
+class _MenuListTile<T> extends StatelessWidget {
+  const _MenuListTile({
+    required this.header,
+    required this.selected,
+    required this.options,
+    required this.onSelect,
+    required this.contentBuilder,
+  });
+
+  final String header;
+  final List<T> options;
+  final T selected;
+  final ValueChanged<T> onSelect;
+  final (String title, Widget? icon) Function(T) contentBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    return MenuAnchor(
+      style: const MenuStyle(alignment: AlignmentDirectional.centerEnd),
+      alignmentOffset: const Offset(2, 0),
+      builder: (_, controller, __) {
+        final (selectedTitle, _) = contentBuilder(selected);
+        return ListTile(
+          onTap: controller.toggle,
+          title: Text(header),
+          subtitle: Text(selectedTitle),
+          trailing: const Icon(Icons.chevron_right),
+        );
+      },
+      menuChildren: options.map((option) {
+        final (title, icon) = contentBuilder(option);
+        return MenuItemButton(
+          onPressed: option == selected ? null : () => onSelect(option),
+          leadingIcon: icon,
+          child: Text(title),
+        );
+      }).toList(growable: false),
+    );
+  }
+}
 
 class _SliderListTile extends StatelessWidget {
   const _SliderListTile({
@@ -522,7 +502,8 @@ class _SliderListTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Text('$title ($label)'),
       ),
-      contentPadding: const EdgeInsets.only(top: 8),
+      contentPadding: const EdgeInsets.only(top: 12),
+      minVerticalPadding: 0,
       subtitle: Slider(
         min: min,
         max: max,

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
+import '../shared.dart' show watchAnimationDurationSetting;
+import '../tree_data.dart' show generateTreeNodes;
+
 class Node {
-  Node({
-    required this.title,
-    Iterable<Node>? children,
-  }) : children = <Node>[...?children];
+  Node({required this.title}) : children = <Node>[];
 
   final String title;
   final List<Node> children;
@@ -25,7 +25,11 @@ class _MinimalTreeViewState extends State<MinimalTreeView> {
   @override
   void initState() {
     super.initState();
-    populateExampleTree(root);
+    generateTreeNodes(root, (parent, title) {
+      final child = Node(title: title);
+      parent.children.add(child);
+      return child;
+    });
 
     treeController = TreeController<Node>(
       roots: root.children,
@@ -41,18 +45,21 @@ class _MinimalTreeViewState extends State<MinimalTreeView> {
 
   @override
   Widget build(BuildContext context) {
-    return TreeView<Node>(
+    return AnimatedTreeView<Node>(
       treeController: treeController,
       nodeBuilder: (BuildContext context, TreeEntry<Node> entry) {
         return TreeIndentation(
           entry: entry,
           child: Row(
             children: [
-              ExpandIcon(
-                key: GlobalObjectKey(entry.node),
-                isExpanded: entry.isExpanded,
-                onPressed: (_) => treeController.toggleExpansion(entry.node),
-              ),
+              if (entry.hasChildren)
+                ExpandIcon(
+                  key: GlobalObjectKey(entry.node),
+                  isExpanded: entry.isExpanded,
+                  onPressed: (_) => treeController.toggleExpansion(entry.node),
+                )
+              else
+                const SizedBox(height: 40, width: 8),
               Flexible(
                 child: Text(entry.node.title),
               ),
@@ -60,18 +67,7 @@ class _MinimalTreeViewState extends State<MinimalTreeView> {
           ),
         );
       },
+      duration: watchAnimationDurationSetting(context),
     );
-  }
-}
-
-int _uniqueId = 0;
-void populateExampleTree(Node node, [int level = 0]) {
-  if (level >= 7) return;
-  node.children.addAll([
-    Node(title: 'Node ${_uniqueId++}'),
-    Node(title: 'Node ${_uniqueId++}'),
-  ]);
-  for (final Node child in node.children) {
-    populateExampleTree(child, level + 1);
   }
 }

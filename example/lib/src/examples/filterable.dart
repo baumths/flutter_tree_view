@@ -2,6 +2,8 @@ import 'package:faker/faker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
+import '../shared.dart' show watchAnimationDurationSetting;
+
 class Node {
   Node({
     required this.title,
@@ -129,7 +131,7 @@ class _FilterableTreeViewState extends State<FilterableTreeView> {
           ),
         ),
         Expanded(
-          child: TreeView<Node>(
+          child: AnimatedTreeView<Node>(
             treeController: treeController,
             nodeBuilder: (BuildContext context, TreeEntry<Node> entry) {
               return TreeTile(
@@ -138,6 +140,7 @@ class _FilterableTreeViewState extends State<FilterableTreeView> {
                 searchPattern: searchPattern,
               );
             },
+            duration: watchAnimationDurationSetting(context),
           ),
         ),
       ],
