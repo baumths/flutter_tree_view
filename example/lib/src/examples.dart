@@ -8,6 +8,7 @@ import 'examples/drag_and_drop.dart' show DragAndDropTreeView;
 import 'examples/filterable.dart' show FilterableTreeView;
 import 'examples/lazy_loading.dart' show LazyLoadingTreeView;
 import 'examples/minimal.dart' show MinimalTreeView;
+import 'examples/selectable.dart' show SelectableTreeView;
 import 'settings/controller.dart' show SettingsController;
 import 'shared.dart' show IndentGuideType, LineStyle, enumByName;
 
@@ -37,6 +38,7 @@ enum Example {
   filterable('Filterable', Icon(Icons.manage_search_rounded)),
   lazyLoading('Lazy Loading', Icon(Icons.hourglass_top_rounded)),
   minimal('Minimal', Icon(Icons.segment)),
+  selectable('Selectable', Icon(Icons.check_box)),
   ;
 
   const Example(this.title, this.icon);
@@ -62,6 +64,7 @@ class ExamplesView extends StatelessWidget {
           Example.filterable => const FilterableTreeView(),
           Example.lazyLoading => const LazyLoadingTreeView(),
           Example.minimal => const MinimalTreeView(),
+          Example.selectable => const SelectableTreeView(),
         },
       ),
     );

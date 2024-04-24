@@ -101,6 +101,7 @@ class TreeController<T extends Object> with ChangeNotifier {
     required this.childrenProvider,
     ParentProvider<T>? parentProvider,
     this.defaultExpansionState = false,
+    this.enablePartialSelection = true,
   }) : _roots = roots {
     assert(() {
       _debugHasParentProvider = parentProvider != null;
@@ -396,6 +397,87 @@ class TreeController<T extends Object> with ChangeNotifier {
     );
 
     return allNodesCollapsed;
+  }
+
+  // TODO:
+  // ignore_for_file: public_member_api_docs
+
+  final bool enablePartialSelection;
+
+  T? get activeNode => _activeNode;
+  T? _activeNode;
+
+  late final Map<T, bool?> _selection = <T, bool?>{};
+
+  bool? getSelectionState(T node) {
+    return _selection.containsKey(node) ? _selection[node] : false;
+  }
+
+  void setSelectionState(T node, bool? selected) {
+    _selection[node] = selected;
+  }
+
+  void toggleSelection(T node, {bool whenIndeterminate = true}) {
+    _activeNode = node;
+
+    final bool newSelectionState = switch (getSelectionState(node)) {
+      null => whenIndeterminate,
+      true => false,
+      false => true,
+    };
+
+    setSelectionState(node, newSelectionState);
+
+    if (enablePartialSelection) {
+      _propagateSelectionToDescendants(node, newSelectionState);
+      _propagateSelectionToAncestors(parentProvider(node));
+    }
+  }
+
+  void _propagateSelectionToDescendants(T node, bool selectionState) {
+    for (final T child in childrenProvider(node)) {
+      setSelectionState(child, selectionState);
+      _propagateSelectionToDescendants(child, selectionState);
+    }
+  }
+
+  void _propagateSelectionToAncestors(T? node) {
+    if (node == null) return;
+
+    final bool? oldSelectionState = getSelectionState(node);
+    final bool? newSelectionState = _findNewSelectionStateFromChildren(node);
+
+    if (oldSelectionState != newSelectionState) {
+      setSelectionState(node, newSelectionState);
+      _propagateSelectionToAncestors(parentProvider(node));
+    }
+  }
+
+  bool? _findNewSelectionStateFromChildren(T node) {
+    bool hasSelectedChildren = false;
+    bool hasUnselectedChildren = false;
+
+    for (final T child in childrenProvider(node)) {
+      switch (getSelectionState(child)) {
+        // The following causes check for indeterminate state and returns early
+        // when either a child has an indeterminate state or when both selected
+        // and unselected states are found among siblings.
+        case null:
+          return null;
+        case true when hasUnselectedChildren:
+          return null;
+        case false when hasSelectedChildren:
+          return null;
+
+        // Update the state among siblings and keep looking.
+        case true:
+          hasSelectedChildren = true;
+        case false:
+          hasUnselectedChildren = true;
+      }
+    }
+
+    return hasSelectedChildren;
   }
 
   /// Checks if [potentialAncestor] is present in the path from [node] to its
