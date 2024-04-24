@@ -62,12 +62,9 @@ typedef ReturnCondition<T> = ValuePredicate<T>;
 /// ```
 ///
 /// The default implementations of [getExpansionState] and [setExpansionState]
-/// use a [Set] to manage the expansion state of tree nodes as follows:
-/// - getExpansionState(node) = [Set.contains]
-/// - setExpansionState(node, true) = [Set.add]
-/// - setExpansionState(node, false) = [Set.remove]
+/// uses the `toggledNodes` [Set] to manage the expansion state of tree nodes.
 ///
-/// Those methods can be overridden to use other data structures if desired.
+/// Those methods can be overridden to use other data structures as desired.
 /// Example:
 /// ```dart
 /// class Node {
@@ -201,25 +198,28 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// Defaults to `false`.
   final bool defaultExpansionState;
 
-  /// Holds the expanded OR collapsed nodes, depending on the value of
+  /// Holds all the expanded OR collapsed nodes, depending on the value of
   /// [defaultExpansionState].
   ///
-  /// This will hold every and only:
-  /// - expanded nodes when [defaultExpansionState] is false.
-  /// - collapsed nodes when [defaultExpansionState] is true.
+  /// This should not be manipulated directly, instead use [getExpansionState]
+  /// and [setExpansionState]. This was made public for state restoration and
+  /// persistence purposes only.
   ///
-  /// This is done through an XOR operation (^) on `Set.contains()`. The same
-  /// applies to `Set.add()` and `Set.remove()` which are swapped depending on
-  /// [defaultExpansionState]. See [getExpansionState] and [setExpansionState]
-  /// below.
-  late final Set<T> _toggledNodes = <T>{};
+  /// This will hold every and only:
+  /// - expanded nodes when [defaultExpansionState] is set to false.
+  /// - collapsed nodes when [defaultExpansionState] is set to true.
+  ///
+  /// Deciding whether to hold expanded or collapsed nodes is done through an
+  /// XOR operation (^) on `Set.contains()`. The same applies to `Set.add()`
+  /// and `Set.remove()` which are swapped depending on [defaultExpansionState].
+  late final Set<T> toggledNodes = <T>{};
 
   /// The current expansion state of [node].
   ///
   /// If this method returns `true`, the children of [node] should be visible
   /// in tree views.
   bool getExpansionState(T node) {
-    return _toggledNodes.contains(node) ^ defaultExpansionState;
+    return toggledNodes.contains(node) ^ defaultExpansionState;
   }
 
   /// Updates the expansion state of [node] to the value of [expanded].
@@ -228,8 +228,8 @@ class TreeController<T extends Object> with ChangeNotifier {
   /// called many times recursively in cascading operations.
   void setExpansionState(T node, bool expanded) {
     expanded ^ defaultExpansionState
-        ? _toggledNodes.add(node)
-        : _toggledNodes.remove(node);
+        ? toggledNodes.add(node)
+        : toggledNodes.remove(node);
   }
 
   /// Notify listeners that the tree structure changed in some way.
@@ -616,7 +616,7 @@ class TreeController<T extends Object> with ChangeNotifier {
   @override
   void dispose() {
     _roots = const Iterable.empty();
-    _toggledNodes.clear();
+    toggledNodes.clear();
     super.dispose();
   }
 }
