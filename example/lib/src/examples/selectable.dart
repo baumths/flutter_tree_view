@@ -38,6 +38,7 @@ class SelectableTreeView extends StatefulWidget {
 
 class _SelectableTreeViewState extends State<SelectableTreeView> {
   late final TreeController<Node> treeController;
+  late final TreeSelection<Node> treeSelection;
 
   @override
   void initState() {
@@ -49,11 +50,17 @@ class _SelectableTreeViewState extends State<SelectableTreeView> {
       parentProvider: (Node node) => node.parent,
       defaultExpansionState: true,
     );
+
+    treeSelection = TreeSelection<Node>(
+      childrenProvider: (Node node) => node.children,
+      parentProvider: (Node node) => node.parent,
+    );
   }
 
   @override
   void dispose() {
     treeController.dispose();
+    treeSelection.dispose();
     super.dispose();
   }
 
@@ -62,38 +69,59 @@ class _SelectableTreeViewState extends State<SelectableTreeView> {
     return TreeView<Node>(
       treeController: treeController,
       nodeBuilder: (BuildContext context, TreeEntry<Node> entry) {
-        return SizedBox(
-          height: 40,
-          child: InkWell(
-            onTap: () => treeController.toggleExpansion(entry.node),
-            child: TreeIndentation(
-              entry: entry,
-              child: Row(
-                children: [
-                  const SizedBox(width: 4),
-                  Checkbox(
-                    tristate: true,
-                    value: treeController.getSelectionState(entry.node),
-                    onChanged: (_) {
-                      setState(() {
-                        treeController.toggleSelection(entry.node);
-                      });
-                    },
-                  ),
-                  if (entry.hasChildren)
-                    entry.isExpanded
-                        ? const Icon(Icons.expand_less)
-                        : const Icon(Icons.expand_more),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(entry.node.title),
-                  ),
-                ],
-              ),
+        return TreeTile(
+          entry: entry,
+          onPressed: () => treeController.toggleExpansion(entry.node),
+          leading: ListenableBuilder(
+            listenable: treeSelection,
+            builder: (context, child) => Checkbox(
+              tristate: true,
+              value: treeSelection.stateOf(entry.node),
+              onChanged: (_) => treeSelection.toggle(entry.node),
             ),
           ),
         );
       },
+    );
+  }
+}
+
+class TreeTile extends StatelessWidget {
+  const TreeTile({
+    super.key,
+    required this.entry,
+    this.onPressed,
+    this.leading,
+  });
+
+  final TreeEntry<Node> entry;
+  final VoidCallback? onPressed;
+  final Widget? leading;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 40,
+      child: InkWell(
+        onTap: onPressed,
+        child: TreeIndentation(
+          entry: entry,
+          child: Row(
+            children: [
+              const SizedBox(width: 4),
+              if (leading != null) leading!,
+              if (entry.hasChildren)
+                entry.isExpanded
+                    ? const Icon(Icons.expand_less)
+                    : const Icon(Icons.expand_more),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(entry.node.title),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
