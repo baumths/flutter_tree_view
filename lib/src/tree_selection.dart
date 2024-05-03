@@ -18,7 +18,6 @@ class TreeSelection<T extends Object> with ChangeNotifier {
   T? get activeNode => _activeNode;
   T? _activeNode;
 
-  @protected
   late final Map<T, bool?> selection = <T, bool?>{};
 
   @protected
@@ -37,14 +36,8 @@ class TreeSelection<T extends Object> with ChangeNotifier {
     return selection.containsKey(node) ? selection[node] : false;
   }
 
-  void toggle(
-    T node, {
-    bool whenIndeterminate = true,
-    bool updateActiveNode = true,
-  }) {
-    if (updateActiveNode) {
-      _activeNode = node;
-    }
+  void toggle(T node, {bool whenIndeterminate = true}) {
+    _activeNode = node;
 
     final bool newSelectionState = switch (stateOf(node)) {
       null => whenIndeterminate,
