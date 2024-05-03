@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'settings/controller.dart';
 
 T? enumByName<T extends Enum>(String? name, List<T> values) {
-  return name == null ? null : values.byName(name);
+  return name == null ? null : values.asNameMap()[name];
 }
 
 enum IndentGuideType {
