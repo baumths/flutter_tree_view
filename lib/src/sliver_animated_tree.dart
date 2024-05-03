@@ -136,97 +136,78 @@ class SliverAnimatedTree<T extends Object> extends SliverTree<T> {
 
 class _SliverAnimatedTreeState<T extends Object>
     extends State<SliverAnimatedTree<T>> {
-  Map<T, bool> get _expansionStates => _expansionStatesCache ??= <T, bool>{};
-  Map<T, bool>? _expansionStatesCache;
+  final GlobalKey<SliverAnimatedListState> _listKey =
+      GlobalKey<SliverAnimatedListState>();
 
   List<TreeEntry<T>> _flatTree = const [];
 
-  void _updateFlatTree() {
-    final Map<T, bool> oldExpansionStates = Map<T, bool>.of(_expansionStates);
+  void _rebuild() {
+    setState(() {
+      final List<TreeEntry<T>> flatTree = <TreeEntry<T>>[];
+      widget.controller.depthFirstTraversal(onTraverse: flatTree.add);
+      _flatTree = flatTree;
+    });
+  }
 
-    final Map<T, bool> currentExpansionStates = <T, bool>{};
+  void _animatedRebuild() {
     final List<TreeEntry<T>> flatTree = <TreeEntry<T>>[];
+    final List<int> indicesAnimatingIn = <int>[];
+    final Map<T, TreeEntry<T>> oldEntries = <T, TreeEntry<T>>{
+      for (final TreeEntry<T> entry in _flatTree.reversed) entry.node: entry,
+    };
 
-    final Visitor<TreeEntry<T>> onTraverse;
+    widget.controller.depthFirstTraversal(onTraverse: (TreeEntry<T> entry) {
+      flatTree.add(entry);
 
-    if (widget.duration == Duration.zero) {
-      onTraverse = (TreeEntry<T> entry) {
-        flatTree.add(entry);
-        currentExpansionStates[entry.node] = entry.isExpanded;
-      };
-    } else {
-      onTraverse = (TreeEntry<T> entry) {
-        flatTree.add(entry);
-        currentExpansionStates[entry.node] = entry.isExpanded;
+      if (oldEntries.remove(entry.node) == null) {
+        indicesAnimatingIn.add(entry.index);
+      }
+    });
 
-        final bool? previousState = oldExpansionStates[entry.node];
-        if (previousState != null && previousState != entry.isExpanded) {
-          _animatingNodes.add(entry.node);
-        }
-      };
+    for (final TreeEntry<T> entry in oldEntries.values) {
+      _listKey.currentState?.removeItem(
+        duration: widget.duration,
+        entry.index,
+        (BuildContext context, Animation<double> animation) {
+          return widget.transitionBuilder(
+            context,
+            widget.nodeBuilder(context, entry),
+            animation,
+          );
+        },
+      );
     }
 
-    widget.controller.depthFirstTraversal(
-      onTraverse: onTraverse,
-      descendCondition: (TreeEntry<T> entry) {
-        if (_animatingNodes.contains(entry.node)) {
-          // The descendants of a node that is animating are not included in
-          // the flattened tree since those nodes are going to be rendered in
-          // a single list item.
-          return false;
-        }
-        return entry.isExpanded;
-      },
-    );
+    setState(() {
+      _flatTree = flatTree;
+    });
 
-    _flatTree = flatTree;
-    _expansionStatesCache = currentExpansionStates;
-  }
-
-  void _rebuild() => setState(_updateFlatTree);
-
-  final Set<T> _animatingNodes = <T>{};
-
-  void _onAnimationComplete(T node) {
-    _animatingNodes.remove(node);
-    _rebuild();
-  }
-
-  List<TreeEntry<T>> _buildSubtree(TreeEntry<T> entry) {
-    final List<TreeEntry<T>> subtree = <TreeEntry<T>>[];
-    widget.controller.depthFirstTraversal(
-      rootEntry: entry,
-      onTraverse: subtree.add,
-    );
-    if (subtree.length > widget.maxNodesToShowWhenAnimating) {
-      return subtree.sublist(0, widget.maxNodesToShowWhenAnimating);
+    for (final int index in indicesAnimatingIn) {
+      _listKey.currentState?.insertItem(index, duration: widget.duration);
     }
-    return subtree;
   }
 
   @override
   void initState() {
     super.initState();
-    widget.controller.addListener(_rebuild);
-    _updateFlatTree();
+    widget.controller.addListener(_animatedRebuild);
+    _rebuild();
   }
 
   @override
   void didUpdateWidget(covariant SliverAnimatedTree<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.controller != widget.controller) {
-      oldWidget.controller.removeListener(_rebuild);
-      widget.controller.addListener(_rebuild);
-      _updateFlatTree();
+      oldWidget.controller.removeListener(_animatedRebuild);
+      widget.controller.addListener(_animatedRebuild);
+      _rebuild();
     }
   }
 
   @override
   void dispose() {
-    widget.controller.removeListener(_rebuild);
-    _animatingNodes.clear();
+    widget.controller.removeListener(_animatedRebuild);
     _flatTree = const [];
-    _expansionStatesCache = null;
     super.dispose();
   }
 
@@ -234,217 +215,20 @@ class _SliverAnimatedTreeState<T extends Object>
   Widget build(BuildContext context) {
     return TreeViewScope<T>(
       controller: widget.controller,
-      child: SliverList.builder(
-        itemCount: _flatTree.length,
-        itemBuilder: (BuildContext context, int index) {
-          final TreeEntry<T> entry = _flatTree[index];
-          return _TreeEntry<T>(
-            key: _SaltedTreeNodeKey<T>(entry.node, this),
-            entry: entry,
-            nodeBuilder: widget.nodeBuilder,
-            buildFlatSubtree: _buildSubtree,
-            transitionBuilder: widget.transitionBuilder,
-            onAnimationComplete: _onAnimationComplete,
-            curve: widget.curve,
-            duration: widget.duration,
-            showSubtree: _animatingNodes.contains(entry.node),
+      child: SliverAnimatedList(
+        key: _listKey,
+        initialItemCount: _flatTree.length,
+        itemBuilder: (
+          BuildContext context,
+          int index,
+          Animation<double> animation,
+        ) {
+          return widget.transitionBuilder(
+            context,
+            widget.nodeBuilder(context, _flatTree[index]),
+            CurvedAnimation(parent: animation, curve: widget.curve),
           );
         },
-      ),
-    );
-  }
-}
-
-class _SaltedTreeNodeKey<T extends Object> extends GlobalObjectKey {
-  const _SaltedTreeNodeKey(this.node, this.state) : super(node);
-
-  final T node;
-  final _SliverAnimatedTreeState<T> state;
-
-  @override
-  bool operator ==(Object other) {
-    if (other.runtimeType != runtimeType) {
-      return false;
-    }
-    return other is _SaltedTreeNodeKey<T> &&
-        other.node == node &&
-        other.state == state;
-  }
-
-  @override
-  int get hashCode => Object.hash(node, state);
-}
-
-typedef _FlatSubtreeBuilder<T extends Object> = List<TreeEntry<T>> Function(
-  TreeEntry<T> virtualRoot,
-);
-
-class _TreeEntry<T extends Object> extends StatefulWidget {
-  const _TreeEntry({
-    super.key,
-    required this.entry,
-    required this.nodeBuilder,
-    required this.buildFlatSubtree,
-    required this.transitionBuilder,
-    required this.onAnimationComplete,
-    required this.curve,
-    required this.duration,
-    required this.showSubtree,
-  });
-
-  final TreeEntry<T> entry;
-  final TreeNodeBuilder<T> nodeBuilder;
-  final _FlatSubtreeBuilder<T> buildFlatSubtree;
-
-  final TreeTransitionBuilder transitionBuilder;
-  final ValueSetter<T> onAnimationComplete;
-  final Curve curve;
-  final Duration duration;
-  final bool showSubtree;
-
-  @override
-  State<_TreeEntry<T>> createState() => _TreeEntryState<T>();
-}
-
-class _TreeEntryState<T extends Object> extends State<_TreeEntry<T>>
-    with SingleTickerProviderStateMixin {
-  TreeEntry<T> get entry => widget.entry;
-  T get node => entry.node;
-
-  late final AnimationController animationController;
-  late final CurveTween curveTween;
-
-  bool isExpanded = false;
-
-  void onAnimationComplete() {
-    widget.onAnimationComplete(node);
-    if (!mounted) return;
-    setState(() {});
-  }
-
-  void expand() {
-    // Sometimes when [isExpanded] changes and [widget.shouldAnimate] is set to
-    // `false`, the animation value is not reset, then later when a subsequent
-    // animation starts, the controller is already completed and no animation
-    // is played at all.
-    final double? from = animationController.value == 1.0 ? 0.0 : null;
-    animationController.forward(from: from).whenComplete(onAnimationComplete);
-  }
-
-  void collapse() {
-    // Sometimes when [isExpanded] changes and [widget.shouldAnimate] is set to
-    // `false`, the animation value is not reset, then later when a subsequent
-    // animation starts, the controller is already completed and no animation
-    // is played at all.
-    final double? from = animationController.value == 0.0 ? 1.0 : null;
-    animationController.reverse(from: from).whenComplete(onAnimationComplete);
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    isExpanded = entry.isExpanded;
-
-    curveTween = CurveTween(curve: widget.curve);
-    animationController = AnimationController(
-      vsync: this,
-      value: isExpanded ? 1.0 : 0.0,
-      duration: widget.duration,
-    );
-  }
-
-  @override
-  void didUpdateWidget(covariant _TreeEntry<T> oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    curveTween.curve = widget.curve;
-    animationController.duration = widget.duration;
-
-    final bool expansionState = entry.isExpanded;
-
-    if (isExpanded != expansionState) {
-      isExpanded = expansionState;
-
-      if (widget.showSubtree) {
-        isExpanded ? expand() : collapse();
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    animationController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final Widget tile = widget.nodeBuilder(context, entry);
-
-    late final Widget subtree = _Subtree<T>(
-      virtualRoot: entry,
-      nodeBuilder: widget.nodeBuilder,
-      buildFlatSubtree: widget.buildFlatSubtree,
-    );
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        tile,
-        if (widget.showSubtree && animationController.isAnimating)
-          widget.transitionBuilder(
-            context,
-            subtree,
-            animationController.drive(curveTween),
-          ),
-      ],
-    );
-  }
-}
-
-class _Subtree<T extends Object> extends StatefulWidget {
-  const _Subtree({
-    super.key,
-    required this.virtualRoot,
-    required this.nodeBuilder,
-    required this.buildFlatSubtree,
-  });
-
-  final TreeEntry<T> virtualRoot;
-  final TreeNodeBuilder<T> nodeBuilder;
-  final _FlatSubtreeBuilder<T> buildFlatSubtree;
-
-  @override
-  State<_Subtree<T>> createState() => _SubtreeState<T>();
-}
-
-class _SubtreeState<T extends Object> extends State<_Subtree<T>> {
-  late List<TreeEntry<T>> virtualEntries;
-
-  @override
-  void initState() {
-    super.initState();
-    virtualEntries = widget.buildFlatSubtree(widget.virtualRoot);
-  }
-
-  @override
-  void dispose() {
-    virtualEntries = const [];
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      ignoring: true,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (final TreeEntry<T> virtualEntry in virtualEntries)
-            widget.nodeBuilder(context, virtualEntry),
-        ],
       ),
     );
   }
