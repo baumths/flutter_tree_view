@@ -48,7 +48,7 @@ Widget defaultTreeTransitionBuilder(
 ///     slivers: [
 ///       SliverAnimatedTree<Node>(
 ///         controller: treeController,
-///         duration: const Duration(milliseconds, 300),
+///         duration: const Duration(milliseconds: 300),
 ///         curve: Curves.linear,
 ///         nodeBuilder: (BuildContext context, TreeEntry<Node> entry) {
 ///           ...
