@@ -265,6 +265,7 @@ class TreeTile extends StatelessWidget {
       child: Row(
         children: [
           FolderButton(
+            key: Key('DragAndDropTreeViewFolderButton#${entry.node.id}'),
             isOpen: entry.node.isLeaf ? null : entry.isExpanded,
             onPressed: onFolderPressed,
           ),
