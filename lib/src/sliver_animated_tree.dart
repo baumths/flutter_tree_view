@@ -50,7 +50,6 @@ Widget defaultTreeTransitionBuilder(
 ///         controller: treeController,
 ///         duration: const Duration(milliseconds, 300),
 ///         curve: Curves.linear,
-///         maxNodesToShowWhenAnimating: 50,
 ///         nodeBuilder: (BuildContext context, TreeEntry<Node> entry) {
 ///           ...
 ///         },
@@ -83,6 +82,7 @@ class SliverAnimatedTree<T extends Object> extends SliverTree<T> {
     this.transitionBuilder = defaultTreeTransitionBuilder,
     this.duration = const Duration(milliseconds: 300),
     this.curve = Curves.linear,
+    @Deprecated('Not needed by the new animation implementation')
     this.maxNodesToShowWhenAnimating = 50,
   }) : assert(maxNodesToShowWhenAnimating > 0);
 
@@ -112,22 +112,8 @@ class SliverAnimatedTree<T extends Object> extends SliverTree<T> {
   /// {@endtemplate}
   final Curve curve;
 
-  /// {@template flutter_fancy_tree_view.SliverAnimatedTree.maxNodesToShowWhenAnimating}
-  /// The amount of nodes that are going to be shown on an animating subtree.
-  ///
-  /// Must be greater than `0`.
-  ///
-  /// When animating the expand/collapse state changes, all descendant nodes
-  /// whose visibility will change are rendered along with the toggled node,
-  /// i.e. a [Column] is used, therefore rendering the entire subtree regardless
-  /// of being a "lazy" rendered view.
-  ///
-  /// This value can be used to limit how many nodes are actually rendered
-  /// during the animation, since there could be cases where not all widgets
-  /// are visible due to scroll offsets.
-  ///
-  /// Defaults to `50`.
-  /// {@endtemplate}
+  /// @no-doc
+  @Deprecated('Not needed by the new animation implementation')
   final int maxNodesToShowWhenAnimating;
 
   @override

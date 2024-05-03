@@ -112,6 +112,7 @@ class AnimatedTreeView<T extends Object> extends TreeView<T> {
     this.transitionBuilder = defaultTreeTransitionBuilder,
     this.duration = const Duration(milliseconds: 300),
     this.curve = Curves.linear,
+    @Deprecated('Not needed by the new animation implementation')
     this.maxNodesToShowWhenAnimating = 50,
     super.padding,
     super.controller,
@@ -135,7 +136,8 @@ class AnimatedTreeView<T extends Object> extends TreeView<T> {
   /// {@macro flutter_fancy_tree_view.SliverAnimatedTree.curve}
   final Curve curve;
 
-  /// {@macro flutter_fancy_tree_view.SliverAnimatedTree.maxNodesToShowWhenAnimating}
+  /// @no-doc
+  @Deprecated('Not needed by the new animation implementation')
   final int maxNodesToShowWhenAnimating;
 
   @override
@@ -146,6 +148,7 @@ class AnimatedTreeView<T extends Object> extends TreeView<T> {
       transitionBuilder: transitionBuilder,
       duration: duration,
       curve: curve,
+      // ignore: deprecated_member_use_from_same_package
       maxNodesToShowWhenAnimating: maxNodesToShowWhenAnimating,
     );
   }
