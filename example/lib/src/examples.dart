@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
+import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart'
+    hide AnimatedTreeView;
 import 'package:path_drawing/path_drawing.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'examples/animated.dart' show AnimatedTreeView;
 import 'examples/drag_and_drop.dart' show DragAndDropTreeView;
 import 'examples/filterable.dart' show FilterableTreeView;
 import 'examples/lazy_loading.dart' show LazyLoadingTreeView;
@@ -33,6 +35,7 @@ class SelectedExampleNotifier extends ValueNotifier<Example> {
 }
 
 enum Example {
+  animated('Animated', Icon(Icons.animation)),
   dragAndDrop('Drag and Drop', Icon(Icons.move_down_rounded)),
   filterable('Filterable', Icon(Icons.manage_search_rounded)),
   lazyLoading('Lazy Loading', Icon(Icons.hourglass_top_rounded)),
@@ -58,6 +61,7 @@ class ExamplesView extends StatelessWidget {
       child: TreeIndentGuideScope(
         key: Key(selectedExample.title),
         child: switch (selectedExample) {
+          Example.animated => const AnimatedTreeView(),
           Example.dragAndDrop => const DragAndDropTreeView(),
           Example.filterable => const FilterableTreeView(),
           Example.lazyLoading => const LazyLoadingTreeView(),
