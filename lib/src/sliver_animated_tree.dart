@@ -125,6 +125,7 @@ class _SliverAnimatedTreeState<T extends Object>
   final GlobalKey<SliverAnimatedListState> _listKey =
       GlobalKey<SliverAnimatedListState>();
 
+  late final CurveTween _curveTween = CurveTween(curve: widget.curve);
   List<TreeEntry<T>> _flatTree = const [];
 
   void _rebuild() {
@@ -158,7 +159,7 @@ class _SliverAnimatedTreeState<T extends Object>
           return widget.transitionBuilder(
             context,
             widget.nodeBuilder(context, entry),
-            CurvedAnimation(parent: animation, curve: widget.curve),
+            _curveTween.animate(animation),
           );
         },
       );
@@ -188,6 +189,7 @@ class _SliverAnimatedTreeState<T extends Object>
       widget.controller.addListener(_animatedRebuild);
       _rebuild();
     }
+    _curveTween.curve = widget.curve;
   }
 
   @override
@@ -212,7 +214,7 @@ class _SliverAnimatedTreeState<T extends Object>
           return widget.transitionBuilder(
             context,
             widget.nodeBuilder(context, _flatTree[index]),
-            CurvedAnimation(parent: animation, curve: widget.curve),
+            _curveTween.animate(animation),
           );
         },
       ),
