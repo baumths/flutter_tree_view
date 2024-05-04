@@ -158,7 +158,7 @@ class _SliverAnimatedTreeState<T extends Object>
           return widget.transitionBuilder(
             context,
             widget.nodeBuilder(context, entry),
-            animation,
+            CurvedAnimation(parent: animation, curve: widget.curve),
           );
         },
       );
