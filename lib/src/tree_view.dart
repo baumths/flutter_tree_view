@@ -148,8 +148,6 @@ class AnimatedTreeView<T extends Object> extends TreeView<T> {
       transitionBuilder: transitionBuilder,
       duration: duration,
       curve: curve,
-      // ignore: deprecated_member_use_from_same_package
-      maxNodesToShowWhenAnimating: maxNodesToShowWhenAnimating,
     );
   }
 }
