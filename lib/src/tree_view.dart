@@ -136,7 +136,7 @@ class AnimatedTreeView<T extends Object> extends TreeView<T> {
   /// {@macro flutter_fancy_tree_view.SliverAnimatedTree.curve}
   final Curve curve;
 
-  /// @no-doc
+  /// @nodoc
   @Deprecated('Not needed by the new animation implementation')
   final int maxNodesToShowWhenAnimating;
 

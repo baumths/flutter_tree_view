@@ -112,7 +112,7 @@ class SliverAnimatedTree<T extends Object> extends SliverTree<T> {
   /// {@endtemplate}
   final Curve curve;
 
-  /// @no-doc
+  /// @nodoc
   @Deprecated('Not needed by the new animation implementation')
   final int maxNodesToShowWhenAnimating;
 
