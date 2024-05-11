@@ -44,6 +44,7 @@ class TreeView<T extends Object> extends BoxScrollView {
     super.key,
     required this.treeController,
     required this.nodeBuilder,
+    this.onTreeChanged,
     super.padding,
     super.controller,
     super.primary,
@@ -63,11 +64,15 @@ class TreeView<T extends Object> extends BoxScrollView {
   /// {@macro flutter_fancy_tree_view.SliverTree.nodeBuilder}
   final TreeNodeBuilder<T> nodeBuilder;
 
+  /// {@macro flutter_fancy_tree_view.SliverTree.onTreeChanged}
+  final ValueChanged<List<TreeEntry<T>>>? onTreeChanged;
+
   @override
   Widget buildChildLayout(BuildContext context) {
     return SliverTree<T>(
       controller: treeController,
       nodeBuilder: nodeBuilder,
+      onTreeChanged: onTreeChanged,
     );
   }
 }
@@ -109,6 +114,7 @@ class AnimatedTreeView<T extends Object> extends TreeView<T> {
     super.key,
     required super.treeController,
     required super.nodeBuilder,
+    super.onTreeChanged,
     this.transitionBuilder = defaultTreeTransitionBuilder,
     this.duration = const Duration(milliseconds: 300),
     this.curve = Curves.linear,
@@ -143,6 +149,7 @@ class AnimatedTreeView<T extends Object> extends TreeView<T> {
     return SliverAnimatedTree<T>(
       controller: treeController,
       nodeBuilder: nodeBuilder,
+      onTreeChanged: onTreeChanged,
       transitionBuilder: transitionBuilder,
       duration: duration,
       curve: curve,

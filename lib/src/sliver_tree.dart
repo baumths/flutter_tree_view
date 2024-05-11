@@ -1,3 +1,5 @@
+import 'dart:collection' show UnmodifiableListView;
+
 import 'package:flutter/material.dart';
 
 import 'tree_controller.dart';
@@ -51,6 +53,7 @@ class SliverTree<T extends Object> extends StatefulWidget {
     super.key,
     required this.controller,
     required this.nodeBuilder,
+    this.onTreeChanged,
   });
 
   /// {@template flutter_fancy_tree_view.SliverTree.controller}
@@ -71,6 +74,24 @@ class SliverTree<T extends Object> extends StatefulWidget {
   /// {@endtemplate}
   final TreeNodeBuilder<T> nodeBuilder;
 
+  /// {@template flutter_fancy_tree_view.SliverTree.onTreeChanged}
+  /// Called each time the tree gets flattened.
+  ///
+  /// Whenever the tree changes in any way and a traversal is required (e.g.,
+  /// when calling [TreeController.rebuild]), this callback is called with the
+  /// new flat tree.
+  ///
+  /// This can be useful when an action needs to be executed as soon as the tree
+  /// gets rebuilt, like highlighting or scrolling to a selected node.
+  ///
+  /// This callback may get called a lot as the expansion states change.
+  ///
+  /// Note that for animated tree views, this callback will be called twice
+  /// for each rebuild, once when the animation begins and one more time when
+  /// the animation ends.
+  /// {@endtemplate}
+  final ValueChanged<List<TreeEntry<T>>>? onTreeChanged;
+
   @override
   State<SliverTree<T>> createState() => _SliverTreeState<T>();
 }
@@ -82,6 +103,7 @@ class _SliverTreeState<T extends Object> extends State<SliverTree<T>> {
     final List<TreeEntry<T>> flatTree = [];
     widget.controller.depthFirstTraversal(onTraverse: flatTree.add);
     _flatTree = flatTree;
+    widget.onTreeChanged?.call(UnmodifiableListView<TreeEntry<T>>(_flatTree));
   }
 
   void _rebuild() => setState(_updateFlatTree);

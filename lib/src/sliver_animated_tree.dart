@@ -1,3 +1,5 @@
+import 'dart:collection' show UnmodifiableListView;
+
 import 'package:flutter/material.dart';
 
 import 'sliver_tree.dart';
@@ -80,6 +82,7 @@ class SliverAnimatedTree<T extends Object> extends SliverTree<T> {
     super.key,
     required super.controller,
     required super.nodeBuilder,
+    super.onTreeChanged,
     this.transitionBuilder = defaultTreeTransitionBuilder,
     this.duration = const Duration(milliseconds: 300),
     this.curve = Curves.linear,
@@ -181,6 +184,7 @@ class _SliverAnimatedTreeState<T extends Object>
 
     _flatTree = flatTree;
     _expansionStatesCache = currentExpansionStates;
+    widget.onTreeChanged?.call(UnmodifiableListView<TreeEntry<T>>(_flatTree));
   }
 
   void _rebuild() => setState(_updateFlatTree);
