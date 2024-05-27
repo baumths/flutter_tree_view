@@ -54,7 +54,7 @@ class _MinimalTreeViewState extends State<MinimalTreeView> {
             children: [
               if (entry.hasChildren)
                 ExpandIcon(
-                  key: GlobalObjectKey(entry.node),
+                  key: Key('ExpandIcon#${entry.node.title}'),
                   isExpanded: entry.isExpanded,
                   onPressed: (_) => treeController.toggleExpansion(entry.node),
                 )

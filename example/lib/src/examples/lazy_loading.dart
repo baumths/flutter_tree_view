@@ -88,7 +88,7 @@ class _LazyLoadingTreeViewState extends State<LazyLoadingTreeView> {
     }
 
     return FolderButton(
-      key: GlobalObjectKey(data.id),
+      key: Key('FolderButton#${data.id}'),
       isOpen: isOpen,
       onPressed: onPressed,
     );

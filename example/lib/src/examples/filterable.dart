@@ -180,7 +180,7 @@ class _TreeTileState extends State<TreeTile> {
       child: Row(
         children: [
           ExpandIcon(
-            key: GlobalObjectKey(widget.entry.node),
+            key: Key('ExpandIcon#${widget.entry.node.title}'),
             isExpanded: widget.entry.isExpanded,
             onPressed: (_) => TreeViewScope.of<Node>(context)
               ..controller.toggleExpansion(widget.entry.node),
