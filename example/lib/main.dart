@@ -7,6 +7,8 @@ import 'src/examples.dart' show SelectedExampleNotifier;
 import 'src/settings/controller.dart' show SettingsController;
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   final prefs = await SharedPreferences.getInstance();
   runApp(
     MultiProvider(
