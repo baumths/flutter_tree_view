@@ -1,4 +1,4 @@
-import 'package:faker/faker.dart';
+import 'package:faker/faker.dart' as faker;
 import 'package:flutter/material.dart';
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 
@@ -256,7 +256,7 @@ class _TreeTileState extends State<TreeTile> {
   }
 }
 
-final lorem = Faker().lorem;
+final lorem = faker.Faker().lorem;
 void populateExampleTree(Node node, [int level = 0]) {
   if (level >= 7) return;
   node.children.addAll([
