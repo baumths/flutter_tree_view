@@ -60,6 +60,7 @@ class TreeDraggable<T extends Object> extends StatefulWidget {
     this.hitTestBehavior = HitTestBehavior.deferToChild,
     this.longPressDelay,
     this.longPressHapticFeedbackOnStart = true,
+    this.maxSimultaneousDrags = 1,
   });
 
   /// The widget below this widget in the tree.
@@ -256,6 +257,16 @@ class TreeDraggable<T extends Object> extends StatefulWidget {
   /// Defaults to `null`.
   final Duration? longPressDelay;
 
+  /// How many simultaneous drags to support.
+  ///
+  /// When null, no limit is applied. Set this to 1 if you want to only allow
+  /// the drag source to have one item dragged at a time. Set this to 0 if you
+  /// want to prevent the draggable from actually being dragged.
+  ///
+  /// If you set this property to 1, consider supplying an "empty" widget for
+  /// [childWhenDragging] to create the illusion of actually moving [child].
+  final int? maxSimultaneousDrags;
+
   @override
   State<TreeDraggable<T>> createState() => _TreeDraggableState<T>();
 }
@@ -378,7 +389,7 @@ class _TreeDraggableState<T extends Object> extends State<TreeDraggable<T>>
     if (widget.longPressDelay != null) {
       return LongPressDraggable<T>(
         data: widget.node,
-        maxSimultaneousDrags: 1,
+        maxSimultaneousDrags: widget.maxSimultaneousDrags,
         onDragStarted: onDragStarted,
         onDragUpdate: onDragUpdate,
         onDraggableCanceled: onDraggableCanceled,
@@ -399,7 +410,7 @@ class _TreeDraggableState<T extends Object> extends State<TreeDraggable<T>>
 
     return Draggable<T>(
       data: widget.node,
-      maxSimultaneousDrags: 1,
+      maxSimultaneousDrags: widget.maxSimultaneousDrags,
       onDragStarted: onDragStarted,
       onDragUpdate: onDragUpdate,
       onDraggableCanceled: onDraggableCanceled,
