@@ -1,3 +1,11 @@
+> [!CAUTION]
+> This package was **discontinued** in favor of Flutter's new [TreeSliver](https://api.flutter.dev/flutter/widgets/TreeSliver-class.html)
+> widget (introduced in Flutter version 3.24.0) and
+> [2D TreeView](https://pub.dev/documentation/two_dimensional_scrollables/latest/two_dimensional_scrollables/TreeView-class.html)
+> from Flutter's official [two_dimensional_scrollables](https://pub.dev/packages/two_dimensional_scrollables) package.
+
+---
+
 # flutter_fancy_tree_view
 [![pub package](https://img.shields.io/pub/v/flutter_fancy_tree_view.svg)](https://pub.dev/packages/flutter_fancy_tree_view)
 
